@@ -1,0 +1,15 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Management</title>
+    <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
+</head>
+<body>
+    <h2>User Management</h2>
+    <ul>
+        <li><a href="{% url 'password_change' %}">Change Password</a></li>
+        <li><a href="#">Your Account</a></li>
+    </ul>
+</body>
+</html>
