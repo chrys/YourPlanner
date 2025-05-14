@@ -194,3 +194,68 @@ header {
 .overlay.show {
     display: block;
 }
+
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.content-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+form {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+button[type="submit"] {
+    background: #e88ea1;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+button[type="submit"]:hover {
+    background: #d77d90;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea,
+select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.content-container ul {
+    list-style: none;
+    padding: 0;
+}
+
+.content-container li {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+a {
+    color: #e88ea1;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}

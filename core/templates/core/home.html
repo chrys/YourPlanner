@@ -1,73 +1,40 @@
+{% extends "core/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Welcome to V planner</title>
-    <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
-    <link href="https://fonts.googleapis.com/css?family=Pacifico|Open+Sans:400,700" rel="stylesheet">
-</head>
-<body>
-    <div id="side-menu" class="side-menu">
-        <button class="close-btn" onclick="closeMenu()">&times;</button>
-        <a href="" class="menu-item">Welcome To V Planer</a>
-        <a href="/users/register" class="menu-item">User Registration</a>
-        <a href="/users/management" class="menu-item">User Management</a>
-        <a href="#" class="menu-item">Event Locations</a>
-        <a href="#" class="menu-item">Food & Drinks Menu</a>
-        <a href="#" class="menu-item">Book Rooms</a>
-        <a href="#" class="menu-item">Finishing Touches Package</a>
-        <a href="#" class="menu-item">Decors And Services For Hire</a>
-        <a href="#" class="menu-item">Floor And Table Plans</a>
-        <a href="#" class="menu-item">Terms & Conditions</a>
-        <a href="#" class="menu-item">Payment Procedures</a>
-        <a href="#" class="menu-item special"><span class="icon">&#9776;</span> Order Of The Day</a>
-        <a href="#" class="menu-item special"><span class="icon">&#128722;</span> Wedding Basket</a>
-        <a href="#" class="menu-item special">Logout</a>
+
+{% block title %}Welcome to V planner{% endblock %}
+
+{% block content %}
+<header>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
     </div>
-    <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-    <header>
-        <div class="navbar">
-            <span class="menu-icon" onclick="openMenu()">&#9776;</span>
-            <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
-        </div>
-        <div class="header-images">
-            <img src="{% static 'core/images/header1.jpg' %}" alt="Venue 1">
-            <img src="{% static 'core/images/header2.jpg' %}" alt="Venue 2">
-            <img src="{% static 'core/images/header3.jpg' %}" alt="Venue 3">
-        </div>
-    </header>
-    <main>
-        <h1 class="welcome-title">Welcome to <span class="v-planner">V planner</span></h1>
-        <p class="intro">
-            Welcome to the V planner, your 24/7 wedding planning tool. This program has been carefully created for all Vaslias brides and grooms. Our aim is to offer you a stress free and professional service through out your wedding planning process. Here you can update your menus and drinks your ceremony arrangements your table plans and accommodation options. Always remember that your Vaslias team is available for questions and assistance! Happy wedding planning!
-        </p>
-        <div class="circle-grid">
-            <div class="circle">Order your<br>food & drinks</div>
-            <div class="circle">Book rooms</div>
-            <div class="circle">Plan the tables</div>
-            <div class="circle">Choose your<br>decoration</div>
-            <div class="circle">Trusted<br>Suppliers</div>
-            <div class="circle">Wedding<br>Timings</div>
-        </div>
-    </main>
-    <footer>
-        <div class="footer-images">
-            <img src="{% static 'core/images/footer1.jpg' %}" alt="Footer 1">
-            <img src="{% static 'core/images/footer2.jpg' %}" alt="Footer 2">
-            <img src="{% static 'core/images/footer3.jpg' %}" alt="Footer 3">
-            <img src="{% static 'core/images/footer4.jpg' %}" alt="Footer 4">
-        </div>
-    </footer>
-    <script>
-        function openMenu() {
-            document.getElementById('side-menu').classList.add('open');
-            document.getElementById('overlay').classList.add('show');
-        }
-        function closeMenu() {
-            document.getElementById('side-menu').classList.remove('open');
-            document.getElementById('overlay').classList.remove('show');
-        }
-    </script>
-</body>
-</html>
+    <div class="header-images">
+        <img src="{% static 'core/images/header1.jpg' %}" alt="Venue 1">
+        <img src="{% static 'core/images/header2.jpg' %}" alt="Venue 2">
+        <img src="{% static 'core/images/header3.jpg' %}" alt="Venue 3">
+    </div>
+</header>
+<main>
+    <h1 class="welcome-title">Welcome to <span class="v-planner">V planner</span></h1>
+    <p class="intro">
+        Welcome to the V planner, your 24/7 wedding planning tool. This program has been carefully created for all Vaslias brides and grooms. Our aim is to offer you a stress free and professional service through out your wedding planning process. Here you can update your menus and drinks your ceremony arrangements your table plans and accommodation options. Always remember that your Vaslias team is available for questions and assistance! Happy wedding planning!
+    </p>
+    <div class="circle-grid">
+        <div class="circle">Order your<br>food & drinks</div>
+        <div class="circle">Book rooms</div>
+        <div class="circle">Plan the tables</div>
+        <div class="circle">Choose your<br>decoration</div>
+        <div class="circle">Trusted<br>Suppliers</div>
+        <div class="circle">Wedding<br>Timings</div>
+    </div>
+</main>
+<footer>
+    <div class="footer-images">
+        <img src="{% static 'core/images/footer1.jpg' %}" alt="Footer 1">
+        <img src="{% static 'core/images/footer2.jpg' %}" alt="Footer 2">
+        <img src="{% static 'core/images/footer3.jpg' %}" alt="Footer 3">
+        <img src="{% static 'core/images/footer4.jpg' %}" alt="Footer 4">
+    </div>
+</footer>
+{% endblock %}

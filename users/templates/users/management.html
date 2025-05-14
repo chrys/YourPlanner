@@ -1,15 +1,22 @@
+{% extends "core/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>User Management</title>
-    <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
-</head>
-<body>
-    <h2>User Management</h2>
-    <ul>
-        <li><a href="{% url 'password_change' %}">Change Password</a></li>
-        <li><a href="/services/professional-account/">Your Professional Account</a></li>
-    </ul>
-</body>
-</html>
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<header>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
+    </div>
+</header>
+<main>
+    <h2 class="welcome-title">User Management</h2>
+    <div class="content-container">
+        <ul>
+            <li><a href="{% url 'password_change' %}">Change Password</a></li>
+            <li><a href="/services/professional-account/">Your Professional Account</a></li>
+        </ul>
+    </div>
+</main>
+{% endblock %}

@@ -1,17 +1,24 @@
+{% extends "core/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Item: {{ item.title }}</title>
-    <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
-</head>
-<body>
-    <h2>Edit Item: "{{ item.title }}"</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Save Changes</button>
-    </form>
-    <p><a href="{% url 'service-items' item.service.id %}">Back to Items</a></p>
-</body>
-</html>
+
+{% block title %}Edit Item: {{ item.title }}{% endblock %}
+
+{% block content %}
+<header>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
+    </div>
+</header>
+<main>
+    <h2 class="welcome-title">Edit Item: "{{ item.title }}"</h2>
+    <div class="form-container">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Save Changes</button>
+        </form>
+        <p><a href="{% url 'service-items' item.service.id %}">Back to Items</a></p>
+    </div>
+</main>
+{% endblock %}

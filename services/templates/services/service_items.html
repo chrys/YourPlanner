@@ -1,28 +1,35 @@
+{% extends "core/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Items for {{ service.title }}</title>
-    <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
-</head>
-<body>
-    <h2>Items for "{{ service.title }}"</h2>
-    <ul>
-        {% for item in items %}
-        <li>
-            <strong>{{ item.title }}</strong> - {{ item.description|default:"No description" }}
-            [<a href="{% url 'edit-item' item.id %}">Edit</a>]
-        </li>
-        {% empty %}
-            <li>No items yet.</li>
-        {% endfor %}
-    </ul>
-    <h3>Add a New Item</h3>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Add Item</button>
-    </form>
-    <p><a href="{% url 'professional-account' %}">Back to Services</a></p>
-</body>
-</html>
+
+{% block title %}Items for {{ service.title }}{% endblock %}
+
+{% block content %}
+<header>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
+    </div>
+</header>
+<main>
+    <h2 class="welcome-title">Items for "{{ service.title }}"</h2>
+    <div class="content-container">
+        <ul>
+            {% for item in items %}
+            <li>
+                <strong>{{ item.title }}</strong> - {{ item.description|default:"No description" }}
+                [<a href="{% url 'edit-item' item.id %}">Edit</a>]
+            </li>
+            {% empty %}
+                <li>No items yet.</li>
+            {% endfor %}
+        </ul>
+        <h3>Add a New Item</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Add Item</button>
+        </form>
+        <p><a href="{% url 'professional-account' %}">Back to Services</a></p>
+    </div>
+</main>
+{% endblock %}

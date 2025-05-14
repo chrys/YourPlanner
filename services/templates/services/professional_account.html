@@ -1,27 +1,34 @@
+{% extends "core/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Your Professional Account</title>
-    <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
-</head>
-<body>
-    <h2>Your Services</h2>
-    <ul>
-        {% for service in services %}
-            <li>
-                <strong>{{ service.title }}</strong>
-                - <a href="{% url 'service-items' service.id %}">Manage Items</a>
-            </li>
-        {% empty %}
-            <li>No services yet.</li>
-        {% endfor %}
-    </ul>
-    <h3>Add a New Service</h3>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Add Service</button>
-    </form>
-</body>
-</html>
+
+{% block title %}Your Professional Account{% endblock %}
+
+{% block content %}
+<header>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
+    </div>
+</header>
+<main>
+    <h2 class="welcome-title">Your Services</h2>
+    <div class="content-container">
+        <ul>
+            {% for service in services %}
+                <li>
+                    <strong>{{ service.title }}</strong>
+                    - <a href="{% url 'service-items' service.id %}">Manage Items</a>
+                </li>
+            {% empty %}
+                <li>No services yet.</li>
+            {% endfor %}
+        </ul>
+        <h3>Add a New Service</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Add Service</button>
+        </form>
+    </div>
+</main>
+{% endblock %}
