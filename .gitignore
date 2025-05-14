@@ -1,3 +1,4 @@
+*.pyc
 users/__pycache__/forms.cpython-313.pyc
 users/__pycache__/urls.cpython-313.pyc
 users/__pycache__/views.cpython-313.pyc
