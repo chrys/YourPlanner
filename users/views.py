@@ -6,7 +6,7 @@ from django.contrib import messages
 from .models import Professional, Customer, ProfessionalCustomerLink
 from orders.models import Order, OrderItem
 from django import forms
-from .forms import RegistrationForm
+from .forms import RegistrationForm, ProfessionalChoiceForm
 #simple registration page in your users app where a user can register as either a professional or a customer 
 # using their name and email, using Django's built-in User model and forms. 
 
@@ -36,17 +36,7 @@ def register(request):
     return render(request, 'users/register.html', {'form': form})
 
 
-class ProfessionalChoiceForm(forms.Form):
-    professional = forms.ModelChoiceField(
-        queryset=Professional.objects.all(),
-        required=True,
-        label="Choose your Professional",
-        widget=forms.Select(),
-    )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['professional'].label_from_instance = lambda obj: obj.title or obj.user.get_full_name() or obj.user.username
 
 '''
 This view handles the user management page. It checks if the user is a customer 

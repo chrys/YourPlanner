@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from .models import Professional
 
 class RegistrationForm(forms.ModelForm):
     ROLE_CHOICES = (
@@ -25,3 +26,15 @@ class RegistrationForm(forms.ModelForm):
         if role == 'professional' and not title:
             self.add_error('title', 'Title is required for professionals.')
         return cleaned_data
+    
+class ProfessionalChoiceForm(forms.Form):
+    professional = forms.ModelChoiceField(
+        queryset=Professional.objects.all(),
+        required=True,
+        label="Choose your Professional",
+        widget=forms.Select(),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['professional'].label_from_instance = lambda obj: obj.title or obj.user.get_full_name() or obj.user.username
