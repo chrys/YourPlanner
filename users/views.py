@@ -30,7 +30,7 @@ def register(request):
                     title=form.cleaned_data['title']
                 )
             messages.success(request, 'Registration successful. You can now log in.')
-            return redirect('user_management')
+            return redirect('login')
     else:
         form = RegistrationForm()
     return render(request, 'users/register.html', {'form': form})
