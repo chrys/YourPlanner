@@ -14,6 +14,7 @@ class Professional(models.Model):
         primary_key=True, # Use the user's ID as the primary key
         related_name='professional_profile' # user.professional_profile
     )
+    title = models.CharField(max_length=200, blank=True, null=True)  # <-- Add this line
     specialization = models.CharField(max_length=200, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -21,7 +22,7 @@ class Professional(models.Model):
 
     def __str__(self):
         # Access the related user's identifier (e.g., username or email)
-        return f"Professional: {self.user}"
+        return self.title or self.user.get_full_name() or self.user.username  # Show title if available, else fallback
 
     class Meta:
         verbose_name = "Professional"

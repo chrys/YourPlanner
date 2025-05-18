@@ -13,11 +13,33 @@
 <main>
     <h2 class="welcome-title">Register</h2>
     <div class="form-container">
-        <form method="post">
+        <form method="post" id="registration-form">
             {% csrf_token %}
-            {{ form.as_p }}
+            {{ form.first_name.label_tag }} {{ form.first_name }}
+            {{ form.last_name.label_tag }} {{ form.last_name }}
+            {{ form.email.label_tag }} {{ form.email }}
+            {{ form.password.label_tag }} {{ form.password }}
+            {{ form.role.label_tag }} {{ form.role }}
+            <div id="title-field" style="display:none;">
+                {{ form.title.label_tag }} {{ form.title }}
+            </div>
             <button type="submit">Register</button>
         </form>
     </div>
 </main>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var roleSelect = document.getElementById('id_role');
+    var titleField = document.getElementById('title-field');
+    function toggleTitleField() {
+        if (roleSelect.value === 'professional') {
+            titleField.style.display = 'block';
+        } else {
+            titleField.style.display = 'none';
+        }
+    }
+    roleSelect.addEventListener('change', toggleTitleField);
+    toggleTitleField();
+});
+</script>
 {% endblock %}

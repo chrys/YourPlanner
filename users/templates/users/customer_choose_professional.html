@@ -1,0 +1,19 @@
+{% extends "core/base.html" %}
+{% block title %}Choose Your Professional{% endblock %}
+{% block content %}
+{% load static %}
+<header>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
+    </div>
+</header>
+<main>
+    <h2 class="welcome-title">Choose Your Professional</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save</button>
+    </form>
+</main>
+{% endblock %}

@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.forms import inlineformset_factory
 from users.models import Professional
-from .models import Service, Item 
+from .models import Service, Item, Price 
 from .forms import ServiceForm, ItemForm 
 
 # An admin-style page at /services/professional-account/ where a logged-in Professional
@@ -61,20 +62,16 @@ def service_items(request, service_id):
 #Each item in a Service can be edited or deleted
 @login_required
 def edit_item(request, item_id):
-    try:
-        professional = request.user.professional_profile
-    except Professional.DoesNotExist:
-        return render(request, 'services/not_a_professional.html')
-
-    item = Item.objects.get(id=item_id, service__professional=professional)
+    item = Item.objects.get(pk=item_id)
+    PriceFormSet = inlineformset_factory(Item, Price, fields=('amount', 'is_active'), extra=1, can_delete=True)
     if request.method == 'POST':
         form = ItemForm(request.POST, instance=item)
-        if form.is_valid():
+        formset = PriceFormSet(request.POST, instance=item)
+        if form.is_valid() and formset.is_valid():
             form.save()
-            return redirect('service-items', service_id=item.service.id)
+            formset.save()
+            return redirect('service-items', item.service.id)
     else:
         form = ItemForm(instance=item)
-    return render(request, 'services/edit_item.html', {
-        'item': item,
-        'form': form,
-    })
+        formset = PriceFormSet(instance=item)
+    return render(request, 'services/edit_item.html', {'form': form, 'formset': formset, 'item': item})

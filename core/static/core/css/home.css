@@ -259,3 +259,13 @@ a {
 a:hover {
     text-decoration: underline;
 }
+
+.user-menu-link {
+    margin-left: 10px;
+    color: #e88ea1;
+    text-decoration: none;
+    font-weight: bold;
+}
+.user-menu-link:hover {
+    text-decoration: underline;
+}

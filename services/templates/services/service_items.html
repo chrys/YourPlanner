@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 {% load static %}
-
+{% load service_extras %}
 {% block title %}Items for {{ service.title }}{% endblock %}
 
 {% block content %}
@@ -17,6 +17,13 @@
             {% for item in items %}
             <li>
                 <strong>{{ item.title }}</strong> - {{ item.description|default:"No description" }}
+                {% with price=item.prices.all|first_active %}
+                    {% if price %}
+                        <span style="color:#e88ea1;">({{ price.amount }} {{ price.currency }})</span>
+                    {% else %}
+                        <span style="color:red;">No price set!</span>
+                    {% endif %}
+                {% endwith %}
                 [<a href="{% url 'edit-item' item.id %}">Edit</a>]
             </li>
             {% empty %}

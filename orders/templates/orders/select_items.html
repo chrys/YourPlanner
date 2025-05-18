@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+{% block title %}Select Items{% endblock %}
+{% block content %}
+{% load static %}
+{% load order_extras %}
+<header>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
+    </div>
+</header>
+<main>
+    <h2 class="welcome-title">Select Items from Your Professional's Services</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% for service in services %}
+            <h3>{{ service.title }}</h3>
+            <ul>
+            {% for item in service.items.all %}
+                {% with price=item.prices.all|first_active %}
+                <li>
+                    <strong>{{ item.title }}</strong>
+                    {% if price %}
+                        - <span style="color:#e88ea1;">{{ price.amount }} {{ price.currency }}</span>
+                        <span style="font-size:0.9em;color:#888;">({{ price.get_frequency_display }})</span>
+                    {% else %}
+                        <span style="color:red;">No price set!</span>
+                    {% endif %}
+                    <br>
+                    <span style="font-size:0.95em;">{{ item.description }}</span>
+                    <input type="number" name="item_{{ item.id }}" min="0" value="{{ current_quantities|get_item:item.id|default:'0' }}" style="width:60px;">
+                </li>
+                {% endwith %}
+            {% empty %}
+                <li>No items for this service.</li>
+            {% endfor %}
+            </ul>
+        {% endfor %}
+        <button type="submit">Update Basket</button>
+        <a href="{% url 'basket' %}" class="user-menu-link" style="margin-left: 10px;">View Basket</a>
+    </form>
+</main>
+{% endblock %}

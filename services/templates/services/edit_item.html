@@ -16,6 +16,15 @@
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
+            <h3>Prices</h3>
+            {{ formset.management_form }}
+            <table>
+                {% for price_form in formset %}
+                <tr>
+                    <td>{{ price_form.as_p }}</td>
+                </tr>
+                {% endfor %}
+            </table>
             <button type="submit">Save Changes</button>
         </form>
         <p><a href="{% url 'service-items' item.service.id %}">Back to Items</a></p>
