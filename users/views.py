@@ -3,9 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib import messages
+from django.utils.safestring import mark_safe
 from .models import Professional, Customer, ProfessionalCustomerLink
 from orders.models import Order, OrderItem
 from django import forms
+from django.urls import reverse
 from .forms import RegistrationForm, ProfessionalChoiceForm
 #simple registration page in your users app where a user can register as either a professional or a customer 
 # using their name and email, using Django's built-in User model and forms. 
@@ -14,28 +16,35 @@ def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            user = User.objects.create_user(
-                username=form.cleaned_data['email'],
-                email=form.cleaned_data['email'],
-                first_name=form.cleaned_data['first_name'],
-                last_name=form.cleaned_data['last_name'],
-                password=form.cleaned_data['password'],
-            )
-            role = form.cleaned_data['role']
-            if role == 'customer':
-                Customer.objects.create(user=user)
-            else:
-                Professional.objects.create(
-                    user=user,
-                    title=form.cleaned_data['title']
+            # Check if the email is already used
+            if User.objects.filter(email=form.cleaned_data['email']).exists():
+                login_url = reverse('login')
+                error_html = mark_safe(
+                    f'This email is already registered. Please <a href="{login_url}">log in instead</a>.'
                 )
-            messages.success(request, 'Registration successful. You can now log in.')
-            return redirect('login')
+                form.add_error('email', 'This email is already registered. Please log in instead.')
+                messages.error(request, error_html)
+            else:
+                user = User.objects.create_user(
+                    username=form.cleaned_data['email'],
+                    email=form.cleaned_data['email'],
+                    first_name=form.cleaned_data['first_name'],
+                    last_name=form.cleaned_data['last_name'],
+                    password=form.cleaned_data['password'],
+                )
+                role = form.cleaned_data['role']
+                if role == 'customer':
+                    Customer.objects.create(user=user)
+                else:
+                    Professional.objects.create(
+                        user=user,
+                        title=form.cleaned_data['title']
+                    )
+                messages.success(request, 'Registration successful. You can now log in.')
+                return redirect('login')
     else:
         form = RegistrationForm()
     return render(request, 'users/register.html', {'form': form})
-
-
 
 
 '''
