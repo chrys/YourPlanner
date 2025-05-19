@@ -63,15 +63,23 @@ def service_items(request, service_id):
 @login_required
 def edit_item(request, item_id):
     item = Item.objects.get(pk=item_id)
-    PriceFormSet = inlineformset_factory(Item, Price, fields=('amount', 'is_active'), extra=1, can_delete=True)
+    active_price = item.prices.filter(is_active=True).first()
     if request.method == 'POST':
         form = ItemForm(request.POST, instance=item)
-        formset = PriceFormSet(request.POST, instance=item)
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             form.save()
-            formset.save()
-            return redirect('service-items', item.service.id)
+            if active_price:
+                active_price.amount = request.POST.get('active_price_amount')
+                active_price.currency = request.POST.get('active_price_currency')
+                active_price.frequency = request.POST.get('active_price_frequency')
+                active_price.save()
+            # Instead of redirect, just render the same page
+            return render(request, 'services/edit_item.html', {
+                'form': form,
+                'item': item,
+                'active_price': active_price,
+                'saved': True,  # Optional: pass a flag if you want
+            })
     else:
         form = ItemForm(instance=item)
-        formset = PriceFormSet(instance=item)
-    return render(request, 'services/edit_item.html', {'form': form, 'formset': formset, 'item': item})
+    return render(request, 'services/edit_item.html', {'form': form, 'item': item, 'active_price': active_price})

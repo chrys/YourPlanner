@@ -3,41 +3,205 @@
 {% block content %}
 {% load static %}
 {% load order_extras %}
-<header>
-    <div class="navbar">
-        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
-        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
-    </div>
-</header>
 <main>
-    <h2 class="welcome-title">Select Items from Your Professional's Services</h2>
-    <form method="post">
-        {% csrf_token %}
-        {% for service in services %}
-            <h3>{{ service.title }}</h3>
-            <ul>
-            {% for item in service.items.all %}
-                {% with price=item.prices.all|first_active %}
-                <li>
-                    <strong>{{ item.title }}</strong>
-                    {% if price %}
-                        - <span style="color:#e88ea1;">{{ price.amount }} {{ price.currency }}</span>
-                        <span style="font-size:0.9em;color:#888;">({{ price.get_frequency_display }})</span>
-                    {% else %}
-                        <span style="color:red;">No price set!</span>
-                    {% endif %}
-                    <br>
-                    <span style="font-size:0.95em;">{{ item.description }}</span>
-                    <input type="number" name="item_{{ item.id }}" min="0" value="{{ current_quantities|get_item:item.id|default:'0' }}" style="width:60px;">
-                </li>
-                {% endwith %}
-            {% empty %}
-                <li>No items for this service.</li>
-            {% endfor %}
-            </ul>
-        {% endfor %}
-        <button type="submit">Update Basket</button>
-        <a href="{% url 'basket' %}" class="user-menu-link" style="margin-left: 10px;">View Basket</a>
-    </form>
+    <div id="select-items-app">
+        <h2 class="welcome-title" style="margin-top:40px;">Select Items from Your Professional's Services</h2>
+        <div v-for="service in services" :key="service.id" class="service-section" style="margin-bottom: 32px;">
+            <h3 style="margin-top:24px; color:#e88ea1;">[[ service.title ]]</h3>
+            <table class="items-table" style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+                <thead>
+                    <tr style="background:#f5f5f5;">
+                        <th style="padding:10px;">Item</th>
+                        <th style="padding:10px;">Description</th>
+                        <th style="padding:10px;">Price</th>
+                        <th style="padding:10px;">Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in service.items" :key="item.id">
+                        <td style="padding:10px;"><strong>[[ item.title ]]</strong></td>
+                        <td style="padding:10px;">[[ item.description ]]</td>
+                        <td style="padding:10px;">
+                            <span v-if="item.price">
+                                <span style="color:#e88ea1;">[[ item.price.amount ]] [[ item.price.currency ]]</span>
+                            </span>
+                            <span v-else style="color:red;">No price set!</span>
+                        </td>
+                        <td style="padding:10px;">
+                            <input type="number"
+                                   :name="'item_' + item.id"
+                                   min="0"
+                                   style="width:60px;"
+                                   v-model.number="item.quantity"
+                                   @input="validateQuantity(item)">
+                        </td>
+                    </tr>
+                    <tr v-if="service.items.length === 0">
+                        <td colspan="4" style="text-align:center;color:#888;">No items for this service.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="text-align:right; margin-top:30px;">
+            <button type="button" class="basket-btn" @click="showDialog = true">Update Basket</button>
+            <a href="{% url 'basket' %}" class="basket-btn" style="text-decoration:none; margin-left:10px;">View Basket</a>
+        </div>
+        <!-- Confirmation Dialog -->
+        <div v-if="showDialog" class="dialog-overlay">
+            <div class="dialog-box">
+                <p>Are you sure you want to Proceed?</p>
+                <div style="text-align:right;">
+                    <button class="basket-btn" style="margin-right:10px;" @click="showDialog = false">Cancel</button>
+                    <button class="basket-btn" @click="confirmUpdate">Update</button>
+                </div>
+            </div>
+        </div>
+        <!-- Success Popup -->
+        <div v-if="showSuccess" class="success-popup">
+            Basket updated successfully!
+        </div>
+        <form id="hidden-form" method="post" style="display:none;">
+            {% csrf_token %}
+            <!-- Hidden inputs will be dynamically added by Vue before submit -->
+        </form>
+    </div>
 </main>
+<!-- Pass Django data to Vue as JSON -->
+<script>
+window.__services__ = [
+    {% for service in services %}
+    {
+        id: {{ service.id }},
+        title: "{{ service.title|escapejs }}",
+        items: [
+            {% for item in service.items.all %}
+            {
+                id: {{ item.id }},
+                title: "{{ item.title|escapejs }}",
+                description: "{{ item.description|default:""|escapejs }}",
+                price: {% with price=item.prices.all|first_active %}
+                    {% if price %}
+                        {
+                            amount: "{{ price.amount }}",
+                            currency: "{{ price.currency }}",
+                            frequency: "{{ price.get_frequency_display }}"
+                        }
+                    {% else %}
+                        null
+                    {% endif %}
+                {% endwith %},
+                quantity: {{ current_quantities|get_item:item.id|default:'0' }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
+<script>
+const { createApp } = Vue;
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            services: [],
+            showDialog: false,
+            showSuccess: false
+        }
+    },
+    mounted() {
+        this.services = window.__services__;
+    },
+    methods: {
+        validateQuantity(item) {
+            if (item.quantity < 0 || isNaN(item.quantity)) {
+                item.quantity = 0;
+            }
+        },
+        confirmUpdate() {
+            this.showDialog = false;
+            this.showSuccess = true;
+            setTimeout(() => {
+                this.showSuccess = false;
+                this.submitForm();
+            }, 3000);
+        },
+        submitForm() {
+            // Prepare and submit the hidden form with all quantities
+            const form = document.getElementById('hidden-form');
+            // Remove previous inputs
+            while (form.firstChild) {
+                form.removeChild(form.firstChild);
+            }
+            // Add CSRF token
+            form.appendChild(document.querySelector('input[name="csrfmiddlewaretoken"]').cloneNode());
+            // Add item quantities
+            this.services.forEach(service => {
+                service.items.forEach(item => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'item_' + item.id;
+                    input.value = item.quantity || 0;
+                    form.appendChild(input);
+                });
+            });
+            form.submit();
+        }
+    }
+}).mount('#select-items-app');
+</script>
+<style>
+.basket-btn {
+    background: #e88ea1;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.basket-btn:hover {
+    background: #fff;
+    color: #e88ea1;
+    border: 1px solid #e88ea1;
+}
+.items-table th, .items-table td {
+    border: 1px solid #e0e0e0;
+}
+.dialog-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.dialog-box {
+    background: #fff;
+    padding: 30px 30px 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+    min-width: 300px;
+}
+.success-popup {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    background: #e88ea1;
+    color: #fff;
+    padding: 18px 32px;
+    border-radius: 6px;
+    font-size: 1.1em;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    z-index: 10001;
+    animation: fadeOut 3s forwards;
+}
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+</style>
 {% endblock %}

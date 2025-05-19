@@ -11,12 +11,40 @@
     </div>
 </header>
 <main>
-    <h2 class="welcome-title">User Management</h2>
-    <div class="content-container">
-        <ul>
-            <li><a href="{% url 'password_change' %}">Change Password</a></li>
-            <li><a href="/services/professional-account/">Your Professional Account</a></li>
-        </ul>
+    <div id="management-app">
+        <h2 class="welcome-title">User Management</h2>
+        <div class="content-container">
+            <ul>
+                <li>
+                    <a href="{% url 'password_change' %}">Change Password</a>
+                </li>
+                <li>
+                    <a href="/services/professional-account/">Your Professional Account</a>
+                </li>
+                <li v-if="showHelp">
+                    <a href="#" @click.prevent="showHelpMessage = !showHelpMessage">Help</a>
+                    <div v-if="showHelpMessage" style="margin-top:8px; color:#444;">
+                        Here you can manage your account, change your password, or access your professional profile.
+                    </div>
+                </li>
+            </ul>
+            <button @click="showHelp = !showHelp" style="margin-top:15px;">
+                [[ showHelp ? 'Hide Help' : 'Show Help' ]]
+            </button>
+        </div>
     </div>
 </main>
+<script>
+const { createApp } = Vue;
+const app = createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            showHelp: false,
+            showHelpMessage: false
+        }
+    }
+});
+app.mount('#management-app');
+</script>
 {% endblock %}

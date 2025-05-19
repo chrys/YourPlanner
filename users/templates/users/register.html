@@ -14,39 +14,77 @@
     {% if messages %}
     <ul class="messages">
         {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|safe }}</li>
         {% endfor %}
     </ul>
     {% endif %}
-    <h2 class="welcome-title">Register</h2>
-    <div class="form-container">
-        <form method="post" id="registration-form">
-            {% csrf_token %}
-            {{ form.first_name.label_tag }} {{ form.first_name }}
-            {{ form.last_name.label_tag }} {{ form.last_name }}
-            {{ form.email.label_tag }} {{ form.email }}
-            {{ form.password.label_tag }} {{ form.password }}
-            {{ form.role.label_tag }} {{ form.role }}
-            <div id="title-field" style="display:none;">
-                {{ form.title.label_tag }} {{ form.title }}
-            </div>
-            <button type="submit">Register</button>
-        </form>
+    <div id="register-app">
+        <h2 class="welcome-title">Register</h2>
+        <div class="form-container">
+            <form method="post" id="registration-form" @submit="onSubmit">
+                {% csrf_token %}
+                <label for="first_name">First Name</label>
+                <input type="text" id="first_name" name="first_name" v-model="first_name" required>
+
+                <label for="last_name">Last Name</label>
+                <input type="text" id="last_name" name="last_name" v-model="last_name" required>
+
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" v-model="email" required>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" v-model="password" required>
+
+                <label for="role">Role</label>
+                <select id="role" name="role" v-model="role" required>
+                    <option value="customer">Customer</option>
+                    <option value="professional">Professional</option>
+                </select>
+
+                <div v-if="role === 'professional'">
+                    <label for="title">Professional Title</label>
+                    <input type="text" id="title" name="title" v-model="title" required>
+                </div>
+
+                <div v-if="error" class="error-message" style="color:red; margin:10px 0;">[[ error ]]</div>
+                <button type="submit">Register</button>
+            </form>
+        </div>
     </div>
 </main>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var roleSelect = document.getElementById('id_role');
-    var titleField = document.getElementById('title-field');
-    function toggleTitleField() {
-        if (roleSelect.value === 'professional') {
-            titleField.style.display = 'block';
-        } else {
-            titleField.style.display = 'none';
+const { createApp } = Vue;
+const app = createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            first_name: '',
+            last_name: '',
+            email: '',
+            password: '',
+            role: 'customer',
+            title: '',
+            error: ''
+        }
+    },
+    methods: {
+        onSubmit(e) {
+            // Basic client-side validation
+            if (!this.first_name || !this.last_name || !this.email || !this.password || !this.role) {
+                this.error = "Please fill in all required fields.";
+                e.preventDefault();
+                return;
+            }
+            if (this.role === 'professional' && !this.title) {
+                this.error = "Please enter your professional title.";
+                e.preventDefault();
+                return;
+            }
+            this.error = '';
+            // Let the form submit normally to Django
         }
     }
-    roleSelect.addEventListener('change', toggleTitleField);
-    toggleTitleField();
 });
+app.mount('#register-app');
 </script>
 {% endblock %}

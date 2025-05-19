@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
     <meta charset="UTF-8">
     <title>{% block title %}V Planner{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
@@ -43,6 +44,7 @@
         {% endif %}
     </div>
     <div id="overlay" class="overlay" onclick="closeMenu()"></div>
+    
     {% block content %}{% endblock %}
     <script>
         function openMenu() {
@@ -55,5 +57,16 @@
         }
     </script>
     {% block extra_js %}{% endblock %}
+    <script>
+     const app = createApp({
+        data() {
+            return {
+            message: "Welcome to Vue in Django!"
+            }
+        }
+        });
+        app.config.compilerOptions.delimiters = ['[[', ']]'];
+        app.mount('#vue-app');
+    </script>
 </body>
 </html>

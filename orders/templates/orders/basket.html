@@ -1,43 +1,141 @@
 {% extends "core/base.html" %}
 {% load static %}
-{% load order_extras %}
-
 {% block title %}Basket{% endblock %}
-
 {% block content %}
-<header>
-    <div class="navbar">
-        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
-        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
-    </div>
-</header>
 <main>
-    <h2 class="welcome-title">Your Basket</h2>
-    {% if items %}
-    <table border="1">
-        <tr>
-            <th>Item</th>
-            <th>Service</th>
-            <th>Quantity</th>
-            <th>Unit Price</th>
-            <th>Subtotal</th>
-        </tr>
-        {% for item in items %}
-        <tr>
-            <td>{{ item.item.title }}</td>
-            <td>{{ item.service.title }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.price_amount_at_order }} {{ item.price_currency_at_order }}</td>
-            <td>{{ item.quantity|multiply:item.price_amount_at_order|floatformat:2 }} {{ item.price_currency_at_order }}</td>
-        </tr>
-        {% endfor %}
-        <tr>
-            <td colspan="4" style="text-align:right;"><strong>Total:</strong></td>
-            <td><strong>{{ total|floatformat:2 }} {{ items.0.price_currency_at_order }}</strong></td>
-        </tr>
-    </table>
-    {% else %}
-        <p>Your basket is empty.</p>
-    {% endif %}
+    <div id="basket-app" style="max-width:900px;margin:40px auto 0 auto;background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.07);padding:32px;">
+        <h2 class="welcome-title" style="font-size:2em;font-weight:700;margin-bottom:32px;">Basket</h2>
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:32px;">
+            <div>
+                <div style="font-weight:600;">From</div>
+                <div style="font-weight:700;">V Planner</div>
+                <div>1280, Clair Street,<br>Massachusetts, New York - 02543</div>
+                <div style="margin-top:12px;font-size:0.95em;">Issued On:<br><span style="font-weight:600;">{{ order.created_at|date:"d M, Y" }}</span></div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-weight:600;">To</div>
+                <div style="font-weight:700;">[[ userName ]]</div>
+                <div>[[ userAddress ]]</div>
+                <div style="margin-top:12px;font-size:0.95em;">Due On:<br><span style="font-weight:600;">{{ order.due_date|date:"d M, Y" }}</span></div>
+            </div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="basket-table" style="width:100%;border-collapse:separate;border-spacing:0 8px;">
+                <thead>
+                    <tr style="background:#f8f8f8;">
+                        <th style="padding:12px 8px;border-radius:8px 0 0 8px;">#</th>
+                        <th style="padding:12px 8px;">Product</th>
+                        <th style="padding:12px 8px;">Service</th>
+                        <th style="padding:12px 8px;">Quantity</th>
+                        <th style="padding:12px 8px;">Unit Cost</th>
+                        <th style="padding:12px 8px;border-radius:0 8px 8px 0;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item, idx) in items" :key="item.id" style="background:#fff;">
+                        <td style="padding:12px 8px;text-align:center;">[[ idx + 1 ]]</td>
+                        <td style="padding:12px 8px;">[[ item.product ]]</td>
+                        <td style="padding:12px 8px;">[[ item.service ]]</td>
+                        <td style="padding:12px 8px;text-align:center;">[[ item.quantity ]]</td>
+                        <td style="padding:12px 8px;">[[ item.unit_price ]] [[ item.currency ]]</td>
+                        <td style="padding:12px 8px;text-align:right;">[[ (item.quantity * item.unit_price).toFixed(2) ]] [[ item.currency ]]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:32px;">
+            <div style="min-width:320px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                    <span style="color:#888;">Sub Total amount:</span>
+                    <span style="font-weight:600;">[[ subtotal.toFixed(2) ]] [[ currency ]]</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                    <span style="color:#888;">Vat (10%):</span>
+                    <span style="font-weight:600;">[[ vat.toFixed(2) ]] [[ currency ]]</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:1.2em;margin-top:12px;">
+                    <span style="font-weight:700;">Total :</span>
+                    <span style="font-weight:700;color:#e88ea1;">[[ total.toFixed(2) ]] [[ currency ]]</span>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:32px;gap:16px;">
+            <a href="{% url 'select-items' %}" class="basket-btn">Update Basket</a>
+            <button class="basket-btn" @click="printPage"><span style="margin-right:8px;">🖨️</span>Print</button>
+        </div>
+    </div>
 </main>
+<script>
+const { createApp } = Vue;
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            items: [
+                {% for item in items %}
+                {
+                    id: {{ item.id }},
+                    product: "{{ item.item.title|escapejs }}",
+                    service: "{{ item.service.title|escapejs }}",
+                    quantity: {{ item.quantity }},
+                    unit_price: {{ item.price_amount_at_order|floatformat:2 }},
+                    currency: "{{ item.price_currency_at_order }}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            userName: "{{ request.user.get_full_name|default:request.user.username|escapejs }}",
+            userAddress: "{{ request.user.profile.address|default:''|linebreaksbr|escapejs }}",
+            subtotal: {{ total|floatformat:2 }},
+            vat: {{ total|floatformat:2 }} * 0.10,
+            total: {{ total|floatformat:2 }} * 1.10,
+            currency: "{{ items.0.price_currency_at_order|default:'USD' }}"
+        }
+    },
+    methods: {
+        printPage() {
+            window.print();
+        }
+    }
+}).mount('#basket-app');
+</script>
+<style>
+.basket-table th, .basket-table td {
+    border: none;
+    background: #fff;
+}
+.basket-table th {
+    font-weight: 600;
+    color: #222;
+    font-size: 1em;
+}
+.basket-table td {
+    color: #333;
+    font-size: 1em;
+}
+.basket-btn {
+    background: #e88ea1;
+    color: #fff;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 6px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    justify-content: center;
+}
+.basket-btn:hover {
+    background: #fff;
+    color: #e88ea1;
+    border: 1px solid #e88ea1;
+}
+@media print {
+    .navbar, .menu-icon, .basket-btn { display: none !important; }
+    #basket-app { box-shadow: none; border: none; }
+    body { background: #fff !important; }
+}
+</style>
 {% endblock %}

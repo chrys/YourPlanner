@@ -60,6 +60,9 @@ def select_items(request):
                 price = item.prices.filter(is_active=True).first()
                 order_item = order.items.filter(item=item).first()
                 if qty > 0:
+                    if not price:
+                        # Optionally, you can add a message or log a warning here
+                        continue  # Skip items with no active price
                     if order_item:
                         # Update existing item
                         order_item.quantity = qty

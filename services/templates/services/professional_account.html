@@ -11,24 +11,99 @@
     </div>
 </header>
 <main>
-    <h2 class="welcome-title">Your Services</h2>
-    <div class="content-container">
+    <div id="professional-account-app" class="content-container">
+        <h2 class="welcome-title">Your Services</h2>
         <ul>
-            {% for service in services %}
-                <li>
-                    <strong>{{ service.title }}</strong>
-                    - <a href="{% url 'service-items' service.id %}">Manage Items</a>
-                </li>
-            {% empty %}
-                <li>No services yet.</li>
-            {% endfor %}
+            <li v-for="service in services" :key="service.id" style="margin-bottom:10px;">
+                <strong>[[ service.title ]]</strong>
+                <span v-if="service.description" style="color:#888;">- [[ service.description ]]</span>
+                <span v-if="!service.is_active" style="color:red; font-size:0.9em;">(Inactive)</span>
+                - <a :href="service.manage_url" style="color:#e88ea1;">Manage Items</a>
+            </li>
+            <li v-if="services.length === 0">No services yet.</li>
         </ul>
-        <h3>Add a New Service</h3>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Add Service</button>
+        <h3 style="margin-top:32px;">Add a New Service</h3>
+        <form @submit.prevent="addService" style="margin-top:16px;">
+            <label for="title">Title</label>
+            <input type="text" id="title" v-model="newService.title" required style="display:block;width:100%;margin-bottom:10px;">
+
+            <label for="description">Description</label>
+            <textarea id="description" v-model="newService.description" rows="2" style="display:block;width:100%;margin-bottom:10px;"></textarea>
+
+            <label style="display:flex;align-items:center;margin-bottom:16px;">
+                <input type="checkbox" v-model="newService.is_active" style="margin-right:8px;">
+                Active
+            </label>
+
+            <button type="submit" class="pink-btn">Add Service</button>
+            <div v-if="error" style="color:red;margin-top:10px;">[[ error ]]</div>
         </form>
     </div>
 </main>
+<script>
+const { createApp } = Vue;
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            services: [
+                {% for service in services %}
+                {
+                    id: {{ service.id }},
+                    title: "{{ service.title|escapejs }}",
+                    description: "{{ service.description|default:''|escapejs }}",
+                    is_active: {{ service.is_active|yesno:"true,false" }},
+                    manage_url: "{% url 'service-items' service.id %}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            newService: {
+                title: "",
+                description: "",
+                is_active: true
+            },
+            error: ""
+        }
+    },
+    methods: {
+        addService() {
+            if (!this.newService.title.trim()) {
+                this.error = "Title is required.";
+                return;
+            }
+            // Optionally, send AJAX to backend here. For now, just add to list:
+            this.services.push({
+                id: Date.now(),
+                title: this.newService.title,
+                description: this.newService.description,
+                is_active: this.newService.is_active,
+                manage_url: "#"
+            });
+            // Reset form
+            this.newService.title = "";
+            this.newService.description = "";
+            this.newService.is_active = true;
+            this.error = "";
+        }
+    }
+}).mount('#professional-account-app');
+</script>
+<style>
+.pink-btn {
+    background: #e88ea1;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    font-weight: 600;
+}
+.pink-btn:hover {
+    background: #fff;
+    color: #e88ea1;
+    border: 1px solid #e88ea1;
+}
+</style>
 {% endblock %}

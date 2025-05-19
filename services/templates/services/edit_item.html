@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 {% load static %}
-
+{% load service_extras %}
 {% block title %}Edit Item: {{ item.title }}{% endblock %}
 
 {% block content %}
@@ -11,23 +11,160 @@
     </div>
 </header>
 <main>
-    <h2 class="welcome-title">Edit Item: "{{ item.title }}"</h2>
-    <div class="form-container">
-        <form method="post">
+    <div id="edit-item-app" class="form-container" style="max-width:600px;margin:40px auto;">
+        <h2 class="welcome-title">Edit Item: "{{ item.title }}"</h2>
+        <form method="post" ref="editForm" @submit.prevent="showDialog = true">
             {% csrf_token %}
             {{ form.as_p }}
-            <h3>Prices</h3>
-            {{ formset.management_form }}
-            <table>
-                {% for price_form in formset %}
-                <tr>
-                    <td>{{ price_form.as_p }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-            <button type="submit">Save Changes</button>
+            <h3 style="margin-top:32px;">Active Price</h3>
+            <div v-if="activePrice" class="active-price-box">
+                <div>
+                    <label style="font-weight:600;">Amount:</label>
+                    <input type="number" step="0.01" min="0" v-model="activePrice.amount" name="active_price_amount" required style="margin-left:10px;width:120px;">
+                </div>
+                <div style="margin-top:10px;">
+                    <label style="font-weight:600;">Currency:</label>
+                    <select v-model="activePrice.currency" name="active_price_currency" style="margin-left:10px;width:120px;">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <!-- Add more currencies as needed -->
+                    </select>
+                </div>
+                <div style="margin-top:10px;">
+                    <label style="font-weight:600;">Frequency:</label>
+                    <select v-model="activePrice.frequency" name="active_price_frequency" style="margin-left:10px;width:120px;">
+                        <option value="once">Once</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                        <!-- Add more frequencies as needed -->
+                    </select>
+                </div>
+            </div>
+            <div v-else style="color:red;margin-bottom:16px;">No active price set!</div>
+            <button type="submit" class="pink-btn" style="margin-top:24px;">Save Changes</button>
         </form>
-        <p><a href="{% url 'service-items' item.service.id %}">Back to Items</a></p>
+        <!-- Confirmation Dialog -->
+        <div v-if="showDialog" class="dialog-overlay">
+            <div class="dialog-box">
+                <p>Are you sure you want to proceed?</p>
+                <div style="text-align:right;">
+                    <button class="pink-btn" style="margin-right:10px;" @click="showDialog = false">Cancel</button>
+                    <button class="pink-btn" @click="confirmUpdate">Save</button>
+                </div>
+            </div>
+        </div>
+        <!-- Success Popup -->
+        <div v-if="showSuccess" class="success-popup">
+            Item updated successfully!
+        </div>
+        <p style="margin-top:24px;"><a href="{% url 'service-items' item.service.id %}" style="color:#e88ea1;">Back to Items</a></p>
     </div>
 </main>
+<script>
+const { createApp } = Vue;
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            showDialog: false,
+            showSuccess: false,
+            activePrice: 
+                {% with active=item.prices.all|get_active_price %}
+                    {% if active %}
+                        {
+                            amount: "{{ active.amount }}",
+                            currency: "{{ active.currency }}",
+                            frequency: "{{ active.frequency }}"
+                        }
+                    {% else %}
+                        {
+                            amount: "",
+                            currency: "USD",
+                            frequency: "once"
+                        }
+                    {% endif %}
+                {% endwith %}
+        }
+    },
+    methods: {
+        confirmUpdate() {
+            this.showDialog = false;
+            this.showSuccess = true;
+            setTimeout(() => {
+                this.showSuccess = false;
+                this.$refs.editForm.submit();
+            }, 3000);
+        }
+    }
+}).mount('#edit-item-app');
+</script>
+<style>
+.pink-btn {
+    background: #e88ea1;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    font-weight: 600;
+}
+.pink-btn:hover {
+    background: #fff;
+    color: #e88ea1;
+    border: 1px solid #e88ea1;
+}
+.active-price-box {
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    margin-top: 8px;
+    font-size: 1.1em;
+    color: #333;
+}
+.active-price-box input,
+.active-price-box select {
+    font-size: 1em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+.dialog-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.dialog-box {
+    background: #fff;
+    padding: 30px 30px 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+    min-width: 300px;
+}
+.success-popup {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    background: #e88ea1;
+    color: #fff;
+    padding: 18px 32px;
+    border-radius: 6px;
+    font-size: 1.1em;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    z-index: 10001;
+    animation: fadeOut 3s forwards;
+}
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+</style>
 {% endblock %}
