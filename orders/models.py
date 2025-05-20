@@ -38,11 +38,17 @@ class Order(models.Model):
 
     # Optional: Method to calculate total based on items
     def calculate_total(self):
+        from django.db.models import F, Sum, DecimalField, ExpressionWrapper
         total = self.items.aggregate(
-            total=models.Sum('price_amount_at_order')
+            total=Sum(
+                ExpressionWrapper(
+                    F('quantity') * F('price_amount_at_order'),
+                    output_field=DecimalField(max_digits=12, decimal_places=2)
+                )
+            )
         )['total'] or Decimal('0.00')
         self.total_amount = total
-        self.save(update_fields=['total_amount']) # Efficiently save only this field
+        self.save(update_fields=['total_amount'])
         return total
 
     class Meta:
