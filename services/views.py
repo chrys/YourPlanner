@@ -1,9 +1,13 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.forms import inlineformset_factory
+from django.http import JsonResponse
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_protect
 from users.models import Professional
 from .models import Service, Item, Price 
 from .forms import ServiceForm, ItemForm 
+from orders.models import OrderItem
 
 # An admin-style page at /services/professional-account/ where a logged-in Professional
 # can add and manage their own Services
@@ -83,3 +87,76 @@ def edit_item(request, item_id):
     else:
         form = ItemForm(instance=item)
     return render(request, 'services/edit_item.html', {'form': form, 'item': item, 'active_price': active_price})
+
+@login_required
+@csrf_protect
+def delete_service(request, service_id):
+    try:
+        professional = request.user.professional_profile
+    except Professional.DoesNotExist:
+        return render(request, 'services/not_a_professional.html')
+
+    service = get_object_or_404(Service, id=service_id, professional=professional)
+    
+    # Check if any items from this service are in a customer's basket
+    items_in_basket = OrderItem.objects.filter(service=service).exists()
+    
+    if items_in_basket:
+        # Get the list of customers who have this service in their basket
+        customers_with_service = OrderItem.objects.filter(service=service).values_list('order__customer__user__username', flat=True).distinct()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': 'This service cannot be deleted because it exists in customer baskets.',
+                'customers': list(customers_with_service)
+            })
+        
+        messages.error(request, f"This service cannot be deleted because it exists in customer baskets. Customers: {', '.join(customers_with_service)}")
+        return redirect('professional-account')
+    
+    # If no items in basket, proceed with deletion
+    service.delete()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    messages.success(request, f"Service '{service.title}' has been deleted successfully.")
+    return redirect('professional-account')
+
+@login_required
+@csrf_protect
+def delete_item(request, item_id):
+    try:
+        professional = request.user.professional_profile
+    except Professional.DoesNotExist:
+        return render(request, 'services/not_a_professional.html')
+
+    item = get_object_or_404(Item, id=item_id, service__professional=professional)
+    service_id = item.service.id
+    
+    # Check if this item is in a customer's basket
+    item_in_basket = OrderItem.objects.filter(item=item).exists()
+    
+    if item_in_basket:
+        # Get the list of customers who have this item in their basket
+        customers_with_item = OrderItem.objects.filter(item=item).values_list('order__customer__user__username', flat=True).distinct()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': 'This item cannot be deleted because it exists in customer baskets.',
+                'customers': list(customers_with_item)
+            })
+        
+        messages.error(request, f"This item cannot be deleted because it exists in customer baskets. Customers: {', '.join(customers_with_item)}")
+        return redirect('service-items', service_id=service_id)
+    
+    # If not in basket, proceed with deletion
+    item.delete()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    messages.success(request, f"Item '{item.title}' has been deleted successfully.")
+    return redirect('service-items', service_id=service_id)
