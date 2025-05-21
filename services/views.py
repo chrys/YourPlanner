@@ -44,7 +44,7 @@ def service_items(request, service_id):
     items = Item.objects.filter(service=service)
 
     if request.method == 'POST':
-        form = ItemForm(request.POST)
+        form = ItemForm(request.POST, request.FILES)
         if form.is_valid():
             item = form.save(commit=False)
             item.service = service
@@ -65,7 +65,7 @@ def edit_item(request, item_id):
     item = Item.objects.get(pk=item_id)
     active_price = item.prices.filter(is_active=True).first()
     if request.method == 'POST':
-        form = ItemForm(request.POST, instance=item)
+        form = ItemForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
             if active_price:

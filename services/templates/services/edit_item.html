@@ -13,9 +13,17 @@
 <main>
     <div id="edit-item-app" class="form-container" style="max-width:600px;margin:40px auto;">
         <h2 class="welcome-title">Edit Item: "{{ item.title }}"</h2>
-        <form method="post" ref="editForm" @submit.prevent="showDialog = true">
+        <form method="post" ref="editForm" @submit.prevent="showDialog = true" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.as_p }}
+            
+            {% if item.image %}
+            <div class="current-image">
+                <h3>Current Image</h3>
+                <img src="{{ item.image.url }}" alt="{{ item.title }}" style="max-width: 100%; max-height: 200px; margin-bottom: 20px;">
+            </div>
+            {% endif %}
+            
             <h3 style="margin-top:32px;">Active Price</h3>
             <div v-if="activePrice" class="active-price-box">
                 <div>
@@ -43,6 +51,26 @@
             <div v-else style="color:red;margin-bottom:16px;">No active price set!</div>
             <button type="submit" class="pink-btn" style="margin-top:24px;">Save Changes</button>
         </form>
+        
+        <!-- Image Gallery -->
+        <div class="image-gallery" style="margin-top: 40px;">
+            <h3>Image Gallery</h3>
+            <p>Click on an image to use it for this item</p>
+            <div class="gallery-container">
+                {% get_all_images as all_images %}
+                {% for gallery_item in all_images %}
+                    {% if gallery_item.image %}
+                    <div class="gallery-item" onclick="selectImage('{{ gallery_item.image.url }}')">
+                        <img src="{{ gallery_item.image.url }}" alt="{{ gallery_item.title }}" style="width: 100px; height: 100px; object-fit: cover; cursor: pointer; margin: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                        <div class="gallery-item-title">{{ gallery_item.title }}</div>
+                    </div>
+                    {% endif %}
+                {% empty %}
+                    <p>No images available in the gallery.</p>
+                {% endfor %}
+            </div>
+        </div>
+        
         <!-- Confirmation Dialog -->
         <div v-if="showDialog" class="dialog-overlay">
             <div class="dialog-box">
@@ -93,10 +121,25 @@ createApp({
             setTimeout(() => {
                 this.showSuccess = false;
                 this.$refs.editForm.submit();
-            }, 3000);
+            }, 1500);
         }
     }
 }).mount('#edit-item-app');
+
+// Function to select an image from the gallery
+function selectImage(imageUrl) {
+    // Extract the filename from the URL
+    const filename = imageUrl.split('/').pop();
+    
+    // Create a custom file input event
+    const event = new CustomEvent('gallery-image-selected', {
+        detail: { imageUrl, filename }
+    });
+    document.dispatchEvent(event);
+    
+    // Show a notification
+    alert('Image selected: ' + filename);
+}
 </script>
 <style>
 .pink-btn {
@@ -165,6 +208,24 @@ createApp({
     0% { opacity: 1; }
     80% { opacity: 1; }
     100% { opacity: 0; }
+}
+.gallery-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+.gallery-item {
+    text-align: center;
+    width: 110px;
+}
+.gallery-item-title {
+    font-size: 0.8em;
+    margin-top: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100px;
 }
 </style>
 {% endblock %}

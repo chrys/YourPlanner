@@ -17,6 +17,7 @@
                 <thead>
                     <tr style="background:#f8f8f8;">
                         <th style="padding:12px 8px;border-radius:8px 0 0 8px;text-align:center;">#</th>
+                        <th style="padding:12px 8px;text-align:center;">Image</th>
                         <th style="padding:12px 8px;text-align:center;">Title</th>
                         <th style="padding:12px 8px;text-align:center;">Description</th>
                         <th style="padding:12px 8px;text-align:center;">Price</th>
@@ -26,6 +27,10 @@
                 <tbody>
                     <tr v-for="(item, idx) in items" :key="item.id" style="background:#fff;">
                         <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">[[ idx + 1 ]]</td>
+                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">
+                            <img v-if="item.image_url" :src="item.image_url" :alt="item.title" style="max-width: 50px; max-height: 50px;">
+                            <span v-else>No image</span>
+                        </td>
                         <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">[[ item.title ]]</td>
                         <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">[[ item.description || 'No description' ]]</td>
                         <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">
@@ -37,18 +42,21 @@
                         </td>
                     </tr>
                     <tr v-if="items.length === 0">
-                        <td colspan="5" style="text-align:center;color:#888; border:1px solid #e0e0e0;">No items yet.</td>
+                        <td colspan="6" style="text-align:center;color:#888; border:1px solid #e0e0e0;">No items yet.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
         <h3 style="margin-top:32px;">Add a New Item</h3>
-        <form @submit.prevent="addItem" style="margin-top:16px;max-width:500px;">
+        <form @submit.prevent="addItem" style="margin-top:16px;max-width:500px;" enctype="multipart/form-data">
             <label for="title">Title</label>
             <input type="text" id="title" v-model="newItem.title" required style="display:block;width:100%;margin-bottom:10px;">
 
             <label for="description">Description</label>
             <textarea id="description" v-model="newItem.description" rows="2" style="display:block;width:100%;margin-bottom:10px;"></textarea>
+
+            <label for="image">Image</label>
+            <input type="file" id="image" accept="image/*" style="display:block;width:100%;margin-bottom:10px;">
 
             <label for="price">Price</label>
             <input type="number" id="price" v-model.number="newItem.price" min="0" step="0.01" required style="display:block;width:100%;margin-bottom:10px;">
@@ -78,6 +86,7 @@ createApp({
                     id: {{ item.id }},
                     title: "{{ item.title|escapejs }}",
                     description: "{{ item.description|default:''|escapejs }}",
+                    image_url: {% if item.image %}"{{ item.image.url }}"{% else %}null{% endif %},
                     price: {% with price=item.prices.all|first %}{% if price %}"{{ price.amount }}"{% else %}null{% endif %}{% endwith %},
                     currency: {% with price=item.prices.all|first %}{% if price %}"{{ price.currency }}"{% else %}"USD"{% endif %}{% endwith %},
                     edit_url: "{% url 'edit-item' item.id %}"
