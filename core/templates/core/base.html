@@ -44,7 +44,15 @@
         {% endif %}
     </div>
     <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-    
+    {% if messages %}
+    <div class="django-messages">
+        {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
     {% block content %}{% endblock %}
     <script>
         function openMenu() {

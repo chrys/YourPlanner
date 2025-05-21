@@ -34,22 +34,11 @@
             <li v-if="services.length === 0">No services yet.</li>
         </ul>
         <h3 style="margin-top:32px;">Add a New Service</h3>
-        <form @submit.prevent="addService" style="margin-top:16px;">
-            <label for="title">Title</label>
-            <input type="text" id="title" v-model="newService.title" required style="display:block;width:100%;margin-bottom:10px;">
-
-            <label for="description">Description</label>
-            <textarea id="description" v-model="newService.description" rows="2" style="display:block;width:100%;margin-bottom:10px;"></textarea>
-
-            <label style="display:flex;align-items:center;margin-bottom:16px;">
-                <input type="checkbox" v-model="newService.is_active" style="margin-right:8px;">
-                Active
-            </label>
-
+        <form method="post" style="margin-top:16px;">
+            {% csrf_token %}
+            {{ form.as_p }}
             <button type="submit" class="pink-btn">Add Service</button>
-            <div v-if="error" style="color:red;margin-top:10px;">[[ error ]]</div>
         </form>
-        
         <!-- Delete Confirmation Dialog -->
         <div v-if="showDeleteDialog" class="dialog-overlay">
             <div class="dialog-box">

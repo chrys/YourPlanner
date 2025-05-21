@@ -1,26 +1,11 @@
 {% extends "core/base.html" %}
 {% load static %}
+
 {% block title %}Items for {{ service.title }}{% endblock %}
 
 {% block content %}
-<header>
-    <div class="navbar">
-        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
-        <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
-    </div>
-</header>
 <main>
-    <div id="service-items-app" class="content-container">
-        {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        
+    <div class="content-container">
         <h2 class="welcome-title">Items for "{{ service.title }}"</h2>
         <div style="overflow-x:auto;">
             <table class="items-table" style="width:100%;border-collapse:separate;border-spacing:0 8px;margin-bottom:32px;">
@@ -29,206 +14,54 @@
                         <th style="padding:12px 8px;border-radius:8px 0 0 8px;text-align:center;">#</th>
                         <th style="padding:12px 8px;text-align:center;">Title</th>
                         <th style="padding:12px 8px;text-align:center;">Description</th>
+                        <th style="padding:12px 8px;text-align:center;">Image</th>
                         <th style="padding:12px 8px;text-align:center;">Price</th>
                         <th style="padding:12px 8px;border-radius:0 8px 8px 0;text-align:center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(item, idx) in items" :key="item.id" style="background:#fff;">
-                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">[[ idx + 1 ]]</td>
-                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">[[ item.title ]]</td>
-                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">[[ item.description || 'No description' ]]</td>
+                    {% for item in items %}
+                    <tr style="background:#fff;">
+                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">{{ forloop.counter }}</td>
+                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">{{ item.title }}</td>
+                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">{{ item.description|default:"No description" }}</td>
                         <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">
-                            <span v-if="item.price !== null" style="color:#e88ea1;">[[ item.price ]] [[ item.currency ]]</span>
-                            <span v-else style="color:red;">No price set!</span>
+                            {% if item.image %}
+                                <img src="{{ item.image.url }}" alt="Item Image" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
+                            {% else %}
+                                <span style="color:#bbb;">No image</span>
+                            {% endif %}
                         </td>
                         <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">
-                            <a :href="item.edit_url" style="color:#e88ea1;margin-right:10px;">Edit</a>
-                            <a href="#" @click.prevent="confirmDeleteItem(item)" style="color:#e88ea1;">Delete</a>
+                            {% with price=item.prices.all|first %}
+                                {% if price %}
+                                    <span style="color:#e88ea1;">{{ price.amount }} {{ price.currency }}</span>
+                                {% else %}
+                                    <span style="color:red;">No price set!</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td style="padding:12px 8px;text-align:center; border:1px solid #e0e0e0;">
+                            <a href="{% url 'edit-item' item.id %}" style="color:#e88ea1;">Edit</a>
                         </td>
                     </tr>
-                    <tr v-if="items.length === 0">
-                        <td colspan="5" style="text-align:center;color:#888; border:1px solid #e0e0e0;">No items yet.</td>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align:center;color:#888; border:1px solid #e0e0e0;">No items yet.</td>
                     </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
         <h3 style="margin-top:32px;">Add a New Item</h3>
-        <form @submit.prevent="addItem" style="margin-top:16px;max-width:500px;">
-            <label for="title">Title</label>
-            <input type="text" id="title" v-model="newItem.title" required style="display:block;width:100%;margin-bottom:10px;">
-
-            <label for="description">Description</label>
-            <textarea id="description" v-model="newItem.description" rows="2" style="display:block;width:100%;margin-bottom:10px;"></textarea>
-
-            <label for="price">Price</label>
-            <input type="number" id="price" v-model.number="newItem.price" min="0" step="0.01" required style="display:block;width:100%;margin-bottom:10px;">
-
-            <label for="currency">Currency</label>
-            <select id="currency" v-model="newItem.currency" required style="display:block;width:100%;margin-bottom:16px;">
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <!-- Add more currencies as needed -->
-            </select>
-
+        <form method="post" enctype="multipart/form-data" style="margin-top:16px;max-width:500px;">
+            {% csrf_token %}
+            {{ form.as_p }}
             <button type="submit" class="pink-btn">Add Item</button>
-            <div v-if="error" style="color:red;margin-top:10px;">[[ error ]]</div>
         </form>
         <p style="margin-top:24px;"><a href="{% url 'professional-account' %}" style="color:#e88ea1;">Back to Services</a></p>
-        
-        <!-- Delete Confirmation Dialog -->
-        <div v-if="showDeleteDialog" class="dialog-overlay">
-            <div class="dialog-box">
-                <h3 style="margin-top:0;">Confirm Deletion</h3>
-                <p>Are you sure you want to delete the item "[[ itemToDelete.title ]]"?</p>
-                <div style="text-align:right;">
-                    <button class="cancel-btn" style="margin-right:10px;" @click="showDeleteDialog = false">Cancel</button>
-                    <button class="delete-btn" @click="deleteItem">Delete</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Error Dialog -->
-        <div v-if="showErrorDialog" class="dialog-overlay">
-            <div class="dialog-box">
-                <h3 style="margin-top:0;">Cannot Delete Item</h3>
-                <p>[[ errorMessage ]]</p>
-                <p v-if="customersWithItem.length > 0">
-                    The following customers have this item in their basket:
-                    <ul>
-                        <li v-for="customer in customersWithItem">[[ customer ]]</li>
-                    </ul>
-                    Please ask them to remove the item from their basket first.
-                </p>
-                <div style="text-align:right;">
-                    <button class="pink-btn" @click="showErrorDialog = false">OK</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Success Notification -->
-        <div v-if="showSuccessNotification" class="success-popup">
-            Item deleted successfully!
-        </div>
     </div>
 </main>
-<script>
-const { createApp } = Vue;
-createApp({
-    delimiters: ['[[', ']]'],
-    data() {
-        return {
-            items: [
-                {% for item in items %}
-                {
-                    id: {{ item.id }},
-                    title: "{{ item.title|escapejs }}",
-                    description: "{{ item.description|default:''|escapejs }}",
-                    price: {% with price=item.prices.all|first %}{% if price %}"{{ price.amount }}"{% else %}null{% endif %}{% endwith %},
-                    currency: {% with price=item.prices.all|first %}{% if price %}"{{ price.currency }}"{% else %}"USD"{% endif %}{% endwith %},
-                    edit_url: "{% url 'edit-item' item.id %}",
-                    delete_url: "{% url 'delete-item' item.id %}"
-                }{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ],
-            newItem: {
-                title: "",
-                description: "",
-                price: null,
-                currency: "USD"
-            },
-            error: "",
-            showDeleteDialog: false,
-            showErrorDialog: false,
-            showSuccessNotification: false,
-            itemToDelete: null,
-            errorMessage: "",
-            customersWithItem: []
-        }
-    },
-    methods: {
-        addItem() {
-            if (!this.newItem.title.trim()) {
-                this.error = "Title is required.";
-                return;
-            }
-            if (this.newItem.price === null || this.newItem.price === "" || isNaN(this.newItem.price)) {
-                this.error = "Price is required and must be a number.";
-                return;
-            }
-            // Optionally, send AJAX to backend here. For now, just add to list:
-            this.items.push({
-                id: Date.now(),
-                title: this.newItem.title,
-                description: this.newItem.description,
-                price: this.newItem.price,
-                currency: this.newItem.currency,
-                edit_url: "#",
-                delete_url: "#"
-            });
-            // Reset form
-            this.newItem.title = "";
-            this.newItem.description = "";
-            this.newItem.price = null;
-            this.newItem.currency = "USD";
-            this.error = "";
-        },
-        confirmDeleteItem(item) {
-            this.itemToDelete = item;
-            this.showDeleteDialog = true;
-        },
-        deleteItem() {
-            if (!this.itemToDelete) return;
-            
-            fetch(this.itemToDelete.delete_url, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': this.getCookie('csrftoken')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                this.showDeleteDialog = false;
-                
-                if (data.success) {
-                    // Remove item from list
-                    this.items = this.items.filter(i => i.id !== this.itemToDelete.id);
-                    this.showSuccessNotification = true;
-                    setTimeout(() => {
-                        this.showSuccessNotification = false;
-                    }, 3000);
-                } else {
-                    // Show error dialog
-                    this.errorMessage = data.message;
-                    this.customersWithItem = data.customers || [];
-                    this.showErrorDialog = true;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                this.showDeleteDialog = false;
-                this.errorMessage = "An error occurred while trying to delete the item.";
-                this.showErrorDialog = true;
-            });
-        },
-        getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-    }
-}).mount('#service-items-app');
-</script>
 <style>
 .pink-btn {
     background: #e88ea1;
@@ -260,88 +93,6 @@ createApp({
     color: #333;
     font-size: 1em;
     border: 1px solid #e0e0e0;
-}
-.delete-btn {
-    background: #e74c3c;
-    color: #fff;
-    border: none;
-    padding: 10px 22px;
-    border-radius: 5px;
-    font-size: 1em;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-weight: 600;
-}
-.delete-btn:hover {
-    background: #c0392b;
-}
-.cancel-btn {
-    background: #95a5a6;
-    color: #fff;
-    border: none;
-    padding: 10px 22px;
-    border-radius: 5px;
-    font-size: 1em;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-weight: 600;
-}
-.cancel-btn:hover {
-    background: #7f8c8d;
-}
-.dialog-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-}
-.dialog-box {
-    background: #fff;
-    padding: 30px 30px 20px 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.18);
-    min-width: 400px;
-    max-width: 90%;
-}
-.success-popup {
-    position: fixed;
-    bottom: 40px;
-    right: 40px;
-    background: #2ecc71;
-    color: #fff;
-    padding: 18px 32px;
-    border-radius: 6px;
-    font-size: 1.1em;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    z-index: 10001;
-    animation: fadeOut 3s forwards;
-}
-@keyframes fadeOut {
-    0% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { opacity: 0; }
-}
-.messages {
-    margin-bottom: 20px;
-}
-.message {
-    padding: 12px 20px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    font-weight: 500;
-}
-.message.error {
-    background-color: #ffecec;
-    color: #e74c3c;
-    border: 1px solid #f5c6cb;
-}
-.message.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
 }
 </style>
 {% endblock %}
