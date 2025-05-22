@@ -57,6 +57,10 @@
         <form method="post" enctype="multipart/form-data" style="margin-top:16px;max-width:500px;">
             {% csrf_token %}
             {{ form.as_p }}
+            <fieldset style="margin-top:20px;">
+                <legend>Price</legend>
+                {{ price_form.as_p }}
+            </fieldset>
             <button type="submit" class="pink-btn">Add Item</button>
         </form>
         <p style="margin-top:24px;"><a href="{% url 'professional-account' %}" style="color:#e88ea1;">Back to Services</a></p>

@@ -8,6 +8,12 @@
         <form method="post" enctype="multipart/form-data" style="max-width:500px;">
             {% csrf_token %}
             {{ form.as_p }}
+            {% if item.image %}
+                <div style="margin-bottom:16px;">
+                    <label>Current Image:</label><br>
+                    <img src="{{ item.image.url }}" alt="Current Image" style="width:100px;height:100px;object-fit:cover;border-radius:8px;">
+                </div>
+            {% endif %}
             <fieldset style="margin-top:20px;">
                 <legend>Active Price</legend>
                 {{ price_form.as_p }}

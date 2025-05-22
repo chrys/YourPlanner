@@ -45,26 +45,26 @@ def service_items(request, service_id):
 
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
-        if form.is_valid():
+        price_form = PriceForm(request.POST)
+        if form.is_valid() and price_form.is_valid():
             item = form.save(commit=False)
             item.service = service
             item.save()
             # Save the price
-            Price.objects.create(
-                item=item,
-                amount=form.cleaned_data['price_amount'],
-                currency=form.cleaned_data['price_currency'],
-                frequency=form.cleaned_data['price_frequency'],
-                is_active=True
-            )
+            price = price_form.save(commit=False)
+            price.item = item
+            price.is_active = True
+            price.save()
             return redirect('service-items', service_id=service.id)
     else:
         form = ItemForm()
+        price_form = PriceForm()
 
     return render(request, 'services/service_items.html', {
         'service': service,
         'items': items,
         'form': form,
+        'price_form': price_form,
     })
 
 @login_required

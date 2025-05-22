@@ -29,7 +29,7 @@ class Order(models.Model):
     total_amount = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
-    currency = models.CharField(max_length=3, default='USD') # Should match item currencies
+    currency = models.CharField(max_length=3, default='EUR') # Should match item currencies
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
