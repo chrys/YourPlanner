@@ -27,26 +27,3 @@ DATABASES = {
         'PORT': '5432',
     }
 }
-
-# Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-    },
-    'root': {
-        'handlers': ['journal'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['journal'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}
