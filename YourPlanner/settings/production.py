@@ -38,13 +38,6 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'journal': {
-            'level': 'INFO',
-            'class': 'systemd.journal.JournalHandler',
-            'formatter': 'verbose',
-        },
-    },
     'root': {
         'handlers': ['journal'],
         'level': 'INFO',
