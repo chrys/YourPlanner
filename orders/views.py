@@ -26,7 +26,7 @@ def select_items(request):
     ).first()
     # If no link is found, redirect to user management page
     if not link:
-        logger.warning(f"No active professional link found for customer {customer.id}")
+        logger.warning(f"No active professional link found for customer user {customer.user.username}")
         return redirect('user_management')
 
     professional = link.professional
