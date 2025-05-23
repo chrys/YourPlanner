@@ -10,11 +10,7 @@ CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# URL Configuration for subdirectory
-FORCE_SCRIPT_NAME = '/yourplanner'
-USE_X_FORWARDED_HOST = True
-CSRF_COOKIE_PATH = '/yourplanner'
-SESSION_COOKIE_PATH = '/yourplanner'
+
 
 # Static/Media files
 STATIC_URL = '/yourplanner/static/'
