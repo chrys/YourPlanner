@@ -17,7 +17,7 @@ SESSION_COOKIE_PATH = '/yourplanner'
 
 # Static/Media files
 STATIC_URL = '/yourplanner/static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR.parent / 'static'
 MEDIA_URL = '/yourplanner/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
