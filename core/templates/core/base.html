@@ -10,9 +10,15 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <div class="navbar">
+        <span class="menu-icon" onclick="openMenu()">&#9776;</span>
+        <a href="{% url 'home' %}">
+            <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
+        </a>
+    </div>
     <div id="side-menu" class="side-menu">
         <button class="close-btn" onclick="closeMenu()">&times;</button>
-        <a href="" class="menu-item">Welcome To V Planer</a>
+        <a href="/" class="menu-item">Welcome To V Planner</a>
         <a href="/users/register" class="menu-item">User Registration</a>
         <a href="/users/management" class="menu-item">User Management</a>
         <a href="#" class="menu-item">Event Locations</a>
@@ -65,16 +71,5 @@
         }
     </script>
     {% block extra_js %}{% endblock %}
-    <script>
-     const app = createApp({
-        data() {
-            return {
-            message: "Welcome to Vue in Django!"
-            }
-        }
-        });
-        app.config.compilerOptions.delimiters = ['[[', ']]'];
-        app.mount('#vue-app');
-    </script>
 </body>
 </html>
