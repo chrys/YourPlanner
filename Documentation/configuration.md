@@ -15,7 +15,7 @@ To use the production settings, the `DJANGO_SETTINGS_MODULE` environment variabl
 
 For security and flexibility, sensitive data and environment-specific settings should be managed using environment variables.
 
-**Important:** Currently, some sensitive information like `SECRET_KEY` (in `base.py`) and production database credentials (in `production.py`) are hardcoded. These **must** be moved to environment variables in a production setting.
+
 
 **Examples:**
 
@@ -167,11 +167,11 @@ For production, the project uses PostgreSQL. The configuration in `production.py
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'yourplanner', # Should be an environment variable
-        'USER': 'planner',      # Should be an environment variable
-        'PASSWORD': 'PlannerPlanner2025!', # Should be an environment variable
-        'HOST': 'localhost',    # Should be an environment variable if not local
-        'PORT': '5432',         # Should be an environment variable if not default
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
         'OPTIONS': {
             'options': '-c search_path=public'
         }
