@@ -258,4 +258,4 @@ You can apply rate limits using decorators in your views or directly in your URL
 *   **In `urls.py` (less common for view-specific rates but possible for groups):**
     Consult `django-ratelimit` documentation for advanced URL-based configuration.
 
-It's important to identify all sensitive endpoints (authentication, password reset, form submissions prone to abuse) and apply appropriate rate limits.
+It's important to identify all sensitive endpoints (authentication,  reset, form submissions prone to abuse) and apply appropriate rate limits.
