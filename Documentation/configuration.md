@@ -168,8 +168,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'yourplanner', # Should be an environment variable
-        'USER': 'planner',      # Should be an environment variable
-        'PASSWORD': 'PlannerPlanner2025!', # Should be an environment variable
+        'USER': 'XXXX',      # Should be an environment variable
+        'PASSWORD': 'XXXX', # Should be an environment variable
         'HOST': 'localhost',    # Should be an environment variable if not local
         'PORT': '5432',         # Should be an environment variable if not default
         'OPTIONS': {
@@ -258,4 +258,4 @@ You can apply rate limits using decorators in your views or directly in your URL
 *   **In `urls.py` (less common for view-specific rates but possible for groups):**
     Consult `django-ratelimit` documentation for advanced URL-based configuration.
 
-It's important to identify all sensitive endpoints (authentication, password reset, form submissions prone to abuse) and apply appropriate rate limits.
+It's important to identify all sensitive endpoints (authentication,  reset, form submissions prone to abuse) and apply appropriate rate limits.
