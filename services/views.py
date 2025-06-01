@@ -3,6 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
+from django.db import transaction
+from django.db.models import Prefetch
+from django.core.cache import cache
 from users.models import Professional
 from .models import Service, Item, Price 
 from .forms import ServiceForm, ItemForm, PriceForm
@@ -15,14 +18,27 @@ def professional_account(request):
     except Professional.DoesNotExist:
         return render(request, 'services/not_a_professional.html')
 
-    services = Service.objects.filter(professional=professional)
+    # Cache key based on professional ID and last update time
+    cache_key = f'professional_services_{professional.pk}_{professional.updated_at.timestamp()}'
+    services = cache.get(cache_key)
+    
+    if services is None:
+        # If not in cache, fetch from database with prefetch_related for optimization
+        services = Service.objects.filter(professional=professional).prefetch_related(
+            Prefetch('items', queryset=Item.objects.prefetch_related('prices'))
+        )
+        # Cache for 10 minutes
+        cache.set(cache_key, services, 60 * 10)
 
     if request.method == 'POST':
         form = ServiceForm(request.POST)
         if form.is_valid():
-            service = form.save(commit=False)
-            service.professional = professional
-            service.save()
+            with transaction.atomic():
+                service = form.save(commit=False)
+                service.professional = professional
+                service.save()
+                # Invalidate cache
+                cache.delete(cache_key)
             return redirect('professional-account')
     else:
         form = ServiceForm()
@@ -40,21 +56,31 @@ def service_items(request, service_id):
     except Professional.DoesNotExist:
         return render(request, 'services/not_a_professional.html')
 
-    service = Service.objects.get(id=service_id, professional=professional)
-    items = Item.objects.filter(service=service)
+    service = get_object_or_404(Service, id=service_id, professional=professional)
+    
+    # Cache key for items
+    cache_key = f'service_items_{service.pk}_{service.updated_at.timestamp()}'
+    items = cache.get(cache_key)
+    
+    if items is None:
+        items = Item.objects.filter(service=service).prefetch_related('prices')
+        cache.set(cache_key, items, 60 * 10)  # Cache for 10 minutes
 
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES)
         price_form = PriceForm(request.POST)
         if form.is_valid() and price_form.is_valid():
-            item = form.save(commit=False)
-            item.service = service
-            item.save()
-            # Save the price
-            price = price_form.save(commit=False)
-            price.item = item
-            price.is_active = True
-            price.save()
+            with transaction.atomic():
+                item = form.save(commit=False)
+                item.service = service
+                item.save()
+                # Save the price
+                price = price_form.save(commit=False)
+                price.item = item
+                price.is_active = True
+                price.save()
+                # Invalidate cache
+                cache.delete(cache_key)
             return redirect('service-items', service_id=service.id)
     else:
         form = ItemForm()
@@ -69,19 +95,26 @@ def service_items(request, service_id):
 
 @login_required
 def edit_item(request, item_id):
-    item = Item.objects.get(pk=item_id)
+    item = get_object_or_404(Item, pk=item_id)
+    # Ensure the user owns this item
+    if item.service.professional.user != request.user:
+        messages.error(request, "You don't have permission to edit this item.")
+        return redirect('professional-account')
+        
     active_price = item.prices.filter(is_active=True).first()
-    from .forms import PriceForm  # Make sure this is imported
 
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES, instance=item)
         price_form = PriceForm(request.POST, instance=active_price)
         if form.is_valid() and price_form.is_valid():
-            form.save()
-            price = price_form.save(commit=False)
-            price.item = item
-            price.is_active = True
-            price.save()
+            with transaction.atomic():
+                form.save()
+                price = price_form.save(commit=False)
+                price.item = item
+                price.is_active = True
+                price.save()
+                # Invalidate cache
+                cache.delete(f'service_items_{item.service.pk}_{item.service.updated_at.timestamp()}')
             return render(request, 'services/edit_item.html', {
                 'form': form,
                 'price_form': price_form,
@@ -97,9 +130,6 @@ def edit_item(request, item_id):
         'price_form': price_form,
         'item': item,
     })
-
-
-
 
 @login_required
 @csrf_protect
@@ -126,7 +156,11 @@ def delete_service(request, service_id):
         return redirect('professional-account')
     
     # If no items in basket, proceed with deletion
-    service.delete()
+    with transaction.atomic():
+        service.delete()
+        # Invalidate cache
+        cache.delete(f'professional_services_{professional.pk}_{professional.updated_at.timestamp()}')
+        
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'success': True})
     messages.success(request, "Service Deleted")
@@ -158,7 +192,11 @@ def delete_item(request, item_id):
         return redirect('service-items', service_id=service_id)
     
     # If not in basket, proceed with deletion
-    item.delete()
+    with transaction.atomic():
+        item.delete()
+        # Invalidate cache
+        cache.delete(f'service_items_{service_id}_{item.service.updated_at.timestamp()}')
+        
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'success': True})
     messages.success(request, "Item Deleted")
