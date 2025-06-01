@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Delete Price{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'services:service_list' %}">My Services</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'services:service_detail' pk=service.pk %}">{{ service.title }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'services:item_detail' service_pk=service.pk pk=item.pk %}">{{ item.title }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Confirm Delete Price</li>
+        </ol>
+    </nav>
+
+    <h2>Confirm Deletion</h2>
+    <p>Are you sure you want to delete this price?</p>
+    <p><strong>Details:</strong> {{ price.amount }} {{ price.currency }} ({{ price.get_frequency_display }}) for item "{{ item.title }}"</p>
+    <p>This action cannot be undone.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete Price</button>
+        <a href="{% url 'services:price_detail' service_pk=service.pk item_pk=item.pk pk=price.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

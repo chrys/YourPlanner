@@ -1,140 +1,207 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib import messages
 from django.utils.safestring import mark_safe
-from django.core.exceptions import ValidationError
+# from django.core.exceptions import ValidationError # Not used
 from django.db import transaction
-from django.utils.html import escape
+# from django.utils.html import escape # Not used
+from django.urls import reverse, reverse_lazy
+from django.http import HttpResponseRedirect
+from django.views.generic import CreateView, View, TemplateView, FormView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
 from .models import Professional, Customer, ProfessionalCustomerLink
-from orders.models import Order, OrderItem
-from django import forms
-from django.urls import reverse
+# from orders.models import Order, OrderItem # Not used in these views directly
+# from django import forms # Not used directly in views.py if forms are in forms.py
 from .forms import RegistrationForm, ProfessionalChoiceForm
 
-#simple registration page in your users app where a user can register as either a professional or a customer 
-# using their name and email, using Django's built-in User model and forms. 
 
-def register(request):
-    if request.method == 'POST':
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            # Check if the email is already used
-            if User.objects.filter(email=form.cleaned_data['email']).exists():
-                login_url = reverse('login')
-                error_html = mark_safe(
-                    f'This email is already registered. Please <a href="{escape(login_url)}">log in instead</a>.'
+# --- Mixins ---
+class CustomerRequiredMixin(UserPassesTestMixin):
+    """Ensures the logged-in user has a customer profile."""
+    def test_func(self):
+        try:
+            return hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile is not None
+        except AttributeError: # For AnonymousUser
+            return False
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You need a customer profile to access this page.")
+        if not self.request.user.is_authenticated:
+            return redirect('login') # Or your specific login URL
+        # If authenticated but no customer profile, redirect to a relevant page
+        # For example, a profile choice or creation page if you have one.
+        return redirect('users:user_management') # Or a more suitable page
+
+
+# --- Class-Based Views ---
+
+class UserRegistrationView(CreateView):
+    form_class = RegistrationForm
+    template_name = 'users/register.html'
+    success_url = reverse_lazy('login')
+
+    def form_valid(self, form):
+        email = form.cleaned_data['email']
+        if User.objects.filter(email=email).exists():
+            login_url = reverse('login')
+            error_html = mark_safe(
+                f'This email is already registered. Please <a href="{escape(login_url)}">log in instead</a>.'
+            )
+            # form.add_error('email', error_html) # This way might render escaped HTML in form
+            messages.error(self.request, error_html) # Use messages framework for this kind of error
+            return self.form_invalid(form)
+
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=email, # Using email as username
+                    email=email,
+                    first_name=form.cleaned_data['first_name'],
+                    last_name=form.cleaned_data['last_name'],
+                    password=form.cleaned_data['password'],
                 )
-                form.add_error('email', 'This email is already registered. Please log in instead.')
-                messages.error(request, error_html)
-            else:
-                # Use transaction.atomic to ensure all database operations succeed or fail together
-                with transaction.atomic():
-                    user = User.objects.create_user(
-                        username=form.cleaned_data['email'],
-                        email=form.cleaned_data['email'],
-                        first_name=form.cleaned_data['first_name'],
-                        last_name=form.cleaned_data['last_name'],
-                        password=form.cleaned_data['password'],
+                role = form.cleaned_data['role']
+                if role == 'customer':
+                    Customer.objects.create(user=user)
+                else: # Professional
+                    Professional.objects.create(
+                        user=user,
+                        title=form.cleaned_data['title']
                     )
-                    role = form.cleaned_data['role']
-                    if role == 'customer':
-                        Customer.objects.create(user=user)
-                    else:
-                        Professional.objects.create(
-                            user=user,
-                            title=form.cleaned_data['title']
-                        )
-                messages.success(request, 'Registration successful. You can now log in.')
-                return redirect('login')
-    else:
-        form = RegistrationForm()
-    return render(request, 'users/register.html', {'form': form})
+            messages.success(self.request, 'Registration successful. You can now log in.')
+            return HttpResponseRedirect(self.get_success_url())
+        except Exception as e: # Catch any other unexpected error during transaction
+            # Log the error e
+            messages.error(self.request, "An unexpected error occurred during registration. Please try again.")
+            return self.form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Register" # Example of adding more context
+        return context
 
 
-'''
-This view handles the user management page. It checks if the user is a customer 
-and if they are already linked to a professional.
-users/management.html will be shown if the user is a Professional 
-users/customer_dashboard.html will be shown if the user is a Customer and already linked to a Professional
-If the user is a Customer and not linked to a Professional,
-they will be shown a form to select a Professional.
-'''
-@login_required
-def user_management_view(request):
-    user = request.user
-    # Check if user is a Customer
-    try:
-        customer = user.customer_profile
-    except Customer.DoesNotExist:
-        # Not a customer, show default management page
-        return render(request, 'users/management.html')
+class UserManagementView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            customer = user.customer_profile
+        except Customer.DoesNotExist: # User is not a customer (could be Professional or Admin without CustomerProfile)
+            # Professionals or other non-customer users see a generic management page.
+            return render(request, 'users/management.html', {'page_title': "User Management"})
 
-    # Check if customer already linked to a professional
-    link = ProfessionalCustomerLink.objects.filter(
-        customer=customer, 
-        status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-    ).select_related('professional').first()
-    
-    if not link:
-        # Show professional selection form
-        if request.method == 'POST':
-            form = ProfessionalChoiceForm(request.POST)
-            if form.is_valid():
-                professional = form.cleaned_data['professional']
-                # Use transaction.atomic to ensure database consistency
+        # User is a customer, check for active ProfessionalCustomerLink
+        link = ProfessionalCustomerLink.objects.filter(
+            customer=customer,
+            status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+        ).select_related('professional__user').first() # Added professional__user to select_related
+
+        if link:
+            # Customer is linked to a professional, show customer dashboard
+            return render(request, 'users/customer_dashboard.html', {
+                'professional': link.professional,
+                'page_title': "My Dashboard"
+            })
+        else:
+            # Customer not linked, show professional selection form
+            form = ProfessionalChoiceForm()
+            return render(request, 'users/customer_choose_professional.html', {
+                'form': form,
+                'page_title': "Choose Your Professional"
+            })
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            customer = user.customer_profile
+        except Customer.DoesNotExist:
+            messages.error(request, "Only customers can link to a professional.")
+            return redirect('home') # Or some other appropriate redirect
+
+        form = ProfessionalChoiceForm(request.POST)
+        if form.is_valid():
+            professional = form.cleaned_data['professional']
+            try:
                 with transaction.atomic():
+                    # Ensure no other active link exists before creating a new one.
+                    # This could happen if user navigates away and back.
+                    ProfessionalCustomerLink.objects.filter(
+                        customer=customer,
+                        status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                    ).delete() # Or set to INACTIVE
+
                     ProfessionalCustomerLink.objects.create(
                         professional=professional,
                         customer=customer,
                         status=ProfessionalCustomerLink.StatusChoices.ACTIVE
                     )
-                return redirect('select-items')
-        else:
-            form = ProfessionalChoiceForm()
-        return render(request, 'users/customer_choose_professional.html', {'form': form})
+                messages.success(request, f"You are now linked with {professional.title or professional.user.get_full_name()}.")
+                # Redirect to a relevant page, e.g., where they can start selecting items/services
+                # Assuming 'orders:select_items' requires an order_pk.
+                # This flow might need adjustment depending on when an order is created.
+                # For now, redirecting to user_management which should show the dashboard.
+                return redirect('users:user_management')
+            except Exception as e:
+                # Log error e
+                messages.error(request, "An error occurred while linking with the professional. Please try again.")
 
-    # If already linked, show customer dashboard
-    return render(request, 'users/customer_dashboard.html', {'professional': link.professional})
+        # Form is invalid or an error occurred, re-render the choice form
+        return render(request, 'users/customer_choose_professional.html', {
+            'form': form,
+            'page_title': "Choose Your Professional"
+        })
 
-@login_required
-def profile_view(request):
-    return render(request, 'users/profile.html')
+
+class UserProfileView(LoginRequiredMixin, TemplateView):
+    template_name = 'users/profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "My Profile"
+        # The user object (request.user) is automatically available in templates.
+        # Explicitly pass profiles if needed for clarity or specific access patterns.
+        if hasattr(self.request.user, 'customer_profile'):
+            context['customer_profile'] = self.request.user.customer_profile
+        if hasattr(self.request.user, 'professional_profile'):
+            context['professional_profile'] = self.request.user.professional_profile
+        return context
 
 
-@login_required
-def change_professional(request):
-    user = request.user
-    try:
-        customer = user.customer_profile
-    except Customer.DoesNotExist:
-        # Or handle as an error, e.g., messages.error and redirect
-        return redirect('user_management')
+class ChangeProfessionalView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
+    form_class = ProfessionalChoiceForm
+    template_name = 'users/customer_choose_professional.html' # Reuses the same template
+    success_url = reverse_lazy('users:user_management')
 
-    if request.method == 'POST':
-        # Current logic: Deactivate/delete existing link first.
-        # This means if the form is invalid, the user has no professional.
-        # Consider if this is the desired behavior. For now, retain it.
-        with transaction.atomic():
-            ProfessionalCustomerLink.objects.filter(
-                customer=customer,
-                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-            ).delete()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Change Your Professional"
+        context['form_title'] = "Select a New Professional" # Custom title for this context
+        return context
 
-        form = ProfessionalChoiceForm(request.POST) # Define form with POST data
-        if form.is_valid():
-            professional = form.cleaned_data['professional']
-            with transaction.atomic(): # Ensure link creation is atomic too
+    def form_valid(self, form):
+        customer = self.request.user.customer_profile # CustomerRequiredMixin ensures this exists
+        new_professional = form.cleaned_data['professional']
+
+        try:
+            with transaction.atomic():
+                # Deactivate or delete existing active links
+                ProfessionalCustomerLink.objects.filter(
+                    customer=customer,
+                    status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                ).delete() # Or update to INACTIVE if history is important
+
+                # Create the new link
                 ProfessionalCustomerLink.objects.create(
-                    professional=professional,
+                    professional=new_professional,
                     customer=customer,
                     status=ProfessionalCustomerLink.StatusChoices.ACTIVE
                 )
-            return redirect('user_management')
-        # If form is invalid, this 'form' instance (with errors)
-        # will be passed to render below.
-    else: # Was a GET request
-        form = ProfessionalChoiceForm()
-    
-    return render(request, 'users/customer_choose_professional.html', {'form': form})
+            messages.success(self.request, f"You have successfully changed your professional to {new_professional.title or new_professional.user.get_full_name()}.")
+        except Exception as e:
+            # Log error e
+            messages.error(self.request, "An error occurred while changing your professional. Please try again.")
+            # Redirect back to the form or a relevant error page
+            return self.form_invalid(form)
+
+        return HttpResponseRedirect(self.get_success_url())

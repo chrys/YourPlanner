@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Item: {{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'services:service_list' %}">My Services</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'services:service_detail' pk=service.pk %}">{{ service.title }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ item.title }}</li>
+        </ol>
+    </nav>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3>{{ item.title }}</h3>
+                <div>
+                    {% if user_owns_service %} {# Assuming user_owns_service is passed from ItemDetailView's get_context_data #}
+                        <a href="{% url 'services:item_update' service_pk=service.pk pk=item.pk %}" class="btn btn-warning me-2">Edit Item</a>
+                        <a href="{% url 'services:item_delete' service_pk=service.pk pk=item.pk %}" class="btn btn-danger">Delete Item</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <p><strong>Description:</strong> {{ item.description|linebreaksbr }}</p>
+            {% if item.image %}
+                <div class="mb-3">
+                    <img src="{{ item.image.url }}" alt="{{ item.title }}" class="img-fluid rounded" style="max-height: 300px;">
+                </div>
+            {% endif %}
+            <p><strong>Created:</strong> {{ item.created_at|date:"Y-m-d H:i" }}</p>
+            <p><strong>Last Updated:</strong> {{ item.updated_at|date:"Y-m-d H:i" }}</p>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Prices for this Item</h4>
+            {% if user_owns_service %}
+                <a href="{% url 'services:price_create' service_pk=service.pk item_pk=item.pk %}" class="btn btn-primary">Add New Price</a>
+            {% endif %}
+        </div>
+        {% if item.prices.all %}
+            <div class="list-group">
+                {% for price in item.prices.all %}
+                    <div class="list-group-item list-group-item-action mb-2">
+                        <div class="d-flex w-100 justify-content-between">
+                            <div>
+                                <h5 class="mb-1">{{ price.amount }} {{ price.currency }} ({{ price.get_frequency_display }})</h5>
+                                <p class="mb-1">{{ price.description|default:"No description" }}</p>
+                            </div>
+                            <div>
+                                <small class="text-muted">{% if price.is_active %}Active{% else %}Inactive{% endif %}</small>
+                                {% if user_owns_service %}
+                                    <a href="{% url 'services:price_detail' service_pk=service.pk item_pk=item.pk pk=price.pk %}" class="btn btn-sm btn-info ms-2">Details</a>
+                                    <a href="{% url 'services:price_update' service_pk=service.pk item_pk=item.pk pk=price.pk %}" class="btn btn-sm btn-warning ms-1">Edit</a>
+                                    <a href="{% url 'services:price_delete' service_pk=service.pk item_pk=item.pk pk=price.pk %}" class="btn btn-sm btn-danger ms-1">Delete</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                No prices have been set for this item yet.
+                {% if user_owns_service %}
+                    <a href="{% url 'services:price_create' service_pk=service.pk item_pk=item.pk %}" class="alert-link">Add the first price!</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'services:service_detail' pk=service.pk %}" class="btn btn-secondary">Back to {{ service.title }}</a>
+    </div>
+</div>
+{% endblock %}

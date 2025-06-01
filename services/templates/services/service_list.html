@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}My Services{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>My Services</h2>
+        <a href="{% url 'services:service_create' %}" class="btn btn-primary">Add New Service</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if services %}
+        <div class="list-group">
+            {% for service in services %}
+                <div class="list-group-item list-group-item-action flex-column align-items-start mb-2">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ service.title }}</h5>
+                        <small class="text-muted">{{ service.created_at|date:"Y-m-d H:i" }}</small>
+                    </div>
+                    <p class="mb-1">{{ service.description|truncatewords:30 }}</p>
+                    <div class="mt-2">
+                        <a href="{% url 'services:service_detail' pk=service.pk %}" class="btn btn-sm btn-info me-1">View Details</a>
+                        <a href="{% url 'services:service_update' pk=service.pk %}" class="btn btn-sm btn-warning me-1">Edit</a>
+                        <a href="{% url 'services:service_delete' pk=service.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                    </div>
+                    <div class="mt-1">
+                        <small>Status: {% if service.is_active %}Active{% else %}Inactive{% endif %}</small>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            You have not created any services yet. <a href="{% url 'services:service_create' %}" class="alert-link">Add your first service!</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

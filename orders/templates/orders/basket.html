@@ -1,141 +1,188 @@
-{% extends "core/base.html" %}
+{% extends "base.html" %} {# Changed from core/base.html #}
 {% load static %}
-{% block title %}Basket{% endblock %}
+{% load i18n %}
+{% block title %}{{ page_title|default:"My Basket" }}{% endblock %}
+
 {% block content %}
-<main>
-    <div id="basket-app" style="max-width:900px;margin:40px auto 0 auto;background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.07);padding:32px;">
-        <h2 class="welcome-title" style="font-size:2em;font-weight:700;margin-bottom:32px;">Basket</h2>
-        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:32px;">
-            <div>
-                <div style="font-weight:600;">From</div>
-                <div style="font-weight:700;">V Planner</div>
-                <div>1280, Clair Street,<br>Massachusetts, New York - 02543</div>
-                <div style="margin-top:12px;font-size:0.95em;">Issued On:<br><span style="font-weight:600;">{{ order.created_at|date:"d M, Y" }}</span></div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-weight:600;">To</div>
-                <div style="font-weight:700;">[[ userName ]]</div>
-                <div>[[ userAddress ]]</div>
-                <div style="margin-top:12px;font-size:0.95em;">Due On:<br><span style="font-weight:600;">{{ order.due_date|date:"d M, Y" }}</span></div>
-            </div>
+<main class="container mt-4">
+    <div id="basket-app" class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h2 class="h4 mb-0">{{ page_title|default:"My Basket" }}</h2>
         </div>
-        <div style="overflow-x:auto;">
-            <table class="basket-table" style="width:100%;border-collapse:separate;border-spacing:0 8px;">
-                <thead>
-                    <tr style="background:#f8f8f8;">
-                        <th style="padding:12px 8px;border-radius:8px 0 0 8px;">#</th>
-                        <th style="padding:12px 8px;">Product</th>
-                        <th style="padding:12px 8px;">Service</th>
-                        <th style="padding:12px 8px;">Quantity</th>
-                        <th style="padding:12px 8px;">Unit Cost</th>
-                        <th style="padding:12px 8px;border-radius:0 8px 8px 0;">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(item, idx) in items" :key="item.id" style="background:#fff;">
-                        <td style="padding:12px 8px;text-align:center;">[[ idx + 1 ]]</td>
-                        <td style="padding:12px 8px;">[[ item.product ]]</td>
-                        <td style="padding:12px 8px;">[[ item.service ]]</td>
-                        <td style="padding:12px 8px;text-align:center;">[[ item.quantity ]]</td>
-                        <td style="padding:12px 8px;">[[ item.unit_price ]] [[ item.currency ]]</td>
-                        <td style="padding:12px 8px;text-align:right;">[[ (item.quantity * item.unit_price).toFixed(2) ]] [[ item.currency ]]</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:32px;">
-            <div style="min-width:320px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                    <span style="color:#888;">Sub Total amount:</span>
-                    <span style="font-weight:600;">[[ subtotal.toFixed(2) ]] [[ currency ]]</span>
+        <div class="card-body p-4">
+            {% include "_messages.html" %}
+
+            {% if order and order_items %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p><strong>{% trans "Order ID" %}:</strong> {{ order.pk_formatted }}</p>
+                        <p><strong>{% trans "Date Placed" %}:</strong> {{ order.created_at|date:"Y-m-d H:i" }}</p>
+                        <p><strong>{% trans "Status" %}:</strong> <span class="badge bg-info text-dark">{{ order.get_status_display }}</span></p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p><strong>{% trans "To" %}:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+                        {% if request.user.customer_profile.address %}
+                        <p>{{ request.user.customer_profile.address|linebreaksbr }}</p>
+                        {% endif %}
+                    </div>
                 </div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                    <span style="color:#888;">Vat (10%):</span>
-                    <span style="font-weight:600;">[[ vat.toFixed(2) ]] [[ currency ]]</span>
+
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">{% trans "Service" %}</th>
+                                <th scope="col">{% trans "Item" %}</th>
+                                <th scope="col" class="text-center">{% trans "Quantity" %}</th>
+                                <th scope="col" class="text-end">{% trans "Unit Price" %}</th>
+                                <th scope="col" class="text-end">{% trans "Subtotal" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(order_item, idx) in vueOrderItems" :key="order_item.id">
+                                <td>[[ idx + 1 ]]</td>
+                                <td>[[ order_item.service_title ]]</td>
+                                <td>[[ order_item.item_title ]]</td>
+                                <td class="text-center">[[ order_item.quantity ]]</td>
+                                <td class="text-end">[[ order_item.unit_price ]] [[ order_item.currency ]]</td>
+                                <td class="text-end">[[ order_item.subtotal ]] [[ order_item.currency ]]</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div style="display:flex;justify-content:space-between;font-size:1.2em;margin-top:12px;">
-                    <span style="font-weight:700;">Total :</span>
-                    <span style="font-weight:700;color:#e88ea1;">[[ total.toFixed(2) ]] [[ currency ]]</span>
+
+                <div class="row justify-content-end">
+                    <div class="col-md-5 col-lg-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">{% trans "Subtotal (calculated)" %}:</span>
+                            <span>[[ calculatedSubtotal ]] [[ vueCurrency ]]</span>
+                        </div>
+                        {# Example VAT, if applicable, can be calculated or displayed if part of order total #}
+                        {# <div class="d-flex justify-content-between mb-1"> #}
+                        {# <span class="text-muted">VAT (if any):</span> #}
+                        {# <span>[[ calculatedVAT ]] [[ vueCurrency ]]</span> #}
+                        {# </div> #}
+                        <hr>
+                        <div class="d-flex justify-content-between h5 fw-bold">
+                            <span>{% trans "Order Total" %}:</span>
+                            <span>{{ order.total_amount|floatformat:2 }} {{ order_items.0.price.currency|default:order.currency_display_symbol }}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:32px;gap:16px;">
-            <a href="{% url 'select-items' %}" class="basket-btn">Update Basket</a>
-            <button class="basket-btn" @click="printPage"><span style="margin-right:8px;">🖨️</span>Print</button>
+
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn basket-btn-vue-2">{% trans "Update Items" %}</a>
+                    <button type="button" class="btn btn-secondary" @click="printPage"><i class="fas fa-print me-1"></i> {% trans "Print" %}</button>
+                    {# Add a 'Proceed to Checkout' button if applicable #}
+                    {# <a href="#" class="btn btn-success">Proceed to Checkout</a> #}
+                </div>
+            {% else %}
+                <div class="alert alert-info" role="alert">
+                    {% trans "Your basket is currently empty." %}
+                    {% if request.user.customer_profile %}
+                        <br><a href="{% url 'orders:order_create' %}" class="alert-link">{% trans "Start a new order" %}</a>
+                        {% trans "or find services to add." %}
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </main>
+
 <script>
-const { createApp } = Vue;
+const { createApp, ref, computed, onMounted } = Vue;
+
 createApp({
     delimiters: ['[[', ']]'],
-    data() {
-        return {
-            items: [
-                {% for item in items %}
+    setup() {
+        const vueOrderItems = ref([]);
+        const vueOrderTotal = ref(0);
+        const vueCurrency = ref("{{ order_items.0.price.currency|default:'USD'|escapejs }}"); // Default currency from first item or USD
+
+        onMounted(() => {
+            vueOrderItems.value = [
+                {% for item in order_items %}
                 {
-                    id: {{ item.id }},
-                    product: "{{ item.item.title|escapejs }}",
-                    service: "{{ item.service.title|escapejs }}",
+                    id: {{ item.pk }},
+                    item_title: "{{ item.price.item.title|escapejs }}",
+                    service_title: "{{ item.price.item.service.title|escapejs }}",
                     quantity: {{ item.quantity }},
-                    unit_price: {{ item.price_amount_at_order|floatformat:2 }},
-                    currency: "{{ item.price_currency_at_order }}"
+                    // Use price_at_purchase if available and reliable, else current price.amount
+                    unit_price: parseFloat("{{ item.price_at_purchase|default:item.price.amount|floatformat:2 }}").toFixed(2),
+                    currency: "{{ item.price.currency|escapejs }}",
+                    subtotal: ({{ item.quantity }} * parseFloat("{{ item.price_at_purchase|default:item.price.amount|floatformat:2 }}")).toFixed(2)
                 }{% if not forloop.last %},{% endif %}
                 {% endfor %}
-            ],
-            userName: "{{ request.user.get_full_name|default:request.user.username|escapejs }}",
-            userAddress: "{{ request.user.profile.address|default:''|linebreaksbr|escapejs }}",
-            subtotal: {{ total|floatformat:2 }},
-            vat: {{ total|floatformat:2 }} * 0.10,
-            total: {{ total|floatformat:2 }} * 1.10,
-            currency: "{{ items.0.price_currency_at_order|default:'USD' }}"
-        }
-    },
-    methods: {
-        printPage() {
+            ];
+            vueOrderTotal.value = parseFloat("{{ order.total_amount|default:0|floatformat:2 }}");
+        });
+
+        const calculatedSubtotal = computed(() => {
+            return vueOrderItems.value.reduce((sum, item) => sum + (parseFloat(item.unit_price) * item.quantity), 0).toFixed(2);
+        });
+
+        // Example VAT calculation if needed for display, assuming total_amount might be pre-tax or post-tax
+        // const calculatedVAT = computed(() => (calculatedSubtotal.value * 0.10).toFixed(2));
+
+        function printPage() {
             window.print();
         }
+
+        return {
+            vueOrderItems,
+            vueOrderTotal,
+            vueCurrency,
+            calculatedSubtotal,
+            // calculatedVAT,
+            printPage
+        };
     }
 }).mount('#basket-app');
 </script>
+
 <style>
-.basket-table th, .basket-table td {
-    border: none;
-    background: #fff;
-}
-.basket-table th {
-    font-weight: 600;
-    color: #222;
-    font-size: 1em;
-}
-.basket-table td {
-    color: #333;
-    font-size: 1em;
-}
-.basket-btn {
+/* Renamed to avoid conflicts if .basket-btn is global */
+.basket-btn-vue-2 {
     background: #e88ea1;
     color: #fff;
     border: none;
-    padding: 12px 32px;
-    border-radius: 6px;
-    font-size: 1em;
+    padding: 0.5rem 1rem; /* Adjusted padding */
+    border-radius: .25rem; /* Bootstrap's default border-radius */
+    font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
-    font-weight: 600;
-    display: flex;
+    font-weight: 600; /* Adjusted font-weight */
+    display: inline-flex; /* Changed to inline-flex */
     align-items: center;
     text-decoration: none;
     justify-content: center;
 }
-.basket-btn:hover {
+.basket-btn-vue-2:hover {
     background: #fff;
     color: #e88ea1;
     border: 1px solid #e88ea1;
 }
+/* Ensure table looks good with Bootstrap */
+.table {
+    margin-bottom: 0; /* Remove default bottom margin if card body has padding */
+}
 @media print {
-    .navbar, .menu-icon, .basket-btn { display: none !important; }
-    #basket-app { box-shadow: none; border: none; }
-    body { background: #fff !important; }
+    .navbar, .footer, .btn, .alert-link { /* More comprehensive hide list for printing */
+        display: none !important;
+    }
+    #basket-app.card {
+        box-shadow: none !important;
+        border: none !important;
+    }
+    body {
+        background: #fff !important;
+        padding-top: 0 !important; /* Remove padding if any from base layout */
+    }
+    .card-header {
+        background-color: #fff !important; /* Ensure header is white for print */
+        border-bottom: 1px solid #dee2e6 !important; /* Keep a light border */
+    }
 }
 </style>
 {% endblock %}
