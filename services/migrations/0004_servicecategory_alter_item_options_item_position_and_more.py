@@ -3,7 +3,55 @@
 import django.db.models.deletion
 from decimal import Decimal
 from django.db import migrations, models
+from django.utils.text import slugify
 
+def generate_unique_item_slugs(apps, schema_editor):
+    Item = apps.get_model('services', 'Item')
+    db_alias = schema_editor.connection.alias
+    items_to_update = []
+    for item in Item.objects.using(db_alias).select_related('service').iterator():
+        # Only generate if slug is currently empty or would be considered blank by the model
+        # This check might need adjustment if items could have legitimate blank slugs
+        # that should not be overwritten. Given blank=True, new items get ""
+        if not item.slug:
+            base_slug = slugify(item.title)
+            if not base_slug: # Handle empty titles or titles that slugify to empty
+                base_slug = 'item' # Default slug if title is empty or slugs to empty
+
+            slug = base_slug
+            counter = 1
+            # Check for uniqueness within the same service
+            # Ensure we are checking against the current state in the loop or database if items are many
+            while Item.objects.using(db_alias).filter(service_id=item.service_id, slug=slug).exclude(pk=item.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            item.slug = slug
+            items_to_update.append(item)
+
+    if items_to_update:
+        Item.objects.using(db_alias).bulk_update(items_to_update, ['slug'])
+
+def generate_unique_service_slugs(apps, schema_editor):
+    Service = apps.get_model('services', 'Service')
+    db_alias = schema_editor.connection.alias
+    services_to_update = []
+    for service in Service.objects.using(db_alias).select_related('professional').iterator():
+        if not service.slug:
+            base_slug = slugify(service.title)
+            if not base_slug:
+                base_slug = 'service'
+
+            slug = base_slug
+            counter = 1
+            # Check for uniqueness within the same professional
+            while Service.objects.using(db_alias).filter(professional_id=service.professional_id, slug=slug).exclude(pk=service.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            service.slug = slug
+            services_to_update.append(service)
+
+    if services_to_update:
+        Service.objects.using(db_alias).bulk_update(services_to_update, ['slug'])
 
 class Migration(migrations.Migration):
 
@@ -48,6 +96,7 @@ class Migration(migrations.Migration):
             name='slug',
             field=models.SlugField(blank=True, max_length=255),
         ),
+        migrations.RunPython(generate_unique_item_slugs, migrations.RunPython.noop),
         migrations.AddField(
             model_name='item',
             name='stock',
@@ -88,6 +137,7 @@ class Migration(migrations.Migration):
             name='slug',
             field=models.SlugField(blank=True, max_length=255),
         ),
+        migrations.RunPython(generate_unique_service_slugs, migrations.RunPython.noop),
         migrations.AlterField(
             model_name='price',
             name='currency',
@@ -135,3 +185,4 @@ class Migration(migrations.Migration):
             constraint=models.UniqueConstraint(fields=('professional', 'slug'), name='unique_professional_service_slug'),
         ),
     ]
+```
