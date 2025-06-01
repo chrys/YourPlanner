@@ -2,6 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
 from users.models import Customer, Professional, ProfessionalCustomerLink
+from django.conf import settings
 
 class UserViewsTest(TestCase):
     NON_EXISTENT_PROFESSIONAL_ID = 99999
@@ -50,7 +51,7 @@ class UserViewsTest(TestCase):
         }
         response = self.client.post(reverse('register'), data)
         self.assertEqual(response.status_code, 200) # Re-renders form
-        self.assertFormError(response, 'form', 'email', 'User with this email already exists.') # Adjust error message if needed
+        self.assertFormError(response.context['form'], 'email', 'User with this email already exists.') # Adjust error message if needed
         self.assertEqual(User.objects.count(), initial_user_count)
 
     def test_register_post_missing_email(self):
@@ -65,7 +66,7 @@ class UserViewsTest(TestCase):
         }
         response = self.client.post(reverse('register'), data)
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(response.context['form'], 'email', 'This field is required.')
         self.assertEqual(User.objects.count(), initial_user_count)
 
     def test_login_view_get(self):
@@ -141,9 +142,9 @@ class UserViewsTest(TestCase):
         initial_link = ProfessionalCustomerLink.objects.filter(customer=self.customer).first()
 
         response = self.client.post(reverse('change_professional'), {'professional': self.NON_EXISTENT_PROFESSIONAL_ID}) # Non-existent ID
-        # Assuming the view re-renders the form with an error
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Selected professional not found.") # Example error message
+
+        self.assertEqual(response.status_code, 200) # View should re-render with form errors
+        self.assertFormError(response.context['form'], 'professional', 'Select a valid choice. That choice is not one of the available choices.')
 
         current_link = ProfessionalCustomerLink.objects.filter(customer=self.customer).first()
         self.assertEqual(initial_link, current_link) # Link should not have changed
@@ -154,7 +155,7 @@ class UserViewsTest(TestCase):
         url = reverse('change_professional')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, f"{reverse('login')}?next={url}")
+        self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
 
     def test_change_professional_post_unauthenticated(self):
         """Test POST request to change_professional view when unauthenticated."""
@@ -162,4 +163,4 @@ class UserViewsTest(TestCase):
         url = reverse('change_professional')
         response = self.client.post(url, {'professional': self.professional.pk})
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, f"{reverse('login')}?next={url}")
+        self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")

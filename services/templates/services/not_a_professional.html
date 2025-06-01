@@ -1,0 +1,11 @@
+{% extends "core/base.html" %}
+
+{% block title %}Not Authorized{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Access Denied</h2>
+    <p>You are not registered as a professional or do not have the necessary permissions to view this page.</p>
+    <p><a href="{% url 'home' %}">Return to Homepage</a></p>
+</div>
+{% endblock %}
