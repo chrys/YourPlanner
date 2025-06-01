@@ -185,4 +185,3 @@ class Migration(migrations.Migration):
             constraint=models.UniqueConstraint(fields=('professional', 'slug'), name='unique_professional_service_slug'),
         ),
     ]
-```
