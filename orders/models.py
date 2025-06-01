@@ -2,8 +2,10 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
+from core.models import TimeStampedModel
 
-class Order(models.Model):
+
+class Order(TimeStampedModel):
     """ Represents an order placed by a Customer. """
     class StatusChoices(models.TextChoices):
         PENDING = 'PENDING', 'Pending Confirmation'
@@ -12,6 +14,13 @@ class Order(models.Model):
         COMPLETED = 'COMPLETED', 'Completed'
         CANCELLED = 'CANCELLED', 'Cancelled'
         # Add other statuses as needed
+    
+    class PaymentStatusChoices(models.TextChoices):
+        UNPAID = 'UNPAID', 'Unpaid'
+        PARTIALLY_PAID = 'PARTIALLY_PAID', 'Partially Paid'
+        PAID = 'PAID', 'Paid'
+        REFUNDED = 'REFUNDED', 'Refunded'
+        FAILED = 'FAILED', 'Payment Failed'
 
     customer = models.ForeignKey(
         'users.Customer', # String notation
@@ -24,14 +33,19 @@ class Order(models.Model):
         choices=StatusChoices.choices,
         default=StatusChoices.PENDING
     )
+    payment_status = models.CharField(
+        max_length=15,
+        choices=PaymentStatusChoices.choices,
+        default=PaymentStatusChoices.UNPAID
+    )
     # Store total calculated from items, or allow manual override?
     # Defaulting to null=True, blank=True allows calculation later.
     total_amount = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
     currency = models.CharField(max_length=3, default='EUR') # Should match item currencies
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True, null=True, help_text="Additional notes about this order")
+    # created_at and updated_at are inherited from TimeStampedModel
 
     def __str__(self):
         return f"Order #{self.pk} by {self.customer} on {self.order_date.strftime('%Y-%m-%d')}"
@@ -50,15 +64,40 @@ class Order(models.Model):
         self.total_amount = total
         self.save(update_fields=['total_amount'])
         return total
+    
+    @property
+    def order_age(self):
+        """
+        Returns the age of the order in days.
+        """
+        return (timezone.now() - self.order_date).days
+    
+    def can_be_cancelled(self):
+        """
+        Determines if an order can be cancelled based on its status.
+        """
+        return self.status in [self.StatusChoices.PENDING, self.StatusChoices.CONFIRMED]
 
     class Meta:
         verbose_name = "Order"
         verbose_name_plural = "Orders"
         ordering = ['-order_date']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['order_date']),
+            models.Index(fields=['customer', 'status']),
+        ]
 
-
-class OrderItem(models.Model):
+class OrderItem(TimeStampedModel):
     """ Represents a specific item included within an Order. """
+    class StatusChoices(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        PROCESSING = 'PROCESSING', 'Processing'
+        SHIPPED = 'SHIPPED', 'Shipped'
+        DELIVERED = 'DELIVERED', 'Delivered'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+        RETURNED = 'RETURNED', 'Returned'
+    
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE, # If order deleted, delete its items
@@ -91,8 +130,22 @@ class OrderItem(models.Model):
     price_amount_at_order = models.DecimalField(max_digits=10, decimal_places=2)
     price_currency_at_order = models.CharField(max_length=3)
     price_frequency_at_order = models.CharField(max_length=10) # Store frequency from Price model
-
-    created_at = models.DateTimeField(auto_now_add=True)
+    discount_amount = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="Discount amount applied to this item"
+    )
+    status = models.CharField(
+        max_length=15,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING
+    )
+    position = models.PositiveIntegerField(
+        default=0,
+        help_text="Position of this item in the order display"
+    )
+    # created_at is inherited from TimeStampedModel
     # No updated_at needed typically for line items once created?
 
     def __str__(self):
@@ -106,11 +159,56 @@ class OrderItem(models.Model):
             self.price_frequency_at_order = self.price.frequency
         super().save(*args, **kwargs)
 
+    @property
+    def final_price(self):
+        """
+        Calculate the final price after discount.
+        """
+        item_total = self.quantity * self.price_amount_at_order
+        return max(Decimal('0.00'), item_total - self.discount_amount)
+
     class Meta:
         verbose_name = "Order Item"
         verbose_name_plural = "Order Items"
-        ordering = ['order', 'created_at']
+        ordering = ['order', 'position', 'created_at']
         # Optional: Ensure item from a specific service/pro isn't added twice?
         # constraints = [
         #     models.UniqueConstraint(fields=['order', 'item'], name='unique_order_item')
         # ]
+
+
+class OrderStatusHistory(TimeStampedModel):
+    """
+    Tracks the history of status changes for an order.
+    """
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='status_history'
+    )
+    old_status = models.CharField(
+        max_length=15,
+        choices=Order.StatusChoices.choices,
+        null=True,
+        blank=True
+    )
+    new_status = models.CharField(
+        max_length=15,
+        choices=Order.StatusChoices.choices
+    )
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='order_status_changes'
+    )
+    notes = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"Order #{self.order.pk} status changed from {self.old_status or 'None'} to {self.new_status}"
+    
+    class Meta:
+        verbose_name = "Order Status History"
+        verbose_name_plural = "Order Status Histories"
+        ordering = ['-created_at']
