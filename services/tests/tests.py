@@ -74,7 +74,7 @@ class ServicesAppTests(TestCase):
             'is_active': True,
         }) # No follow=True, we want to check the form errors
         self.assertEqual(response.status_code, 200) # Should re-render the form
-        self.assertFormError(response.context['form'], 'title', 'This field is required.')
+        self.assertFormError(response.context['form'], 'title', ['This field is required.', 'Service title cannot be empty'])
         self.assertEqual(Service.objects.count(), initial_service_count) # No new service created
 
     def test_service_items_view_get_for_own_service(self):
@@ -122,19 +122,38 @@ class ServicesAppTests(TestCase):
         self.assertTrue(Price.objects.filter(item=new_item, amount=10.99, currency='USD', frequency=Price.FrequencyChoices.ONE_TIME).exists())
         self.assertEqual(Price.objects.count(), initial_price_count + 1)
 
+    
+ 
     def test_add_item_to_service_post_invalid_data_empty_title(self):
         """Test POST to add item with an empty title to a service."""
-        service = Service.objects.create(professional=self.professional, title="S_InvalidItemAdd", description="D", is_active=True)
+        # Create service with unique title
+        service = Service.objects.create(
+            professional=self.professional, 
+            title="S_InvalidItemAdd_Test", 
+            description="D", 
+            is_active=True
+        )
         url = reverse('service-items', args=[service.id])
         initial_item_count = Item.objects.filter(service=service).count()
+        
         response = self.client.post(url, {
-            'title': '', # Invalid: empty title
+            'title': '',  # Invalid: empty title
             'description': 'Test Item Desc Invalid',
-        }) # No follow=True
-        self.assertEqual(response.status_code, 200) # Re-renders form
-        self.assertFormError(response.context['form'], 'title', 'This field is required.')
+            'amount': '10.00',
+            'currency': 'EUR',
+            'frequency': Price.FrequencyChoices.ONE_TIME,
+        })
+        
+        self.assertEqual(response.status_code, 200)  # Re-renders form
+        self.assertFormError(
+            response.context['form'], 
+            'title', 
+            ['This field is required.', 'Item title cannot be empty']
+        )
         self.assertEqual(Item.objects.filter(service=service).count(), initial_item_count)
-
+    
+        # Remove duplicate test section
+ 
     def test_edit_item_post_valid_data(self):
         """Test POST request to edit an item and its price with valid data."""
         service = Service.objects.create(professional=self.professional, title="S3_EditValid", description="D3", is_active=True)

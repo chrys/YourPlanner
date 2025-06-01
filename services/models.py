@@ -67,13 +67,14 @@ class Service(TimeStampedModel):
         if not self.title:
             raise ValidationError({'title': 'Service title cannot be empty'})
         
-        # Check for duplicate titles for the same professional
-        if Service.objects.filter(
-            professional=self.professional, 
-            title=self.title
-        ).exclude(pk=self.pk).exists():
-            raise ValidationError({'title': 'You already have a service with this title'})
-    
+        # Only check for duplicate titles if we have a professional
+        if hasattr(self, 'professional') and self.professional:
+            # Check for duplicate titles for the same professional
+            if Service.objects.filter(
+                professional=self.professional, 
+                title=self.title
+            ).exclude(pk=self.pk).exists():
+                raise ValidationError({'title': 'You already have a service with this title'})
     def calculate_average_rating(self):
         """
         Calculate the average rating for this service from reviews.

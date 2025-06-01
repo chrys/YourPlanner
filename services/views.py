@@ -11,43 +11,6 @@ from .models import Service, Item, Price
 from .forms import ServiceForm, ItemForm, PriceForm
 from orders.models import OrderItem
 
-@login_required
-def professional_account(request):
-    try:
-        professional = request.user.professional_profile
-    except Professional.DoesNotExist:
-        return render(request, 'services/not_a_professional.html')
-
-    # Cache key based on professional ID and last update time
-    cache_key = f'professional_services_{professional.pk}_{professional.updated_at.timestamp()}'
-    services = cache.get(cache_key)
-    
-    if services is None:
-        # If not in cache, fetch from database with prefetch_related for optimization
-        services = Service.objects.filter(professional=professional).prefetch_related(
-            Prefetch('items', queryset=Item.objects.prefetch_related('prices'))
-        )
-        # Cache for 10 minutes
-        cache.set(cache_key, services, 60 * 10)
-
-    if request.method == 'POST':
-        form = ServiceForm(request.POST)
-        if form.is_valid():
-            with transaction.atomic():
-                service = form.save(commit=False)
-                service.professional = professional
-                service.save()
-                # Invalidate cache
-                cache.delete(cache_key)
-            return redirect('professional-account')
-    else:
-        form = ServiceForm()
-
-    return render(request, 'services/professional_account.html', {
-        'services': services,
-        'form': form,
-    })
- 
 
 @login_required
 def service_items(request, service_id):
@@ -201,3 +164,51 @@ def delete_item(request, item_id):
         return JsonResponse({'success': True})
     messages.success(request, "Item Deleted")
     return redirect('service-items', service_id=service_id)
+
+@login_required
+def professional_account(request):
+    """
+    View for professional's account dashboard. Shows services and allows creating new ones.
+    """
+    try:
+        professional = request.user.professional_profile
+    except Professional.DoesNotExist:
+        return render(request, 'services/not_a_professional.html')
+
+    # Cache key for services
+    cache_key = f'professional_services_{professional.pk}_{professional.updated_at.timestamp()}'
+    services = cache.get(cache_key)
+    
+    if services is None:
+        services = Service.objects.filter(professional=professional).prefetch_related(
+            Prefetch('items', queryset=Item.objects.prefetch_related('prices'))
+        )
+        cache.set(cache_key, services, 60 * 10)  # Cache for 10 minutes
+
+    if request.method == 'POST':
+        form = ServiceForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    service = form.save(commit=False)
+                    service.professional = professional
+                    service.full_clean()
+                    service.save()
+                    # Invalidate cache
+                    cache.delete(cache_key)
+                messages.success(request, "Service created successfully")
+                return redirect('professional-account')
+            except ValidationError as e:
+                for field, errors in e.message_dict.items():
+                    for error in errors:
+                        form.add_error(field, error)
+    else:
+        form = ServiceForm()
+
+    context = {
+        'services': services,
+        'form': form,
+        'professional': professional,
+    }
+    
+    return render(request, 'services/professional_account.html', context)
