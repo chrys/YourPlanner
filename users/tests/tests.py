@@ -51,7 +51,7 @@ class UserViewsTest(TestCase):
         }
         response = self.client.post(reverse('register'), data)
         self.assertEqual(response.status_code, 200) # Re-renders form
-        self.assertFormError(response.context['form'], 'email', 'User with this email already exists.') # Adjust error message if needed
+        self.assertFormError(response.context['form'], 'email', 'This email is already registered. Please log in instead.') # Adjust error message if needed
         self.assertEqual(User.objects.count(), initial_user_count)
 
     def test_register_post_missing_email(self):
