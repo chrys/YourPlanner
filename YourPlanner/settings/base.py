@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'services.apps.ServicesConfig',
     'orders.apps.OrdersConfig',
     'core.apps.CoreConfig',
+    'crispy_forms',
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -229,3 +230,6 @@ LOGGING = {
         },
     },
 }
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
