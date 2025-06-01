@@ -9,7 +9,7 @@ from django.shortcuts import render # Added render for SelectItemsView GET
 import json # Moved json import to the top
 
 from .models import Order, OrderItem
-from users.models import CustomerProfile, Professional # Assuming Professional is from users.models
+from users.models import Customer, Professional # Assuming Professional is from users.models
 from services.models import Service, Item, Price # For select_items and OrderItemForm population
 from .forms import OrderForm, OrderStatusUpdateForm, OrderItemForm
 
@@ -21,7 +21,7 @@ class CustomerRequiredMixin(UserPassesTestMixin):
         try:
             # Check if profile exists and is not None
             return hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile is not None
-        except CustomerProfile.DoesNotExist: # This exception might not be directly raised by hasattr
+        except Customer.DoesNotExist: # This exception might not be directly raised by hasattr
             return False
         except AttributeError: # If user is AnonymousUser which has no customer_profile
             return False
@@ -63,7 +63,7 @@ class CustomerOwnsOrderMixin(UserPassesTestMixin):
             customer = self.request.user.customer_profile
             self.order = get_object_or_404(Order, pk=order_id, customer=customer)
             return True
-        except CustomerProfile.DoesNotExist: # Should be caught by the hasattr check above
+        except Customer.DoesNotExist: # Should be caught by the hasattr check above
             return False
         except Http404:
             return False # Order not found or not owned by this customer

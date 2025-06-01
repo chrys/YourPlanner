@@ -1,23 +1,12 @@
 Creating test database for alias 'default'...
-/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /Users/chrys/Projects/YourPlanner/YourPlanner/staticfiles/
+EE.EEEEEEEEEEEEEEEEEEEE/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /Users/chrys/Projects/YourPlanner/YourPlanner/staticfiles/
   mw_instance = middleware(adapted_handler)
-DEBUG 2025-06-01 13:21:52,261 views 57524 8736623744 Current quantities for order 1: {}
-.F.DEBUG 2025-06-01 13:21:52,463 views 57524 8736623744 Current quantities for order 1: {'1': 2, '2': 1}
-.DEBUG 2025-06-01 13:21:52,529 views 57524 8736623744 Current quantities for order 1: {}
-.DEBUG 2025-06-01 13:21:52,597 views 57524 8736623744 Current quantities for order 1: {'1': 2}
-.DEBUG 2025-06-01 13:21:52,662 views 57524 8736623744 Current quantities for order 1: {}
-.FEFE.EF.ERROR 2025-06-01 13:21:53,136 log 57524 8736623744 Internal Server Error: /services/professional-account/
+ERROR 2025-06-01 19:25:03,497 log 78830 8736623744 Internal Server Error: /users/management/
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/views.py", line 17, in professional_account
-    professional = request.user.professional_profile
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/utils/functional.py", line 253, in inner
-    return func(_wrapped, *args)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/db/models/fields/related_descriptors.py", line 531, in __get__
-    raise self.RelatedObjectDoesNotExist(
-    ...<2 lines>...
-    )
-django.contrib.auth.models.User.professional_profile.RelatedObjectDoesNotExist: User has no professional_profile.
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1035, in find_library
+    return parser.libraries[name]
+           ~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'crispy_forms_tags'
 
 During handling of the above exception, another exception occurred:
 
@@ -26,29 +15,82 @@ Traceback (most recent call last):
     response = get_response(request)
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 197, in _get_response
     response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
-    return view_func(request, *args, **kwargs)
-  File "/Users/chrys/Projects/YourPlanner/services/views.py", line 19, in professional_account
-    return render(request, 'services/not_a_professional.html')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/contrib/auth/mixins.py", line 73, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/views/generic/base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chrys/Projects/YourPlanner/users/views.py", line 109, in get
+    return render(request, 'users/customer_choose_professional.html', {
+        'form': form,
+        'page_title': "Choose Your Professional"
+    })
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/shortcuts.py", line 25, in render
     content = loader.render_to_string(template_name, context, request, using=using)
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 61, in render_to_string
     template = get_template(template_name, using=using)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 19, in get_template
-    raise TemplateDoesNotExist(template_name, chain=chain)
-django.template.exceptions.TemplateDoesNotExist: services/not_a_professional.html
-ERROR 2025-06-01 13:21:53,136 log 57524 8736623744 Internal Server Error: /services/professional-account/
-Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/views.py", line 17, in professional_account
-    professional = request.user.professional_profile
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/utils/functional.py", line 253, in inner
-    return func(_wrapped, *args)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/db/models/fields/related_descriptors.py", line 531, in __get__
-    raise self.RelatedObjectDoesNotExist(
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/engine.py", line 177, in get_template
+    template, origin = self.find_template(template_name)
+                       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+        contents,
     ...<2 lines>...
+        self.engine,
     )
-django.contrib.auth.models.User.professional_profile.RelatedObjectDoesNotExist: User has no professional_profile.
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 196, in compile_nodelist
+    nodelist = parser.parse()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 299, in do_extends
+    nodelist = parser.parse()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1097, in load
+    lib = find_library(parser, name)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1037, in find_library
+    raise TemplateSyntaxError(
+    ...<5 lines>...
+    )
+django.template.exceptions.TemplateSyntaxError: 'crispy_forms_tags' is not a registered tag library. Must be one of:
+admin_list
+admin_modify
+admin_urls
+cache
+cache_tags
+i18n
+l10n
+log
+order_extras
+service_extras
+static
+tz
+ERROR 2025-06-01 19:25:03,497 log 78830 8736623744 Internal Server Error: /users/management/
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1035, in find_library
+    return parser.libraries[name]
+           ~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'crispy_forms_tags'
 
 During handling of the above exception, another exception occurred:
 
@@ -57,87 +99,618 @@ Traceback (most recent call last):
     response = get_response(request)
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 197, in _get_response
     response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
-    return view_func(request, *args, **kwargs)
-  File "/Users/chrys/Projects/YourPlanner/services/views.py", line 19, in professional_account
-    return render(request, 'services/not_a_professional.html')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/contrib/auth/mixins.py", line 73, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/views/generic/base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chrys/Projects/YourPlanner/users/views.py", line 109, in get
+    return render(request, 'users/customer_choose_professional.html', {
+        'form': form,
+        'page_title': "Choose Your Professional"
+    })
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/shortcuts.py", line 25, in render
     content = loader.render_to_string(template_name, context, request, using=using)
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 61, in render_to_string
     template = get_template(template_name, using=using)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 19, in get_template
-    raise TemplateDoesNotExist(template_name, chain=chain)
-django.template.exceptions.TemplateDoesNotExist: services/not_a_professional.html
-EF.FFFF....EE....
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/engine.py", line 177, in get_template
+    template, origin = self.find_template(template_name)
+                       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+        contents,
+    ...<2 lines>...
+        self.engine,
+    )
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 196, in compile_nodelist
+    nodelist = parser.parse()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 299, in do_extends
+    nodelist = parser.parse()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1097, in load
+    lib = find_library(parser, name)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1037, in find_library
+    raise TemplateSyntaxError(
+    ...<5 lines>...
+    )
+django.template.exceptions.TemplateSyntaxError: 'crispy_forms_tags' is not a registered tag library. Must be one of:
+admin_list
+admin_modify
+admin_urls
+cache
+cache_tags
+i18n
+l10n
+log
+order_extras
+service_extras
+static
+tz
+EERROR 2025-06-01 19:25:03,565 log 78830 8736623744 Internal Server Error: /accounts/login/
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 220, in _get_response
+    response = response.render()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 92, in rendered_content
+    return template.render(context, self._request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 171, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 327, in render
+    return nodelist.render(context)
+           ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
+ERROR 2025-06-01 19:25:03,565 log 78830 8736623744 Internal Server Error: /accounts/login/
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 220, in _get_response
+    response = response.render()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 92, in rendered_content
+    return template.render(context, self._request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 171, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 327, in render
+    return nodelist.render(context)
+           ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
+EERROR 2025-06-01 19:25:03,608 log 78830 8736623744 Internal Server Error: /accounts/login/
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 220, in _get_response
+    response = response.render()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 92, in rendered_content
+    return template.render(context, self._request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 171, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 327, in render
+    return nodelist.render(context)
+           ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
+ERROR 2025-06-01 19:25:03,608 log 78830 8736623744 Internal Server Error: /accounts/login/
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 220, in _get_response
+    response = response.render()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 92, in rendered_content
+    return template.render(context, self._request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 171, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 327, in render
+    return nodelist.render(context)
+           ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
+EEEEEEE
+======================================================================
+ERROR: test_add_non_existent_item_to_basket (orders.tests.tests.OrdersAppTests.test_add_non_existent_item_to_basket)
+Test attempting to add a non-existent item ID to the basket.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 153, in test_add_non_existent_item_to_basket
+    url = reverse('select-items')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'select-items' not found. 'select-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_basket_view_get_unauthenticated_user (orders.tests.tests.OrdersAppTests.test_basket_view_get_unauthenticated_user)
+Test GET request to basket view for unauthenticated user.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 59, in test_basket_view_get_unauthenticated_user
+    url = reverse('basket') # Assuming 'basket' is the name from urls.py
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'basket' not found. 'basket' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_order_total_calculation_and_basket_items_presence (orders.tests.tests.OrdersAppTests.test_order_total_calculation_and_basket_items_presence)
+Test calculation of order total and that items appear in basket context.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 140, in test_order_total_calculation_and_basket_items_presence
+    url = reverse('select-items')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'select-items' not found. 'select-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_select_items_add_to_basket (orders.tests.tests.OrdersAppTests.test_select_items_add_to_basket)
+Test adding items to the basket via POST to select-items view.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 66, in test_select_items_add_to_basket
+    url = reverse('select-items')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'select-items' not found. 'select-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_select_items_remove_from_basket (orders.tests.tests.OrdersAppTests.test_select_items_remove_from_basket)
+Test removing items from the basket by setting quantity to 0.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 92, in test_select_items_remove_from_basket
+    url = reverse('select-items')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'select-items' not found. 'select-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_select_items_view_get_authenticated_user (orders.tests.tests.OrdersAppTests.test_select_items_view_get_authenticated_user)
+Test GET request to select-items view for authenticated user.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 43, in test_select_items_view_get_authenticated_user
+    url = reverse('select-items')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'select-items' not found. 'select-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_select_items_view_get_unauthenticated_user (orders.tests.tests.OrdersAppTests.test_select_items_view_get_unauthenticated_user)
+Test GET request to select-items view for unauthenticated user.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 51, in test_select_items_view_get_unauthenticated_user
+    url = reverse('select-items')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'select-items' not found. 'select-items' is not a valid view function or pattern name.
+
 ======================================================================
 ERROR: test_add_item_to_service_post_invalid_data_empty_title (services.tests.tests.ServicesAppTests.test_add_item_to_service_post_invalid_data_empty_title)
 Test POST to add item with an empty title to a service.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 123, in test_add_item_to_service_post_invalid_data_empty_title
-    self.assertFormError(response, 'form', 'title', 'This field is required.')
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 704, in assertFormError
-    self._assert_form_error(form, field, errors, msg_prefix, f"form {form!r}")
-    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 670, in _assert_form_error
-    if not form.is_bound:
-           ^^^^^^^^^^^^^
-AttributeError: 'HttpResponse' object has no attribute 'is_bound'
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 136, in test_add_item_to_service_post_invalid_data_empty_title
+    url = reverse('service-items', args=[service.id])
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'service-items' not found. 'service-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_add_item_to_service_post_valid_data (services.tests.tests.ServicesAppTests.test_add_item_to_service_post_valid_data)
+Test POST request to add an item to a service with valid data.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 101, in test_add_item_to_service_post_valid_data
+    url = reverse('service-items', args=[service.id])
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'service-items' not found. 'service-items' is not a valid view function or pattern name.
 
 ======================================================================
 ERROR: test_create_service_post_invalid_data_empty_title (services.tests.tests.ServicesAppTests.test_create_service_post_invalid_data_empty_title)
 Test POST to create a service with an empty title.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 78, in test_create_service_post_invalid_data_empty_title
-    self.assertFormError(response, 'form', 'title', 'This field is required.')
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 704, in assertFormError
-    self._assert_form_error(form, field, errors, msg_prefix, f"form {form!r}")
-    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 670, in _assert_form_error
-    if not form.is_bound:
-           ^^^^^^^^^^^^^
-AttributeError: 'HttpResponse' object has no attribute 'is_bound'
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 69, in test_create_service_post_invalid_data_empty_title
+    url = reverse('professional-account')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'professional-account' not found. 'professional-account' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_create_service_post_valid_data (services.tests.tests.ServicesAppTests.test_create_service_post_valid_data)
+Test POST request to create a service with valid data.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 56, in test_create_service_post_valid_data
+    url = reverse('professional-account') # Assumes creation is on the account page
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'professional-account' not found. 'professional-account' is not a valid view function or pattern name.
 
 ======================================================================
 ERROR: test_edit_item_post_invalid_data_non_numeric_price (services.tests.tests.ServicesAppTests.test_edit_item_post_invalid_data_non_numeric_price)
 Test POST to edit item with a non-numeric price.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 171, in test_edit_item_post_invalid_data_non_numeric_price
-    self.assertFormError(response, 'form', 'active_price_amount', 'Enter a number.') # Example error message
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 704, in assertFormError
-    self._assert_form_error(form, field, errors, msg_prefix, f"form {form!r}")
-    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 670, in _assert_form_error
-    if not form.is_bound:
-           ^^^^^^^^^^^^^
-AttributeError: 'HttpResponse' object has no attribute 'is_bound'
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 192, in test_edit_item_post_invalid_data_non_numeric_price
+    url = reverse('edit-item', args=[item.id])
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'edit-item' not found. 'edit-item' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_edit_item_post_valid_data (services.tests.tests.ServicesAppTests.test_edit_item_post_valid_data)
+Test POST request to edit an item and its price with valid data.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 163, in test_edit_item_post_valid_data
+    url = reverse('edit-item', args=[item.id])
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'edit-item' not found. 'edit-item' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_professional_account_view_get_authenticated_pro (services.tests.tests.ServicesAppTests.test_professional_account_view_get_authenticated_pro)
+Test GET request to professional account view for an authenticated professional.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 27, in test_professional_account_view_get_authenticated_pro
+    url = reverse('professional-account')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'professional-account' not found. 'professional-account' is not a valid view function or pattern name.
 
 ======================================================================
 ERROR: test_professional_account_view_get_non_professional (services.tests.tests.ServicesAppTests.test_professional_account_view_get_non_professional)
 Test GET request to professional account view for authenticated non-professional user.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/views.py", line 17, in professional_account
-    professional = request.user.professional_profile
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/utils/functional.py", line 253, in inner
-    return func(_wrapped, *args)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/db/models/fields/related_descriptors.py", line 531, in __get__
-    raise self.RelatedObjectDoesNotExist(
-    ...<2 lines>...
-    )
-django.contrib.auth.models.User.professional_profile.RelatedObjectDoesNotExist: User has no professional_profile.
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 47, in test_professional_account_view_get_non_professional
+    url = reverse('professional-account')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'professional-account' not found. 'professional-account' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_professional_account_view_get_unauthenticated (services.tests.tests.ServicesAppTests.test_professional_account_view_get_unauthenticated)
+Test GET request to professional account view for unauthenticated user.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 35, in test_professional_account_view_get_unauthenticated
+    url = reverse('professional-account')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'professional-account' not found. 'professional-account' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_service_items_view_get_for_own_service (services.tests.tests.ServicesAppTests.test_service_items_view_get_for_own_service)
+Test GET request to service items view for a professional's own service.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 83, in test_service_items_view_get_for_own_service
+    url = reverse('service-items', args=[service.id])
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'service-items' not found. 'service-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_service_items_view_get_unauthenticated (services.tests.tests.ServicesAppTests.test_service_items_view_get_unauthenticated)
+Test GET to service items view for unauthenticated user.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 92, in test_service_items_view_get_unauthenticated
+    url = reverse('service-items', args=[service.id])
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'service-items' not found. 'service-items' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_change_professional_get_unauthenticated (users.tests.tests.UserViewsTest.test_change_professional_get_unauthenticated)
+Test GET request to change_professional view when unauthenticated.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 155, in test_change_professional_get_unauthenticated
+    url = reverse('change_professional')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'change_professional' not found. 'change_professional' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_change_professional_post_non_existent_id (users.tests.tests.UserViewsTest.test_change_professional_post_non_existent_id)
+Test POST to change professional with a non-existent professional ID.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 144, in test_change_professional_post_non_existent_id
+    response = self.client.post(reverse('change_professional'), {'professional': self.NON_EXISTENT_PROFESSIONAL_ID}) # Non-existent ID
+                                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'change_professional' not found. 'change_professional' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_change_professional_post_unauthenticated (users.tests.tests.UserViewsTest.test_change_professional_post_unauthenticated)
+Test POST request to change_professional view when unauthenticated.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 163, in test_change_professional_post_unauthenticated
+    url = reverse('change_professional')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'change_professional' not found. 'change_professional' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_change_professional_post_valid_id (users.tests.tests.UserViewsTest.test_change_professional_post_valid_id)
+Test POST to change professional with a valid new professional ID.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 129, in test_change_professional_post_valid_id
+    response = self.client.post(reverse('change_professional'), {'professional': new_prof.pk})
+                                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'change_professional' not found. 'change_professional' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_login_post_correct_credentials (users.tests.tests.UserViewsTest.test_login_post_correct_credentials)
+Test POST to login with correct credentials and successful redirect.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1035, in find_library
+    return parser.libraries[name]
+           ~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'crispy_forms_tags'
 
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 44, in test_professional_account_view_get_non_professional
-    response = self.client.get(url)
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 89, in test_login_post_correct_credentials
+    response = self.client.post(reverse('login'), data, follow=True)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1163, in post
+    response = self._handle_redirects(
+        response,
+    ...<4 lines>...
+        **extra,
+    )
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1384, in _handle_redirects
+    response = self._follow_redirect(
+        response,
+    ...<4 lines>...
+        **extra,
+    )
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1002, in _follow_redirect
+    return request_method(
+        path,
+    ...<5 lines>...
+        **extra,
+    )
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1124, in get
     response = super().get(
         path,
@@ -166,172 +739,335 @@ Traceback (most recent call last):
     response = get_response(request)
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 197, in _get_response
     response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
-    return view_func(request, *args, **kwargs)
-  File "/Users/chrys/Projects/YourPlanner/services/views.py", line 19, in professional_account
-    return render(request, 'services/not_a_professional.html')
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/contrib/auth/mixins.py", line 73, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/views/generic/base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chrys/Projects/YourPlanner/users/views.py", line 109, in get
+    return render(request, 'users/customer_choose_professional.html', {
+        'form': form,
+        'page_title': "Choose Your Professional"
+    })
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/shortcuts.py", line 25, in render
     content = loader.render_to_string(template_name, context, request, using=using)
   File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 61, in render_to_string
     template = get_template(template_name, using=using)
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 19, in get_template
-    raise TemplateDoesNotExist(template_name, chain=chain)
-django.template.exceptions.TemplateDoesNotExist: services/not_a_professional.html
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/engine.py", line 177, in get_template
+    template, origin = self.find_template(template_name)
+                       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+        contents,
+    ...<2 lines>...
+        self.engine,
+    )
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 196, in compile_nodelist
+    nodelist = parser.parse()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 299, in do_extends
+    nodelist = parser.parse()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1097, in load
+    lib = find_library(parser, name)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 1037, in find_library
+    raise TemplateSyntaxError(
+    ...<5 lines>...
+    )
+django.template.exceptions.TemplateSyntaxError: 'crispy_forms_tags' is not a registered tag library. Must be one of:
+admin_list
+admin_modify
+admin_urls
+cache
+cache_tags
+i18n
+l10n
+log
+order_extras
+service_extras
+static
+tz
+
+======================================================================
+ERROR: test_login_post_incorrect_credentials (users.tests.tests.UserViewsTest.test_login_post_incorrect_credentials)
+Test POST to login with incorrect credentials.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 81, in test_login_post_incorrect_credentials
+    response = self.client.post(reverse('login'), data)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1153, in post
+    response = super().post(
+        path,
+    ...<5 lines>...
+        **extra,
+    )
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 499, in post
+    return self.generic(
+           ~~~~~~~~~~~~^
+        "POST",
+        ^^^^^^^
+    ...<6 lines>...
+        **extra,
+        ^^^^^^^^
+    )
+    ^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 671, in generic
+    return self.request(**r)
+           ~~~~~~~~~~~~^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1087, in request
+    self.check_exception(response)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 802, in check_exception
+    raise exc_value
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 220, in _get_response
+    response = response.render()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 92, in rendered_content
+    return template.render(context, self._request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 171, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 327, in render
+    return nodelist.render(context)
+           ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
+
+======================================================================
+ERROR: test_login_view_get (users.tests.tests.UserViewsTest.test_login_view_get)
+Test GET request to the login page.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 74, in test_login_view_get
+    response = self.client.get(reverse('login'))
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1124, in get
+    response = super().get(
+        path,
+    ...<4 lines>...
+        **extra,
+    )
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 475, in get
+    return self.generic(
+           ~~~~~~~~~~~~^
+        "GET",
+        ^^^^^^
+    ...<4 lines>...
+        **extra,
+        ^^^^^^^^
+    )
+    ^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 671, in generic
+    return self.request(**r)
+           ~~~~~~~~~~~~^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 1087, in request
+    self.check_exception(response)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/client.py", line 802, in check_exception
+    raise exc_value
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 220, in _get_response
+    response = response.render()
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/response.py", line 92, in rendered_content
+    return template.render(context, self._request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 171, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/utils.py", line 114, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 327, in render
+    return nodelist.render(context)
+           ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/template/defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
 
 ======================================================================
 ERROR: test_register_post_duplicate_email (users.tests.tests.UserViewsTest.test_register_post_duplicate_email)
 Test POST to register with an existing email address.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 53, in test_register_post_duplicate_email
-    self.assertFormError(response, 'form', 'email', 'User with this email already exists.') # Adjust error message if needed
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 704, in assertFormError
-    self._assert_form_error(form, field, errors, msg_prefix, f"form {form!r}")
-    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 670, in _assert_form_error
-    if not form.is_bound:
-           ^^^^^^^^^^^^^
-AttributeError: 'HttpResponse' object has no attribute 'is_bound'
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 52, in test_register_post_duplicate_email
+    response = self.client.post(reverse('register'), data)
+                                ~~~~~~~^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
 
 ======================================================================
 ERROR: test_register_post_missing_email (users.tests.tests.UserViewsTest.test_register_post_missing_email)
 Test POST to register with a missing email address.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 68, in test_register_post_missing_email
-    self.assertFormError(response, 'form', 'email', 'This field is required.')
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 704, in assertFormError
-    self._assert_form_error(form, field, errors, msg_prefix, f"form {form!r}")
-    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/test/testcases.py", line 670, in _assert_form_error
-    if not form.is_bound:
-           ^^^^^^^^^^^^^
-AttributeError: 'HttpResponse' object has no attribute 'is_bound'
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 67, in test_register_post_missing_email
+    response = self.client.post(reverse('register'), data)
+                                ~~~~~~~^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
 
 ======================================================================
-FAIL: test_basket_view_get_unauthenticated_user (orders.tests.tests.OrdersAppTests.test_basket_view_get_unauthenticated_user)
-Test GET request to basket view for unauthenticated user.
+ERROR: test_register_post_valid_customer_data (users.tests.tests.UserViewsTest.test_register_post_valid_customer_data)
+Test POST to register a new customer with valid data.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 61, in test_basket_view_get_unauthenticated_user
-    self.assertRedirects(response, f"{reverse('login')}?next={url}")
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: '/users/accounts/login/?next=%2Forders%2Fbasket%2F' != '/accounts/login/?next=%2Forders%2Fbasket%2F'
-- /users/accounts/login/?next=%2Forders%2Fbasket%2F
-? ------
-+ /accounts/login/?next=%2Forders%2Fbasket%2F
- : Response redirected to '/users/accounts/login/?next=/orders/basket/', expected '/accounts/login/?next=/orders/basket/': Expected '/users/accounts/login/?next=/orders/basket/' to equal '/accounts/login/?next=/orders/basket/'.
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 35, in test_register_post_valid_customer_data
+    response = self.client.post(reverse('register'), data)
+                                ~~~~~~~^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
 
 ======================================================================
-FAIL: test_select_items_view_get_unauthenticated_user (orders.tests.tests.OrdersAppTests.test_select_items_view_get_unauthenticated_user)
-Test GET request to select-items view for unauthenticated user.
+ERROR: test_register_view_get (users.tests.tests.UserViewsTest.test_register_view_get)
+Test GET request to the registration page.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/orders/tests/tests.py", line 53, in test_select_items_view_get_unauthenticated_user
-    self.assertRedirects(response, f"{reverse('login')}?next={url}")
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: '/users/accounts/login/?next=%2Forders%2Fselect-items%2F' != '/accounts/login/?next=%2Forders%2Fselect-items%2F'
-- /users/accounts/login/?next=%2Forders%2Fselect-items%2F
-? ------
-+ /accounts/login/?next=%2Forders%2Fselect-items%2F
- : Response redirected to '/users/accounts/login/?next=/orders/select-items/', expected '/accounts/login/?next=/orders/select-items/': Expected '/users/accounts/login/?next=/orders/select-items/' to equal '/accounts/login/?next=/orders/select-items/'.
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 20, in test_register_view_get
+    response = self.client.get(reverse('register'))
+                               ~~~~~~~^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'register' not found. 'register' is not a valid view function or pattern name.
 
 ======================================================================
-FAIL: test_add_item_to_service_post_valid_data (services.tests.tests.ServicesAppTests.test_add_item_to_service_post_valid_data)
-Test POST request to add an item to a service with valid data.
+ERROR: test_user_management_view_customer_no_link_shows_choice (users.tests.tests.UserViewsTest.test_user_management_view_customer_no_link_shows_choice)
+Test user_management view for customer without a professional link shows professional choice form.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 110, in test_add_item_to_service_post_valid_data
-    self.assertTrue(Item.objects.filter(title='Test Item Valid', service=service).exists())
-    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: False is not true
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 99, in test_user_management_view_customer_no_link_shows_choice
+    response = self.client.get(reverse('user_management'))
+                               ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'user_management' not found. 'user_management' is not a valid view function or pattern name.
 
 ======================================================================
-FAIL: test_edit_item_post_valid_data (services.tests.tests.ServicesAppTests.test_edit_item_post_valid_data)
-Test POST request to edit an item and its price with valid data.
+ERROR: test_user_management_view_customer_with_link_shows_dashboard (users.tests.tests.UserViewsTest.test_user_management_view_customer_with_link_shows_dashboard)
+Test user_management view for customer with a professional link shows dashboard.
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 149, in test_edit_item_post_valid_data
-    self.assertEqual(item.title, 'Item1 Updated')
-    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: 'Item1_Original' != 'Item1 Updated'
-- Item1_Original
-+ Item1 Updated
-
-
-======================================================================
-FAIL: test_professional_account_view_get_unauthenticated (services.tests.tests.ServicesAppTests.test_professional_account_view_get_unauthenticated)
-Test GET request to professional account view for unauthenticated user.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 36, in test_professional_account_view_get_unauthenticated
-    self.assertRedirects(response, f"{reverse('login')}?next={url}")
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: '/users/accounts/login/?next=%2Fservices%2Fprofessional-account%2F' != '/accounts/login/?next=%2Fservices%2Fprofessional-account%2F'
-- /users/accounts/login/?next=%2Fservices%2Fprofessional-account%2F
-? ------
-+ /accounts/login/?next=%2Fservices%2Fprofessional-account%2F
- : Response redirected to '/users/accounts/login/?next=/services/professional-account/', expected '/accounts/login/?next=/services/professional-account/': Expected '/users/accounts/login/?next=/services/professional-account/' to equal '/accounts/login/?next=/services/professional-account/'.
-
-======================================================================
-FAIL: test_service_items_view_get_unauthenticated (services.tests.tests.ServicesAppTests.test_service_items_view_get_unauthenticated)
-Test GET to service items view for unauthenticated user.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/services/tests/tests.py", line 97, in test_service_items_view_get_unauthenticated
-    self.assertRedirects(response, f"{reverse('login')}?next={url}")
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: '/users/accounts/login/?next=%2Fservices%2Fservice%2F1%2Fitems%2F' != '/accounts/login/?next=%2Fservices%2Fservice%2F1%2Fitems%2F'
-- /users/accounts/login/?next=%2Fservices%2Fservice%2F1%2Fitems%2F
-? ------
-+ /accounts/login/?next=%2Fservices%2Fservice%2F1%2Fitems%2F
- : Response redirected to '/users/accounts/login/?next=/services/service/1/items/', expected '/accounts/login/?next=/services/service/1/items/': Expected '/users/accounts/login/?next=/services/service/1/items/' to equal '/accounts/login/?next=/services/service/1/items/'.
-
-======================================================================
-FAIL: test_change_professional_get_unauthenticated (users.tests.tests.UserViewsTest.test_change_professional_get_unauthenticated)
-Test GET request to change_professional view when unauthenticated.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 157, in test_change_professional_get_unauthenticated
-    self.assertRedirects(response, f"{reverse('login')}?next={url}")
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: '/users/accounts/login/?next=%2Fusers%2Fchange-professional%2F' != '/accounts/login/?next=%2Fusers%2Fchange-professional%2F'
-- /users/accounts/login/?next=%2Fusers%2Fchange-professional%2F
-? ------
-+ /accounts/login/?next=%2Fusers%2Fchange-professional%2F
- : Response redirected to '/users/accounts/login/?next=/users/change-professional/', expected '/accounts/login/?next=/users/change-professional/': Expected '/users/accounts/login/?next=/users/change-professional/' to equal '/accounts/login/?next=/users/change-professional/'.
-
-======================================================================
-FAIL: test_change_professional_post_non_existent_id (users.tests.tests.UserViewsTest.test_change_professional_post_non_existent_id)
-Test POST to change professional with a non-existent professional ID.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 146, in test_change_professional_post_non_existent_id
-    self.assertContains(response, "Selected professional not found.") # Example error message
-    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: False is not true : Couldn't find 'Selected professional not found.' in the following response
-b'\n<!DOCTYPE html>\n<html lang="en">\n<head>\n    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>\n    <meta charset="UTF-8">\n    <title>Choose Your Professional</title>\n    <link rel="stylesheet" href="/static/core/css/home.css">\n    <link href="https://fonts.googleapis.com/css?family=Pacifico|Open+Sans:400,700" rel="stylesheet">\n    \n</head>\n<body>\n    <div class="navbar">\n        <span class="menu-icon" onclick="openMenu()">&#9776;</span>\n        <a href="/">\n            <img src="/static/core/images/logo.png" alt="V Planner Logo" class="logo">\n        </a>\n    </div>\n    <div id="side-menu" class="side-menu">\n        <button class="close-btn" onclick="closeMenu()">&times;</button>\n        <a href="/" class="menu-item">Welcome To V Planner</a>\n        <a href="/users/register" class="menu-item">User Registration</a>\n        <a href="/users/management" class="menu-item">User Management</a>\n        <a href="#" class="menu-item">Event Locations</a>\n        <a href="#" class="menu-item">Food & Drinks Menu</a>\n        <a href="#" class="menu-item">Book Rooms</a>\n        <a href="#" class="menu-item">Finishing Touches Package</a>\n        <a href="#" class="menu-item">Decors And Services For Hire</a>\n        <a href="#" class="menu-item">Floor And Table Plans</a>\n        <a href="#" class="menu-item">Terms & Conditions</a>\n        <a href="#" class="menu-item">Payment Procedures</a>\n        <a href="#" class="menu-item special"><span class="icon">&#9776;</span> Order Of The Day</a>\n        <a href="#" class="menu-item special"><span class="icon">&#128722;</span> Wedding Basket</a>\n        <form action="/accounts/logout/" method="post" style="margin:0;">\n            <input type="hidden" name="csrfmiddlewaretoken" value="0WmW2Gjxdg5yLjBLDJnAdNDIy5yGg7T4D5I51j5bFP6ciNnhIy7r0YfwN0z5QIoM">\n            <button type="submit" class="menu-item special" style="width:100%;text-align:left;background:none;border:none;padding:10px 0 10px 0;cursor:pointer;">Logout</button>\n        </form>\n    </div>\n    <div id="user-menu" style="position:fixed;top:10px;right:30px;z-index:1000;">\n        \n            <span>Hi, cust</span>\n            <a href="/users/management/" class="user-menu-link">My Account</a>\n            <form action="/accounts/logout/" method="post" style="display:inline;">\n                <input type="hidden" name="csrfmiddlewaretoken" value="0WmW2Gjxdg5yLjBLDJnAdNDIy5yGg7T4D5I51j5bFP6ciNnhIy7r0YfwN0z5QIoM">\n                <button type="submit" class="user-menu-link" style="background:none;border:none;cursor:pointer;color:#e88ea1;">Logout</button>\n            </form>\n        \n    </div>\n    <div id="overlay" class="overlay" onclick="closeMenu()"></div>\n    \n    \n\n<header>\n\n</header>\n<main>\n    <h2 class="welcome-title">Choose Your Professional</h2>\n    <form method="post">\n        <input type="hidden" name="csrfmiddlewaretoken" value="0WmW2Gjxdg5yLjBLDJnAdNDIy5yGg7T4D5I51j5bFP6ciNnhIy7r0YfwN0z5QIoM">\n        <p>\n    <label for="id_professional">Choose your Professional:</label>\n    <select name="professional" required id="id_professional">\n  <option value="" selected>---------</option>\n\n  <option value="2">Test Pro</option>\n\n</select>\n    \n    \n      \n    \n  </p>\n        <button type="submit">Save</button>\n    </form>\n</main>\n\n    <script>\n        function openMenu() {\n            document.getElementById(\'side-menu\').classList.add(\'open\');\n            document.getElementById(\'overlay\').classList.add(\'show\');\n        }\n        function closeMenu() {\n            document.getElementById(\'side-menu\').classList.remove(\'open\');\n            document.getElementById(\'overlay\').classList.remove(\'show\');\n        }\n    </script>\n    \n</body>\n</html>'
-
-======================================================================
-FAIL: test_change_professional_post_unauthenticated (users.tests.tests.UserViewsTest.test_change_professional_post_unauthenticated)
-Test POST request to change_professional view when unauthenticated.
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 165, in test_change_professional_post_unauthenticated
-    self.assertRedirects(response, f"{reverse('login')}?next={url}")
-    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: '/users/accounts/login/?next=%2Fusers%2Fchange-professional%2F' != '/accounts/login/?next=%2Fusers%2Fchange-professional%2F'
-- /users/accounts/login/?next=%2Fusers%2Fchange-professional%2F
-? ------
-+ /accounts/login/?next=%2Fusers%2Fchange-professional%2F
- : Response redirected to '/users/accounts/login/?next=/users/change-professional/', expected '/accounts/login/?next=/users/change-professional/': Expected '/users/accounts/login/?next=/users/change-professional/' to equal '/accounts/login/?next=/users/change-professional/'.
+  File "/Users/chrys/Projects/YourPlanner/users/tests/tests.py", line 111, in test_user_management_view_customer_with_link_shows_dashboard
+    response = self.client.get(reverse('user_management'))
+                               ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chrys/Projects/venv/lib/python3.13/site-packages/django/urls/resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'user_management' not found. 'user_management' is not a valid view function or pattern name.
 
 ----------------------------------------------------------------------
-Ran 32 tests in 1.857s
+Ran 32 tests in 1.776s
 
-FAILED (failures=9, errors=6)
+FAILED (errors=31)
 Destroying test database for alias 'default'...
 Found 32 test(s).
 System check identified no issues (0 silenced).

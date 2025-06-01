@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     OrderCreateView, OrderListView, OrderDetailView, OrderStatusUpdateView, OrderCancelView,
     OrderItemCreateView, OrderItemUpdateView, OrderItemDeleteView,
-    SelectItemsView, BasketView
+    SelectItemsView, BasketView 
 )
 
 app_name = 'orders'
