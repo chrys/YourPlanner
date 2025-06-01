@@ -1,87 +1,64 @@
-{% extends "core/base.html" %}
+{% extends "base.html" %} {# Assuming base.html is the project's base template #}
 {% load static %}
+{% load crispy_forms_tags %}
+{% load i18n %}
 
-{% block title %}Register{% endblock %}
+{% block title %}{{ page_title|default:"Register" }}{% endblock %}
 
 {% block content %}
-<header>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">{{ page_title|default:"Create Your Account" }}</h2>
 
-</header>
-<main>
-    {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|safe }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    <div id="register-app">
-        <h2 class="welcome-title">Register</h2>
-        <div class="form-container">
-            <form method="post" id="registration-form" @submit="onSubmit">
-                {% csrf_token %}
-                <label for="first_name">First Name</label>
-                <input type="text" id="first_name" name="first_name" v-model="first_name" required>
+                    {% include "_messages.html" %} {# Standard way to show messages #}
 
-                <label for="last_name">Last Name</label>
-                <input type="text" id="last_name" name="last_name" v-model="last_name" required>
+                    <form method="post" id="registration-form">
+                        {% csrf_token %}
 
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" v-model="email" required>
+                        {{ form|crispy }}
 
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" v-model="password" required>
-
-                <label for="role">Role</label>
-                <select id="role" name="role" v-model="role" required>
-                    <option value="customer">Customer</option>
-                    <option value="professional">Professional</option>
-                </select>
-
-                <div v-if="role === 'professional'">
-                    <label for="title">Professional Title</label>
-                    <input type="text" id="title" name="title" v-model="title" required>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">{% trans "Register" %}</button>
+                        </div>
+                    </form>
+                    <p class="text-center mt-3">
+                        <small class="text-muted">
+                            {% trans "Already have an account?" %} <a href="{% url 'login' %}">{% trans "Log in" %}</a>
+                        </small>
+                    </p>
                 </div>
-
-                <div v-if="error" class="error-message" style="color:red; margin:10px 0;">[[ error ]]</div>
-                <button type="submit">Register</button>
-            </form>
+            </div>
         </div>
     </div>
-</main>
+</div>
+
+{# Minimal Vue for conditional field visibility if RegistrationForm doesn't handle it via widgets #}
+{# This assumes that the 'title' field's wrapper has an ID like 'div_id_title' (common with crispy) #}
+{# and the 'role' field has ID 'id_role' #}
 <script>
-const { createApp } = Vue;
-const app = createApp({
-    delimiters: ['[[', ']]'],
-    data() {
-        return {
-            first_name: '',
-            last_name: '',
-            email: '',
-            password: '',
-            role: 'customer',
-            title: '',
-            error: ''
-        }
-    },
-    methods: {
-        onSubmit(e) {
-            // Basic client-side validation
-            if (!this.first_name || !this.last_name || !this.email || !this.password || !this.role) {
-                this.error = "Please fill in all required fields.";
-                e.preventDefault();
-                return;
+document.addEventListener('DOMContentLoaded', function() {
+    const roleField = document.getElementById('id_role');
+    const titleFieldWrapper = document.getElementById('div_id_title'); // This ID might change based on form rendering
+
+    function toggleTitleField() {
+        if (roleField && titleFieldWrapper) {
+            if (roleField.value === 'professional') {
+                titleFieldWrapper.style.display = '';
+            } else {
+                titleFieldWrapper.style.display = 'none';
             }
-            if (this.role === 'professional' && !this.title) {
-                this.error = "Please enter your professional title.";
-                e.preventDefault();
-                return;
-            }
-            this.error = '';
-            // Let the form submit normally to Django
         }
     }
+
+    if (roleField) {
+        // Initial check
+        toggleTitleField();
+        // Add event listener
+        roleField.addEventListener('change', toggleTitleField);
+    }
 });
-app.mount('#register-app');
 </script>
 {% endblock %}

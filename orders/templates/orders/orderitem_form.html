@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:"Manage Order Item" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">{% trans "My Orders" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'orders:order_detail' pk=order.pk %}">{% trans "Order" %} #{{ order.pk_formatted }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ page_title }}</li>
+        </ol>
+    </nav>
+
+    <h2>{{ page_title }}</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary">
+            {% if object %} {# 'object' is the orderitem instance during updates #}
+                {% trans "Update Quantity" %}
+            {% else %}
+                {% trans "Add Item to Order" %}
+            {% endif %}
+        </button>
+        <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+    </form>
+</div>
+{% endblock %}

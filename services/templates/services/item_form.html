@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if object %}Edit Item: {{ object.title }}{% else %}Add Item to {{ service.title }}{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{% if object %}Edit Item for {{ service.title }}{% else %}Add New Item to {{ service.title }}{% endif %}</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit" class="btn btn-primary">
+            {% if object %}Save Changes{% else %}Add Item{% endif %}
+        </button>
+        <a href="{% if object %}{% url 'services:item_detail' service_pk=service.pk pk=object.pk %}{% else %}{% url 'services:service_detail' pk=service.pk %}{% endif %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

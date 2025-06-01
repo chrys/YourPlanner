@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ page_title|default:"Create Order" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ page_title|default:"Start a New Order" }}</h2>
+    <p>Review your details below. After creating the order, you'll be able to add items.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary">Create Order and Add Items</button>
+        <a href="{% url 'home' %}" class="btn btn-secondary">Cancel</a> {# Or redirect to a more relevant page #}
+    </form>
+</div>
+{% endblock %}

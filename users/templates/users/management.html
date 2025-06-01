@@ -1,47 +1,65 @@
-{% extends "core/base.html" %}
+{% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 
-{% block title %}User Management{% endblock %}
+{% block title %}{{ page_title|default:"User Management" }}{% endblock %}
 
 {% block content %}
-<header>
+<div class="container mt-4">
+    <div id="management-app" class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="card-title mb-4">{{ page_title|default:"User Management" }}</h2>
 
-</header>
-<main>
-    <div id="management-app">
-        <h2 class="welcome-title">User Management</h2>
-        <div class="content-container">
-            <ul>
-                <li>
-                    <a href="{% url 'password_change' %}">Change Password</a>
+            {% include "_messages.html" %}
+
+            <p>{% trans "This is your management area. From here you can manage various aspects of your account and services." %}</p>
+
+            <ul class="list-group list-group-flush">
+                {% if request.user.professional_profile %}
+                <li class="list-group-item">
+                    <a href="{% url 'services:service_list' %}">{% trans "Manage My Services" %}</a>
                 </li>
-                <li>
-                    <a href="/services/professional-account/">Your Professional Account</a>
+                {% endif %}
+                <li class="list-group-item">
+                    <a href="{% url 'users:profile' %}">{% trans "View My Profile" %}</a>
                 </li>
-                <li v-if="showHelp">
-                    <a href="#" @click.prevent="showHelpMessage = !showHelpMessage">Help</a>
-                    <div v-if="showHelpMessage" style="margin-top:8px; color:#444;">
-                        Here you can manage your account, change your password, or access your professional profile.
-                    </div>
+                <li class="list-group-item">
+                    <a href="{% url 'password_change' %}">{% trans "Change Password" %}</a>
                 </li>
+                {# Add more links as needed, e.g., for admins #}
             </ul>
-            <button @click="showHelp = !showHelp" style="margin-top:15px;">
-                [[ showHelp ? 'Hide Help' : 'Show Help' ]]
+
+            {# Vue part for help can be kept if desired, or simplified #}
+            <div class="mt-3" v-if="showHelp">
+                <a href="#" @click.prevent="showHelpMessage = !showHelpMessage" class="text-decoration-none">
+                    <i class="fas fa-question-circle"></i> {% trans "Help" %}
+                </a>
+                <div v-if="showHelpMessage" class="alert alert-info mt-2" role="alert">
+                    {% blocktrans %}
+                    From this page, professionals can manage their services. All users can view their profile and change their password.
+                    {% endblocktrans %}
+                </div>
+            </div>
+            <button @click="showHelp = !showHelp" class="btn btn-sm btn-outline-secondary mt-3">
+                [[ showHelp ? '{% trans "Hide Help" %}' : '{% trans "Show Help" %}' ]]
             </button>
         </div>
     </div>
-</main>
+</div>
+{# Removed orphaned </main> tag #}
 <script>
-const { createApp } = Vue;
-const app = createApp({
+const { createApp, ref } = Vue; // Using ref for Vue 3 Composition API style
+createApp({
     delimiters: ['[[', ']]'],
-    data() {
+    setup() {
+        const showHelp = ref(false);
+        const showHelpMessage = ref(false);
+        // You might need to watch showHelp to reset showHelpMessage if showHelp becomes false
         return {
-            showHelp: false,
-            showHelpMessage: false
-        }
+            showHelp,
+            showHelpMessage
+        };
     }
-});
-app.mount('#management-app');
+}).mount('#management-app');
 </script>
 {% endblock %}

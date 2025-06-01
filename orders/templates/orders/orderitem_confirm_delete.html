@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:"Confirm Remove Item" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">{% trans "My Orders" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'orders:order_detail' pk=order.pk %}">{% trans "Order" %} #{{ order.pk_formatted }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Confirm Remove Item" %}</li>
+        </ol>
+    </nav>
+
+    <h2>{{ page_title }}</h2>
+    <p>{% blocktrans with item_title=orderitem.price.item.title order_id=order.pk_formatted %}
+        Are you sure you want to remove the item "<strong>{{ item_title }}</strong>" from Order #{{ order_id }}?
+       {% endblocktrans %}</p>
+    <p>{% trans "This action cannot be undone." %}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">{% trans "Yes, Remove Item" %}</button>
+        <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+    </form>
+</div>
+{% endblock %}

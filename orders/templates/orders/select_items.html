@@ -1,157 +1,155 @@
-{% extends "core/base.html" %}
-{% block title %}Select Items{% endblock %}
+{% extends "base.html" %} {# Changed from core/base.html to base.html for consistency #}
+{% load i18n %}
+{% block title %}{{ page_title|default:"Select Items" }}{% endblock %}
+
 {% block content %}
 {% load static %}
-{% load order_extras %}
-<main>
+{% load order_extras %} {# Assuming get_item is here or built-in #}
+
+<main class="container mt-4">
     <div id="select-items-app">
-        <h2 class="welcome-title" style="margin-top:40px;">Select Items from Your Professional's Services</h2>
-        <div v-for="service in services" :key="service.id" class="service-section" style="margin-bottom: 32px;">
-            <h3 style="margin-top:24px; color:#e88ea1;">[[ service.title ]]</h3>
-            <table class="items-table" style="width:100%;border-collapse:collapse;margin-bottom:10px;">
-                <thead>
-                    <tr style="background:#f5f5f5;">
-                        <th style="padding:10px;">Item</th>
-                        <th style="padding:10px;">Description</th>
-                        <th style="padding:10px;">Price</th>
-                        <th style="padding:10px;">Quantity</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="item in service.items" :key="item.id">
-                        <td style="padding:10px;"><strong>[[ item.title ]]</strong></td>
-                        <td style="padding:10px;">[[ item.description ]]</td>
-                        <td style="padding:10px;">
-                            <span v-if="item.price">
-                                <span style="color:#e88ea1;">[[ item.price.amount ]] [[ item.price.currency ]]</span>
-                            </span>
-                            <span v-else style="color:red;">No price set!</span>
-                        </td>
-                        <td style="padding:10px;">
-                            <input type="number"
-                                   :name="'item_' + item.id"
-                                   min="0"
-                                   style="width:60px;"
-                                   v-model.number="item.quantity"
-                                   @input="validateQuantity(item)">
-                        </td>
-                    </tr>
-                    <tr v-if="service.items.length === 0">
-                        <td colspan="4" style="text-align:center;color:#888;">No items for this service.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div style="text-align:right; margin-top:30px;">
-            <button type="button" class="basket-btn" @click="showDialog = true">Update Basket</button>
-            <a href="{% url 'basket' %}" class="basket-btn" style="text-decoration:none; margin-left:10px;">View Basket</a>
-        </div>
-        <!-- Confirmation Dialog -->
-        <div v-if="showDialog" class="dialog-overlay">
-            <div class="dialog-box">
-                <p>Are you sure you want to Proceed?</p>
-                <div style="text-align:right;">
-                    <button class="basket-btn" style="margin-right:10px;" @click="showDialog = false">Cancel</button>
-                    <button class="basket-btn" @click="confirmUpdate">Update</button>
+        <h2 class="mb-4">{{ page_title|default:"Select Items" }} for Order #{{ order.pk_formatted }}</h2>
+
+        {% include "_messages.html" %}
+
+        <form id="select-items-form" method="post">
+            {% csrf_token %}
+            <div v-for="service in servicesData" :key="service.id" class="service-section card mb-4">
+                <div class="card-header bg-light">
+                    <h3 class="h5 mb-0">[[ service.title ]]</h3>
+                </div>
+                <div class="card-body p-0">
+                    <table class="items-table table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 25%;">{% trans "Item" %}</th>
+                                <th style="width: 35%;">{% trans "Description" %}</th>
+                                <th style="width: 20%;">{% trans "Price" %}</th>
+                                <th style="width: 20%;" class="text-center">{% trans "Quantity" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="item in service.items" :key="item.id">
+                                <tr v-for="price in item.prices" :key="price.id">
+                                    <td><strong>[[ item.title ]]</strong></td>
+                                    <td>[[ item.description ]]</td>
+                                    <td>
+                                        <span style="color:#e88ea1;">[[ price.amount ]] [[ price.currency ]]</span>
+                                        <small class="d-block text-muted">([[ price.frequency ]])</small>
+                                        {% if price.description %}
+                                        <small class="d-block text-muted"><em>[[ price.description ]]</em></small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="number"
+                                               :name="'quantity_' + price.id"
+                                               min="0"
+                                               class="form-control form-control-sm mx-auto"
+                                               style="width: 80px;"
+                                               v.model.number="quantities[price.id]"
+                                               @input="validateQuantity(price.id)">
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr v-if="service.items.length === 0">
+                                <td colspan="4" class="text-center text-muted py-3">{% trans "No items available for this service." %}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-        <!-- Success Popup -->
-        <div v-if="showSuccess" class="success-popup">
-            Basket updated successfully!
-        </div>
-        <form id="hidden-form" method="post" style="display:none;">
-            {% csrf_token %}
-            <!-- Hidden inputs will be dynamically added by Vue before submit -->
+
+            <div class="text-end my-4">
+                <button type="button" class="btn btn-lg basket-btn-vue" @click="showDialog = true">{% trans "Update Order Items" %}</button>
+                <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-lg btn-secondary ms-2">{% trans "View Order Summary" %}</a>
+            </div>
+
+            <!-- Confirmation Dialog (Vue) -->
+            <div v-if="showDialog" class="dialog-overlay">
+                <div class="dialog-box">
+                    <p>{% trans "Are you sure you want to update the items in your order?" %}</p>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary me-2" @click="showDialog = false">{% trans "Cancel" %}</button>
+                        <button type="button" class="btn basket-btn-vue" @click="confirmUpdate">{% trans "Yes, Update" %}</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Popup (Vue) -->
+            <div v-if="showSuccess" class="success-popup">
+                {% trans "Order items updated successfully!" %}
+            </div>
+            <!-- Hidden inputs for actual form submission are now part of the main form, managed by Vue's v-model on visible inputs -->
         </form>
     </div>
 </main>
-<!-- Pass Django data to Vue as JSON -->
+
 <script>
-window.__services__ = [
-    {% for service in services %}
-    {
-        id: {{ service.id }},
-        title: "{{ service.title|escapejs }}",
-        items: [
-            {% for item in service.items.all %}
-            {
-                id: {{ item.id }},
-                title: "{{ item.title|escapejs }}",
-                description: "{{ item.description|default:""|escapejs }}",
-                price: {% with price=item.prices.all|first_active %}
-                    {% if price %}
-                        {
-                            amount: "{{ price.amount }}",
-                            currency: "{{ price.currency }}",
-                            frequency: "{{ price.get_frequency_display }}"
-                        }
-                    {% else %}
-                        null
-                    {% endif %}
-                {% endwith %},
-                quantity: {{ current_quantities|get_item:item.id|default:'0' }}
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ]
-    }{% if not forloop.last %},{% endif %}
-    {% endfor %}
-];
+window.__servicesData__ = {{ services_json|safe }};
+window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
+
 <script>
-const { createApp } = Vue;
+const { createApp, ref, onMounted } = Vue;
+
 createApp({
     delimiters: ['[[', ']]'],
-    data() {
-        return {
-            services: [],
-            showDialog: false,
-            showSuccess: false
-        }
-    },
-    mounted() {
-        this.services = window.__services__;
-    },
-    methods: {
-        validateQuantity(item) {
-            if (item.quantity < 0 || isNaN(item.quantity)) {
-                item.quantity = 0;
-            }
-        },
-        confirmUpdate() {
-            this.showDialog = false;
-            this.showSuccess = true;
-            setTimeout(() => {
-                this.showSuccess = false;
-                this.submitForm();
-            }, 3000);
-        },
-        submitForm() {
-            // Prepare and submit the hidden form with all quantities
-            const form = document.getElementById('hidden-form');
-            // Remove previous inputs
-            while (form.firstChild) {
-                form.removeChild(form.firstChild);
-            }
-            // Add CSRF token
-            form.appendChild(document.querySelector('input[name="csrfmiddlewaretoken"]').cloneNode());
-            // Add item quantities
-            this.services.forEach(service => {
+    setup() {
+        const servicesData = ref([]);
+        const quantities = ref({}); // Store quantities by price_id
+        const showDialog = ref(false);
+        const showSuccess = ref(false);
+
+        onMounted(() => {
+            servicesData.value = window.__servicesData__;
+            const initialQuantities = window.__currentQuantities__;
+            // Initialize quantities for Vue reactivity, mapping price_id to quantity
+            servicesData.value.forEach(service => {
                 service.items.forEach(item => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'item_' + item.id;
-                    input.value = item.quantity || 0;
-                    form.appendChild(input);
+                    item.prices.forEach(price => {
+                        quantities.value[price.id] = initialQuantities[price.id] || 0;
+                    });
                 });
             });
-            form.submit();
+        });
+
+        function validateQuantity(priceId) {
+            if (quantities.value[priceId] < 0 || isNaN(quantities.value[priceId])) {
+                quantities.value[priceId] = 0;
+            }
         }
+
+        function confirmUpdate() {
+            showDialog.value = false;
+            // Directly submit the form, no need for success popup and timeout here
+            // as the page will reload/redirect on successful POST.
+            submitForm();
+        }
+
+        function submitForm() {
+            // Vue's v-model on the input fields ensures their values are part of the form submission
+            // when the form is submitted.
+            // We just need to trigger the form submission.
+            document.getElementById('select-items-form').submit();
+        }
+
+        // Expose to template
+        return {
+            servicesData,
+            quantities,
+            showDialog,
+            showSuccess, // Kept if needed for other UI feedback, though direct submit is used.
+            validateQuantity,
+            confirmUpdate,
+            // submitForm is not directly called from template anymore, but by confirmUpdate
+        };
     }
 }).mount('#select-items-app');
 </script>
+
 <style>
-.basket-btn {
+/* Using .basket-btn-vue to avoid conflict if original .basket-btn style is global */
+.basket-btn-vue {
     background: #e88ea1;
     color: #fff;
     border: none;
@@ -161,14 +159,12 @@ createApp({
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 }
-.basket-btn:hover {
+.basket-btn-vue:hover {
     background: #fff;
     color: #e88ea1;
     border: 1px solid #e88ea1;
 }
-.items-table th, .items-table td {
-    border: 1px solid #e0e0e0;
-}
+/* Removed table border for Bootstrap default styling */
 .dialog-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -176,32 +172,35 @@ createApp({
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: 1050; /* Ensure it's above other content, Bootstrap modal z-index is 1050+ */
 }
 .dialog-box {
     background: #fff;
-    padding: 30px 30px 20px 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+    padding: 2rem;
+    border-radius: .5rem;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
     min-width: 300px;
+    max-width: 500px; /* Added for responsiveness */
 }
-.success-popup {
+.success-popup { /* This might be removed if not used due to direct form submission */
     position: fixed;
-    bottom: 40px;
-    right: 40px;
-    background: #e88ea1;
+    bottom: 20px; /* Adjusted position */
+    right: 20px;  /* Adjusted position */
+    background: #28a745; /* Using a success green */
     color: #fff;
-    padding: 18px 32px;
-    border-radius: 6px;
-    font-size: 1.1em;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    z-index: 10001;
-    animation: fadeOut 3s forwards;
+    padding: 1rem 1.5rem;
+    border-radius: .375rem; /* Bootstrap's .rounded */
+    font-size: 1rem;
+    box-shadow: 0 .25rem .75rem rgba(0,0,0,.1);
+    z-index: 1051;
+    /* animation: fadeOut 3s forwards; */ /* Animation can be kept if needed */
 }
+/*
 @keyframes fadeOut {
     0% { opacity: 1; }
     80% { opacity: 1; }
     100% { opacity: 0; }
 }
+*/
 </style>
 {% endblock %}

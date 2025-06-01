@@ -1,21 +1,57 @@
-{% extends "core/base.html" %}
+{% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 
-{% block title %}Customer Dashboard{% endblock %}
+{% block title %}{{ page_title|default:"My Dashboard" }}{% endblock %}
 
 {% block content %}
-<header>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="card-title mb-3">{{ page_title|default:"Welcome to your Dashboard" }}, {{ request.user.first_name|default:request.user.username }}!</h2>
 
-</header>
-<main>
-    <h2 class="welcome-title">Welcome, {{ user.first_name }}</h2>
-    <p>Your Professional: <strong>{{ professional.user.get_full_name|default:professional.user.username }}</strong></p>
-    <div class="content-container">
-        <ul>
-            <li><a href="{% url 'select-items' %}">Select Items &amp; Create Order</a></li>
-            <li><a href="{% url 'basket' %}">View Basket</a></li>
-            <li><a href="{% url 'change_professional' %}">Change Professional</a></li>
+            {% include "_messages.html" %}
 
+            {% if professional %}
+                <div class="alert alert-info" role="alert">
+                    {% blocktrans trimmed with prof_name=professional.title|default:professional.user.get_full_name|default:professional.user.username %}
+                    You are currently linked with professional: <strong>{{ prof_name }}</strong>.
+                    {% endblocktrans %}
+                </div>
+            {% else %}
+                 <div class="alert alert-warning" role="alert">
+                    {% trans "You are not currently linked with any professional." %}
+                    <a href="{% url 'users:user_management' %}" class="alert-link">{% trans "Choose one now" %}</a> {% trans "to start ordering services." %}
+                </div>
+            {% endif %}
+
+            <h4 class="mt-4 mb-3">{% trans "Account Actions" %}:</h4>
+            <div class="list-group">
+                {% if professional %}
+                    <a href="{% url 'orders:order_create' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus-circle me-2"></i>{% trans "Create New Order / Select Items" %}
+                    </a>
+                    <a href="{% url 'orders:basket' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shopping-basket me-2"></i>{% trans "View My Basket / Current Order" %}
+                    </a>
+                     <a href="{% url 'orders:order_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-list-alt me-2"></i>{% trans "View My Order History" %}
+                    </a>
+                {% endif %}
+                <a href="{% url 'users:profile' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-edit me-2"></i>{% trans "View/Edit My Profile" %}
+                </a>
+                <a href="{% url 'users:change_professional' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-exchange-alt me-2"></i>{% trans "Change My Professional" %}
+                </a>
+                <a href="{% url 'password_change' %}" class="list-group-item list-group-item-action">
+                     <i class="fas fa-key me-2"></i>{% trans "Change Password" %}
+                </a>
+                <a href="{% url 'logout' %}" class="list-group-item list-group-item-action text-danger">
+                    <i class="fas fa-sign-out-alt me-2"></i>{% trans "Log Out" %}
+                </a>
+            </div>
+        </div>
     </div>
-</main>
+</div>
 {% endblock %}

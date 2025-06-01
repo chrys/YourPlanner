@@ -1,16 +1,50 @@
-{% extends "core/base.html" %}
-{% block title %}Choose Your Professional{% endblock %}
-{% block content %}
+{% extends "base.html" %}
 {% load static %}
-<header>
+{% load crispy_forms_tags %}
+{% load i18n %}
 
-</header>
-<main>
-    <h2 class="welcome-title">Choose Your Professional</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Save</button>
-    </form>
-</main>
+{% block title %}{{ page_title|default:"Choose Professional" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">{{ form_title|default:page_title|default:"Choose Your Professional" }}</h2>
+
+                    {% include "_messages.html" %}
+
+                    <p class="text-muted text-center">
+                        {% if request.resolver_match.url_name == 'change_professional' %}
+                            {% trans "Select a new professional from the list below to switch your services." %}
+                        {% else %}
+                            {% trans "Please select a professional from the list below to get started with their services." %}
+                        {% endif %}
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                {% if request.resolver_match.url_name == 'change_professional' %}
+                                    {% trans "Change Professional" %}
+                                {% else %}
+                                    {% trans "Confirm Professional" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if request.resolver_match.url_name == 'change_professional' %}
+                    <p class="text-center mt-3">
+                        <a href="{% url 'users:user_management' %}">{% trans "Cancel and go back to dashboard" %}</a>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

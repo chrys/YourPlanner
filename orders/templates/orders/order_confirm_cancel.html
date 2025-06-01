@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:"Confirm Order Cancellation" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ page_title|default:"Confirm Order Cancellation" }}</h2>
+
+    {% include "_messages.html" %}
+
+    {% if is_cancellable %}
+        <p>{% blocktrans with order_id=order.pk_formatted %}Are you sure you want to cancel Order #{{ order_id }}?{% endblocktrans %}</p>
+        <p>{% trans "This action cannot be undone." %}</p>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">{% trans "Yes, Cancel Order" %}</button>
+            <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-secondary">{% trans "No, Keep Order" %}</a>
+        </form>
+    {% else %}
+        {# This message is also shown by the view, but good to have in template if somehow reached #}
+        <p>{% trans "This order can no longer be cancelled." %}</p>
+        <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-primary">{% trans "Back to Order Details" %}</a>
+    {% endif %}
+</div>
+{% endblock %}

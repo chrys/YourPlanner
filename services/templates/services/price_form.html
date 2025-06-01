@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if object %}Edit Price for {{ item.title }}{% else %}Add Price to {{ item.title }}{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'services:service_list' %}">My Services</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'services:service_detail' pk=service.pk %}">{{ service.title }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'services:item_detail' service_pk=service.pk pk=item.pk %}">{{ item.title }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% if object %}Edit Price{% else %}Add Price{% endif %}</li>
+        </ol>
+    </nav>
+
+    <h2>{% if object %}Edit Price for {{ item.title }}{% else %}Add New Price to {{ item.title }}{% endif %}</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">
+            {% if object %}Save Changes{% else %}Add Price{% endif %}
+        </button>
+        <a href="{% if object %}{% url 'services:price_detail' service_pk=service.pk item_pk=item.pk pk=object.pk %}{% else %}{% url 'services:item_detail' service_pk=service.pk pk=item.pk %}{% endif %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
