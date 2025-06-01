@@ -24,7 +24,7 @@ class ServicesAppTests(TestCase):
 
     def test_professional_account_view_get_authenticated_pro(self):
         """Test GET request to professional account view for an authenticated professional."""
-        url = reverse('professional-account')
+        url = reverse('services:service_list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Your Services")
@@ -32,7 +32,7 @@ class ServicesAppTests(TestCase):
     def test_professional_account_view_get_unauthenticated(self):
         """Test GET request to professional account view for unauthenticated user."""
         self.client.logout()
-        url = reverse('professional-account')
+        url = reverse('services:service_list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302) # Redirect to login
         self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
@@ -44,7 +44,7 @@ class ServicesAppTests(TestCase):
         Customer.objects.create(user=basic_user) # Make them a customer
         self.client.login(username='basic_customer', password='testpass')
 
-        url = reverse('professional-account')
+        url = reverse('services:service_list')
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -53,7 +53,7 @@ class ServicesAppTests(TestCase):
 
     def test_create_service_post_valid_data(self):
         """Test POST request to create a service with valid data."""
-        url = reverse('professional-account') # Assumes creation is on the account page
+        url = reverse('services:service_list') # Assumes creation is on the account page
         initial_service_count = Service.objects.count()
         response = self.client.post(url, {
             'title': 'Test Service Valid',
@@ -66,7 +66,7 @@ class ServicesAppTests(TestCase):
 
     def test_create_service_post_invalid_data_empty_title(self):
         """Test POST to create a service with an empty title."""
-        url = reverse('professional-account')
+        url = reverse('services:service_list')
         initial_service_count = Service.objects.count()
         response = self.client.post(url, {
             'title': '', # Invalid: empty title
@@ -80,7 +80,7 @@ class ServicesAppTests(TestCase):
     def test_service_items_view_get_for_own_service(self):
         """Test GET request to service items view for a professional's own service."""
         service = Service.objects.create(professional=self.professional, title="S1_Own", description="D1", is_active=True)
-        url = reverse('service-items', args=[service.id])
+        url = reverse('services:item_list', kwargs={'service_pk': service.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Items for")
@@ -89,7 +89,7 @@ class ServicesAppTests(TestCase):
     def test_service_items_view_get_unauthenticated(self):
         """Test GET to service items view for unauthenticated user."""
         service = Service.objects.create(professional=self.professional, title="S_UnauthTest", is_active=True)
-        url = reverse('service-items', args=[service.id])
+        url = reverse('services:item_list', kwargs={'service_pk': service.id})
         self.client.logout()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
@@ -98,7 +98,7 @@ class ServicesAppTests(TestCase):
     def test_add_item_to_service_post_valid_data(self):
         """Test POST request to add an item to a service with valid data."""
         service = Service.objects.create(professional=self.professional, title="S2_ValidItem", description="D2", is_active=True)
-        url = reverse('service-items', args=[service.id])
+        url = reverse('services:item_create', kwargs={'service_pk': service.id})
         initial_item_count = Item.objects.filter(service=service).count()
         initial_price_count = Price.objects.count()
 
@@ -133,7 +133,7 @@ class ServicesAppTests(TestCase):
             description="D", 
             is_active=True
         )
-        url = reverse('service-items', args=[service.id])
+        url = reverse('services:item_create', kwargs={'service_pk': service.id})
         initial_item_count = Item.objects.filter(service=service).count()
         
         response = self.client.post(url, {
@@ -160,7 +160,7 @@ class ServicesAppTests(TestCase):
         item = Item.objects.create(service=service, title="Item1_Original", description="DescOriginal")
         # Initial price
         price = Price.objects.create(item=item, amount=Decimal('10.00'), currency="USD", frequency=Price.FrequencyChoices.ONE_TIME, is_active=True)
-        url = reverse('edit-item', args=[item.id])
+        url = reverse('services:item_update', kwargs={'service_pk': item.service.id, 'pk': item.id})
 
         post_data = {
             'title': 'Item1 Updated',
@@ -189,7 +189,7 @@ class ServicesAppTests(TestCase):
         service = Service.objects.create(professional=self.professional, title="S_EditItemInvalidPrice", is_active=True)
         item = Item.objects.create(service=service, title="Item_EditPriceTest", description="Desc")
         original_price = Price.objects.create(item=item, amount=10, currency="USD", frequency="ONCE", is_active=True)
-        url = reverse('edit-item', args=[item.id])
+        url = reverse('services:item_update', kwargs={'service_pk': item.service.id, 'pk': item.id})
 
         response = self.client.post(url, {
             'title': 'Item Updated Title',

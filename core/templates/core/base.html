@@ -12,15 +12,15 @@
 <body>
     <div class="navbar">
         <span class="menu-icon" onclick="openMenu()">&#9776;</span>
-        <a href="{% url 'home' %}">
+        <a href="{% url 'core:home' %}">
             <img src="{% static 'core/images/logo.png' %}" alt="V Planner Logo" class="logo">
         </a>
     </div>
     <div id="side-menu" class="side-menu">
         <button class="close-btn" onclick="closeMenu()">&times;</button>
         <a href="/" class="menu-item">Welcome To V Planner</a>
-        <a href="/users/register" class="menu-item">User Registration</a>
-        <a href="/users/management" class="menu-item">User Management</a>
+        <a href="{% url 'users:register' %}" class="menu-item">User Registration</a>
+        <a href="{% url 'users:user_management' %}" class="menu-item">User Management</a>
         <a href="#" class="menu-item">Event Locations</a>
         <a href="#" class="menu-item">Food & Drinks Menu</a>
         <a href="#" class="menu-item">Book Rooms</a>
@@ -31,7 +31,7 @@
         <a href="#" class="menu-item">Payment Procedures</a>
         <a href="#" class="menu-item special"><span class="icon">&#9776;</span> Order Of The Day</a>
         <a href="#" class="menu-item special"><span class="icon">&#128722;</span> Wedding Basket</a>
-        <form action="{% url 'logout' %}" method="post" style="margin:0;">
+        <form action="{% url 'users:logout' %}" method="post" style="margin:0;">
             {% csrf_token %}
             <button type="submit" class="menu-item special" style="width:100%;text-align:left;background:none;border:none;padding:10px 0 10px 0;cursor:pointer;">Logout</button>
         </form>
@@ -39,14 +39,14 @@
     <div id="user-menu" style="position:fixed;top:10px;right:30px;z-index:1000;">
         {% if user.is_authenticated %}
             <span>Hi, {{ user.first_name|default:user.username }}</span>
-            <a href="/users/management/" class="user-menu-link">My Account</a>
-            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+            <a href="{% url 'users:user_management' %}" class="user-menu-link">My Account</a>
+            <form action="{% url 'users:logout' %}" method="post" style="display:inline;">
                 {% csrf_token %}
                 <button type="submit" class="user-menu-link" style="background:none;border:none;cursor:pointer;color:#e88ea1;">Logout</button>
             </form>
         {% else %}
-            <a href="{% url 'login' %}" class="user-menu-link">Login</a>
-            <a href="{% url 'register' %}" class="user-menu-link">Register</a>
+            <a href="{% url 'users:login' %}" class="user-menu-link">Login</a>
+            <a href="{% url 'users:register' %}" class="user-menu-link">Register</a>
         {% endif %}
     </div>
     <div id="overlay" class="overlay" onclick="closeMenu()"></div>
