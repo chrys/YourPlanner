@@ -4,6 +4,7 @@ from users.models import Customer, Professional, ProfessionalCustomerLink
 from services.models import Service, Item, Price
 from orders.models import Order, OrderItem
 from django.urls import reverse
+from django.conf import settings
 
 User = get_user_model()
 '''
@@ -50,7 +51,7 @@ class OrdersAppTests(TestCase):
         url = reverse('select-items')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, f"{reverse('login')}?next={url}")
+        self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
 
     def test_basket_view_get_unauthenticated_user(self):
         """Test GET request to basket view for unauthenticated user."""
@@ -58,7 +59,7 @@ class OrdersAppTests(TestCase):
         url = reverse('basket') # Assuming 'basket' is the name from urls.py
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, f"{reverse('login')}?next={url}")
+        self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
 
     def test_select_items_add_to_basket(self):
         """Test adding items to the basket via POST to select-items view."""

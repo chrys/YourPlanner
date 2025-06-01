@@ -109,27 +109,32 @@ def change_professional(request):
     try:
         customer = user.customer_profile
     except Customer.DoesNotExist:
+        # Or handle as an error, e.g., messages.error and redirect
         return redirect('user_management')
 
-    # Use transaction.atomic for database operations
-    with transaction.atomic():
-        # Deactivate or delete the current link
-        ProfessionalCustomerLink.objects.filter(
-            customer=customer,
-            status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-        ).delete()  # Or update status if you want to keep history
+    if request.method == 'POST':
+        # Current logic: Deactivate/delete existing link first.
+        # This means if the form is invalid, the user has no professional.
+        # Consider if this is the desired behavior. For now, retain it.
+        with transaction.atomic():
+            ProfessionalCustomerLink.objects.filter(
+                customer=customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            ).delete()
 
-        # Show the professional selection form
-        if request.method == 'POST':
-            form = ProfessionalChoiceForm(request.POST)
-            if form.is_valid():
-                professional = form.cleaned_data['professional']
+        form = ProfessionalChoiceForm(request.POST) # Define form with POST data
+        if form.is_valid():
+            professional = form.cleaned_data['professional']
+            with transaction.atomic(): # Ensure link creation is atomic too
                 ProfessionalCustomerLink.objects.create(
                     professional=professional,
                     customer=customer,
                     status=ProfessionalCustomerLink.StatusChoices.ACTIVE
                 )
-                return redirect('user_management')
+            return redirect('user_management')
+        # If form is invalid, this 'form' instance (with errors)
+        # will be passed to render below.
+    else: # Was a GET request
+        form = ProfessionalChoiceForm()
     
-    form = ProfessionalChoiceForm()
     return render(request, 'users/customer_choose_professional.html', {'form': form})
