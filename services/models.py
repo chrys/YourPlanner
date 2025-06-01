@@ -2,13 +2,39 @@ from django.db import models
 from django.conf import settings
 from decimal import Decimal
 from django.core.exceptions import ValidationError
+from django.utils.text import slugify
 
+# Add ServiceCategory model
+class ServiceCategory(models.Model):
+    """Category for grouping services."""
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Service Category"
+        verbose_name_plural = "Service Categories"
+        ordering = ['name']
+
+# ... existing Service model with category field added ...
 class Service(models.Model):
     """ A service offered by a Professional. """
     professional = models.ForeignKey(
         'users.Professional', # Use string notation for cross-app relations
         on_delete=models.CASCADE, # If professional deleted, delete their services
         related_name='services' # professional.services.all()
+    )
+    # Add category field
+    category = models.ForeignKey(
+        ServiceCategory,
+        on_delete=models.SET_NULL,
+        related_name='services',
+        null=True,
+        blank=True
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -25,6 +51,7 @@ class Service(models.Model):
         ordering = ['professional', 'title']
 
 
+# ... existing Item model with slug and position fields added ...
 class Item(models.Model):
     """ An individual item or component within a Service. """
     service = models.ForeignKey(
@@ -33,20 +60,34 @@ class Item(models.Model):
         related_name='items' # service.items.all()
     )
     title = models.CharField(max_length=255)
+    # Add slug field
+    slug = models.SlugField(max_length=255, blank=True)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='item_images/', null=True, blank=True)
+    # Add position field
+    position = models.PositiveIntegerField(default=0, help_text="Order position in the service")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
         
     def __str__(self):
         return f"{self.title} (in Service: {self.service.title})"
 
+    # Add save method to generate slug
+    def save(self, *args, **kwargs):
+        # Generate slug if not provided
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = "Item"
         verbose_name_plural = "Items"
-        ordering = ['service', 'title']
+        ordering = ['service', 'position', 'title']
+        # Add unique_together constraint
+        unique_together = [['service', 'slug']]
 
 
+# ... existing Price model ...
 class Price(models.Model):
     """ Represents a price point for a specific Item. """
     class FrequencyChoices(models.TextChoices):
