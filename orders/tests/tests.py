@@ -35,12 +35,14 @@ class OrdersAppTests(TestCase):
         self.service = Service.objects.create(professional=self.professional, title="Service1", description="Desc", is_active=True)
         self.item = Item.objects.create(service=self.service, title="Item1", description="ItemDesc")
         self.price = Price.objects.create(item=self.item, amount=100, currency="USD", frequency="once", is_active=True)
+        # Create an order
+        self.order = Order.objects.create(customer=self.customer, professional=self.professional, status=Order.StatusChoices.PENDING)
         # Login customer
         self.client.login(username='customer', password='testpass')
 
     def test_select_items_view_get_authenticated_user(self):
         """Test GET request to select-items view for authenticated user."""
-        url = reverse('select-items')
+        url = reverse('orders:select_items', kwargs={'order_pk': self.order.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Select Items")
@@ -48,7 +50,7 @@ class OrdersAppTests(TestCase):
     def test_select_items_view_get_unauthenticated_user(self):
         """Test GET request to select-items view for unauthenticated user."""
         self.client.logout()
-        url = reverse('select-items')
+        url = reverse('orders:select_items', kwargs={'order_pk': self.order.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
@@ -56,14 +58,14 @@ class OrdersAppTests(TestCase):
     def test_basket_view_get_unauthenticated_user(self):
         """Test GET request to basket view for unauthenticated user."""
         self.client.logout()
-        url = reverse('basket') # Assuming 'basket' is the name from urls.py
+        url = reverse('orders:basket') # Assuming 'basket' is the name from urls.py
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
 
     def test_select_items_add_to_basket(self):
         """Test adding items to the basket via POST to select-items view."""
-        url = reverse('select-items')
+        url = reverse('orders:select_items', kwargs={'order_pk': self.order.pk})
         # Simulate selecting 2 of the item
         response = self.client.post(url, {
             f'item_{self.item.id}': 2
@@ -89,7 +91,7 @@ class OrdersAppTests(TestCase):
             price_currency_at_order=self.price.currency,
             price_frequency_at_order=self.price.frequency
         )
-        url = reverse('select-items')
+        url = reverse('orders:select_items', kwargs={'order_pk': self.order.pk})
         # Simulate setting quantity to 0 (removal)
         response = self.client.post(url, {
             f'item_{self.item.id}': 0
@@ -137,7 +139,7 @@ class OrdersAppTests(TestCase):
 
         # Test item presence in basket (which is part of select-items view context)
         # This part assumes the select-items view will display items from the current order
-        url = reverse('select-items')
+        url = reverse('orders:select_items', kwargs={'order_pk': self.order.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.item.title)
@@ -150,7 +152,7 @@ class OrdersAppTests(TestCase):
 
     def test_add_non_existent_item_to_basket(self):
         """Test attempting to add a non-existent item ID to the basket."""
-        url = reverse('select-items')
+        url = reverse('orders:select_items', kwargs={'order_pk': self.order.pk})
         initial_order_item_count = OrderItem.objects.count()
 
         # Try to add a non-existent item

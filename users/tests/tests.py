@@ -17,7 +17,7 @@ class UserViewsTest(TestCase):
 
     def test_register_view_get(self):
         """Test GET request to the registration page."""
-        response = self.client.get(reverse('register'))
+        response = self.client.get(reverse('users:register'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Register')
 
@@ -32,8 +32,8 @@ class UserViewsTest(TestCase):
             'password': 'testpass',
             'role': 'customer'
         }
-        response = self.client.post(reverse('register'), data)
-        self.assertRedirects(response, reverse('login'))
+        response = self.client.post(reverse('users:register'), data)
+        self.assertRedirects(response, reverse('users:login'))
         self.assertEqual(User.objects.count(), initial_user_count + 1)
         self.assertEqual(Customer.objects.count(), initial_customer_count + 1)
         self.assertTrue(User.objects.filter(email='john@example.com').exists())
@@ -49,7 +49,7 @@ class UserViewsTest(TestCase):
             'password': 'password123',
             'role': 'customer'
         }
-        response = self.client.post(reverse('register'), data)
+        response = self.client.post(reverse('users:register'), data)
         self.assertEqual(response.status_code, 200) # Re-renders form
         self.assertFormError(response.context['form'], 'email', 'This email is already registered. Please log in instead.') # Adjust error message if needed
         self.assertEqual(User.objects.count(), initial_user_count)
@@ -64,21 +64,21 @@ class UserViewsTest(TestCase):
             'password': 'password123',
             'role': 'customer'
         }
-        response = self.client.post(reverse('register'), data)
+        response = self.client.post(reverse('users:register'), data)
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response.context['form'], 'email', 'This field is required.')
         self.assertEqual(User.objects.count(), initial_user_count)
 
     def test_login_view_get(self):
         """Test GET request to the login page."""
-        response = self.client.get(reverse('login'))
+        response = self.client.get(reverse('users:login'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Login') # Or other text like "Sign in"
 
     def test_login_post_incorrect_credentials(self):
         """Test POST to login with incorrect credentials."""
         data = {'username': 'cust', 'password': 'wrongpassword'}
-        response = self.client.post(reverse('login'), data)
+        response = self.client.post(reverse('users:login'), data)
         self.assertEqual(response.status_code, 200) # Re-renders form
         self.assertContains(response, "Please enter a correct username and password.") # Django's default message
         self.assertNotIn('_auth_user_id', self.client.session)
@@ -86,17 +86,17 @@ class UserViewsTest(TestCase):
     def test_login_post_correct_credentials(self):
         """Test POST to login with correct credentials and successful redirect."""
         data = {'username': 'cust', 'password': 'pass'} # From setUp
-        response = self.client.post(reverse('login'), data, follow=True)
+        response = self.client.post(reverse('users:login'), data, follow=True)
         self.assertTrue(response.redirect_chain) # Check if any redirect happened
         # Check final landing page after redirect (e.g., user_management)
-        self.assertEqual(response.request['PATH_INFO'], reverse('user_management'))
+        self.assertEqual(response.request['PATH_INFO'], reverse('users:user_management'))
         self.assertIn('_auth_user_id', self.client.session)
         self.assertEqual(int(self.client.session['_auth_user_id']), self.customer_user.pk)
 
     def test_user_management_view_customer_no_link_shows_choice(self):
         """Test user_management view for customer without a professional link shows professional choice form."""
         self.client.login(username='cust', password='pass')
-        response = self.client.get(reverse('user_management'))
+        response = self.client.get(reverse('users:user_management'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Choose your Professional')
 
@@ -108,7 +108,7 @@ class UserViewsTest(TestCase):
             status=ProfessionalCustomerLink.StatusChoices.ACTIVE
         )
         self.client.login(username='cust', password='pass')
-        response = self.client.get(reverse('user_management'))
+        response = self.client.get(reverse('users:user_management'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Your Professional')
 
@@ -126,8 +126,8 @@ class UserViewsTest(TestCase):
         new_prof_user = User.objects.create_user(username='prof2', email='prof2@example.com', password='pass')
         new_prof = Professional.objects.create(user=new_prof_user, title='Pro2')
 
-        response = self.client.post(reverse('change_professional'), {'professional': new_prof.pk})
-        self.assertRedirects(response, reverse('user_management'))
+        response = self.client.post(reverse('users:change_professional'), {'professional': new_prof.pk})
+        self.assertRedirects(response, reverse('users:user_management'))
         link_exists = ProfessionalCustomerLink.objects.filter(customer=self.customer, professional=new_prof, status=ProfessionalCustomerLink.StatusChoices.ACTIVE).exists()
         self.assertTrue(link_exists)
         # Ensure old link (if any specific one was targeted) is no longer active or is deleted,
@@ -141,7 +141,7 @@ class UserViewsTest(TestCase):
         self.client.login(username='cust', password='pass')
         initial_link = ProfessionalCustomerLink.objects.filter(customer=self.customer).first()
 
-        response = self.client.post(reverse('change_professional'), {'professional': self.NON_EXISTENT_PROFESSIONAL_ID}) # Non-existent ID
+        response = self.client.post(reverse('users:change_professional'), {'professional': self.NON_EXISTENT_PROFESSIONAL_ID}) # Non-existent ID
 
         self.assertEqual(response.status_code, 200) # View should re-render with form errors
         self.assertFormError(response.context['form'], 'professional', 'Select a valid choice. That choice is not one of the available choices.')
@@ -152,7 +152,7 @@ class UserViewsTest(TestCase):
     def test_change_professional_get_unauthenticated(self):
         """Test GET request to change_professional view when unauthenticated."""
         self.client.logout()
-        url = reverse('change_professional')
+        url = reverse('users:change_professional')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
@@ -160,7 +160,7 @@ class UserViewsTest(TestCase):
     def test_change_professional_post_unauthenticated(self):
         """Test POST request to change_professional view when unauthenticated."""
         self.client.logout()
-        url = reverse('change_professional')
+        url = reverse('users:change_professional')
         response = self.client.post(url, {'professional': self.professional.pk})
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, f"{settings.LOGIN_URL}?next={url}")
