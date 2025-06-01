@@ -4,11 +4,15 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib import messages
 from django.utils.safestring import mark_safe
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils.html import escape
 from .models import Professional, Customer, ProfessionalCustomerLink
 from orders.models import Order, OrderItem
 from django import forms
 from django.urls import reverse
 from .forms import RegistrationForm, ProfessionalChoiceForm
+
 #simple registration page in your users app where a user can register as either a professional or a customer 
 # using their name and email, using Django's built-in User model and forms. 
 
@@ -20,26 +24,28 @@ def register(request):
             if User.objects.filter(email=form.cleaned_data['email']).exists():
                 login_url = reverse('login')
                 error_html = mark_safe(
-                    f'This email is already registered. Please <a href="{login_url}">log in instead</a>.'
+                    f'This email is already registered. Please <a href="{escape(login_url)}">log in instead</a>.'
                 )
                 form.add_error('email', 'This email is already registered. Please log in instead.')
                 messages.error(request, error_html)
             else:
-                user = User.objects.create_user(
-                    username=form.cleaned_data['email'],
-                    email=form.cleaned_data['email'],
-                    first_name=form.cleaned_data['first_name'],
-                    last_name=form.cleaned_data['last_name'],
-                    password=form.cleaned_data['password'],
-                )
-                role = form.cleaned_data['role']
-                if role == 'customer':
-                    Customer.objects.create(user=user)
-                else:
-                    Professional.objects.create(
-                        user=user,
-                        title=form.cleaned_data['title']
+                # Use transaction.atomic to ensure all database operations succeed or fail together
+                with transaction.atomic():
+                    user = User.objects.create_user(
+                        username=form.cleaned_data['email'],
+                        email=form.cleaned_data['email'],
+                        first_name=form.cleaned_data['first_name'],
+                        last_name=form.cleaned_data['last_name'],
+                        password=form.cleaned_data['password'],
                     )
+                    role = form.cleaned_data['role']
+                    if role == 'customer':
+                        Customer.objects.create(user=user)
+                    else:
+                        Professional.objects.create(
+                            user=user,
+                            title=form.cleaned_data['title']
+                        )
                 messages.success(request, 'Registration successful. You can now log in.')
                 return redirect('login')
     else:
@@ -66,18 +72,24 @@ def user_management_view(request):
         return render(request, 'users/management.html')
 
     # Check if customer already linked to a professional
-    link = ProfessionalCustomerLink.objects.filter(customer=customer, status=ProfessionalCustomerLink.StatusChoices.ACTIVE).first()
+    link = ProfessionalCustomerLink.objects.filter(
+        customer=customer, 
+        status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+    ).select_related('professional').first()
+    
     if not link:
         # Show professional selection form
         if request.method == 'POST':
             form = ProfessionalChoiceForm(request.POST)
             if form.is_valid():
                 professional = form.cleaned_data['professional']
-                ProfessionalCustomerLink.objects.create(
-                    professional=professional,
-                    customer=customer,
-                    status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-                )
+                # Use transaction.atomic to ensure database consistency
+                with transaction.atomic():
+                    ProfessionalCustomerLink.objects.create(
+                        professional=professional,
+                        customer=customer,
+                        status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                    )
                 return redirect('select-items')
         else:
             form = ProfessionalChoiceForm()
@@ -85,7 +97,6 @@ def user_management_view(request):
 
     # If already linked, show customer dashboard
     return render(request, 'users/customer_dashboard.html', {'professional': link.professional})
-
 
 @login_required
 def profile_view(request):
@@ -100,23 +111,25 @@ def change_professional(request):
     except Customer.DoesNotExist:
         return redirect('user_management')
 
-    # Deactivate or delete the current link
-    ProfessionalCustomerLink.objects.filter(
-        customer=customer,
-        status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-    ).delete()  # Or update status if you want to keep history
+    # Use transaction.atomic for database operations
+    with transaction.atomic():
+        # Deactivate or delete the current link
+        ProfessionalCustomerLink.objects.filter(
+            customer=customer,
+            status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+        ).delete()  # Or update status if you want to keep history
 
-    # Show the professional selection form
-    if request.method == 'POST':
-        form = ProfessionalChoiceForm(request.POST)
-        if form.is_valid():
-            professional = form.cleaned_data['professional']
-            ProfessionalCustomerLink.objects.create(
-                professional=professional,
-                customer=customer,
-                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-            )
-            return redirect('user_management')
-    else:
-        form = ProfessionalChoiceForm()
+        # Show the professional selection form
+        if request.method == 'POST':
+            form = ProfessionalChoiceForm(request.POST)
+            if form.is_valid():
+                professional = form.cleaned_data['professional']
+                ProfessionalCustomerLink.objects.create(
+                    professional=professional,
+                    customer=customer,
+                    status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                )
+                return redirect('user_management')
+    
+    form = ProfessionalChoiceForm()
     return render(request, 'users/customer_choose_professional.html', {'form': form})
