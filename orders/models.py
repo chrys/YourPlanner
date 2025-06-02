@@ -43,7 +43,7 @@ class Order(TimeStampedModel):
     total_amount = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
-    currency = models.CharField(max_length=3, default='EUR') # Should match item currencies
+    currency = models.CharField(max_length=3, default='EUR', blank=True) # Should match item currencies
     notes = models.TextField(blank=True, null=True, help_text="Additional notes about this order")
     # created_at and updated_at are inherited from TimeStampedModel
 
@@ -128,7 +128,7 @@ class OrderItem(TimeStampedModel):
     # Store the price details AT THE TIME of order for historical accuracy
     quantity = models.PositiveIntegerField(default=1)
     price_amount_at_order = models.DecimalField(max_digits=10, decimal_places=2)
-    price_currency_at_order = models.CharField(max_length=3)
+    price_currency_at_order = models.CharField(max_length=3, blank=True, default='EUR')
     price_frequency_at_order = models.CharField(max_length=10) # Store frequency from Price model
     discount_amount = models.DecimalField(
         max_digits=10, 

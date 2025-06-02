@@ -184,7 +184,7 @@ class Price(TimeStampedModel):
         related_name='prices' # item.prices.all()
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    currency = models.CharField(max_length=3, default='EUR') # Consider choices or separate model
+    currency = models.CharField(max_length=3, default='EUR', blank=True) # Consider choices or separate model
     frequency = models.CharField(
         max_length=10,
         choices=FrequencyChoices.choices,
