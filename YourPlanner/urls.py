@@ -12,7 +12,7 @@ urlpatterns = [
     path('services/', include('services.urls')),
     path('orders/', include('orders.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('', include('core.urls')),
+    path('', include('core.urls', namespace='core')),
 ]
 
 if settings.DEBUG:
