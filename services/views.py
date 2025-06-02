@@ -56,21 +56,21 @@ class UserOwnsParentServiceMixin(UserPassesTestMixin):
     of an Item or Price. Requires `self.kwargs['service_pk']` to be present in the URL.
     It also fetches and stores `self.service` on the view.
     """
-    def test_func(self):
+    def dispatch(self, request, *args, **kwargs):
         service_pk = self.kwargs.get('service_pk')
         if not service_pk:
-            # This should not happen if URL patterns are correct
             raise Http404("Service PK not found in URL.")
-        
         try:
             professional = self.request.user.professional_profile
-            # Fetch the service and store it on the view for later use
             self.service = get_object_or_404(Service, pk=service_pk, professional=professional)
-            return True # Ownership is confirmed by get_object_or_404
         except Professional.DoesNotExist:
-            return False # User is not a professional
-        except Http404: # Service not found or not owned by this professional
-            return False
+            self.service = None
+        except Http404:
+            self.service = None
+        return super().dispatch(request, *args, **kwargs)
+    
+    def test_func(self):
+        return self.service is not None
 
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to access items for this service.")
@@ -84,7 +84,7 @@ class UserOwnsGrandparentServiceViaItemMixin(UserPassesTestMixin):
     to be present in the URL. It also fetches and stores `self.service` and `self.item`
     on the view.
     """
-    def test_func(self):
+    def dispatch(self, request, *args, **kwargs):
         service_pk = self.kwargs.get('service_pk')
         item_pk = self.kwargs.get('item_pk')
 
@@ -97,16 +97,21 @@ class UserOwnsGrandparentServiceViaItemMixin(UserPassesTestMixin):
             self.service = get_object_or_404(Service, pk=service_pk, professional=professional)
             # Fetch the item and ensure it belongs to the fetched service
             self.item = get_object_or_404(Item, pk=item_pk, service=self.service)
-            return True # Ownership and relationship confirmed
         except Professional.DoesNotExist:
-            return False # User is not a professional
-        except Http404: # Service/Item not found, or item doesn't belong to service, or service not owned.
-            return False
+            self.service = None
+            self.item = None
+        except Http404:
+            self.service = None
+            self.item = None
+
+        # Always return the result of super().dispatch
+        return super().dispatch(request, *args, **kwargs)
+            
+    def test_func(self):
+        return self.service is not None and self.item is not None
 
     def handle_no_permission(self):
         messages.error(self.request, "You do not have permission to access prices for this item/service.")
-        # Redirect to service list or perhaps item detail if item_pk was valid for a different service
-        # For safety, redirect to service_list
         return redirect(reverse_lazy('services:service_list'))
 
 
@@ -240,10 +245,6 @@ class ItemCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsPare
     form_class = ItemForm
     template_name = 'services/item_form.html'
     # success_url is dynamically set in get_success_url
-
-    def dispatch(self, request, *args, **kwargs):
-        # Ensure UserOwnsParentServiceMixin's test_func is called to set self.service
-        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         # self.service is set by UserOwnsParentServiceMixin's test_func via dispatch
