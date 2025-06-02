@@ -241,13 +241,6 @@ class ItemCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsPare
     template_name = 'services/item_form.html'
     # success_url is dynamically set in get_success_url
 
-    def dispatch(self, request, *args, **kwargs):
-        # UserOwnsParentServiceMixin's test_func will run and set self.service
-        # or handle permission denial.
-        # We need to call super().dispatch AFTER test_func has potentially set self.service
-        # or redirected. UserPassesTestMixin handles this by calling test_func in its dispatch.
-        return super().dispatch(request, *args, **kwargs)
-
     def form_valid(self, form):
         # self.service is set by UserOwnsParentServiceMixin's test_func via dispatch
         form.instance.service = self.service
@@ -270,10 +263,6 @@ class ItemListView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsParent
     template_name = 'services/item_list.html' # Or integrate into service_detail
     context_object_name = 'items'
 
-    def dispatch(self, request, *args, **kwargs):
-        # UserOwnsParentServiceMixin's test_func will run and set self.service
-        return super().dispatch(request, *args, **kwargs)
-
     def get_queryset(self):
         # self.service is set by UserOwnsParentServiceMixin
         return Item.objects.filter(service=self.service).order_by('-created_at')
@@ -290,11 +279,6 @@ class ItemDetailView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsPare
     context_object_name = 'item'
     # pk_url_kwarg = 'item_pk' # if your URL uses 'item_pk' instead of 'pk'
 
-    def dispatch(self, request, *args, **kwargs):
-        # UserOwnsParentServiceMixin's test_func will run and set self.service
-        # It uses 'service_pk' from URL. The DetailView itself uses 'pk' or 'item_pk' for the item.
-        return super().dispatch(request, *args, **kwargs)
-    
     def get_queryset(self):
         # Filter items by the service obtained in UserOwnsParentServiceMixin
         # This ensures the item belongs to the specified service and thus the professional
@@ -315,9 +299,6 @@ class ItemUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsPare
     form_class = ItemForm
     template_name = 'services/item_form.html'
     # pk_url_kwarg = 'item_pk'
-
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         return Item.objects.filter(service=self.service, pk=self.kwargs.get('pk'))
@@ -340,9 +321,6 @@ class ItemDeleteView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsPare
     template_name = 'services/item_confirm_delete.html'
     context_object_name = 'item'
     # pk_url_kwarg = 'item_pk'
-
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         return Item.objects.filter(service=self.service, pk=self.kwargs.get('pk'))
