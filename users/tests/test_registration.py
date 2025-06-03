@@ -48,8 +48,8 @@ class UserRegistrationTests(TestCase):
         # Submit registration form
         response = self.client.post(reverse('users:register'), data)
         
-        # Verify redirect to login page
-        self.assertRedirects(response, reverse('login'))
+        # Verify redirect to user management page
+        self.assertRedirects(response, reverse('users:user_management'))
         
         # Verify user and customer profile creation
         self.assertEqual(User.objects.count(), initial_user_count + 1)
@@ -86,8 +86,8 @@ class UserRegistrationTests(TestCase):
         # Submit registration form
         response = self.client.post(reverse('users:register'), data)
         
-        # Verify redirect to login page
-        self.assertRedirects(response, reverse('login'))
+        # Verify redirect to user management page
+        self.assertRedirects(response, reverse('users:user_management'))
         
         # Verify user and professional profile creation
         self.assertEqual(User.objects.count(), initial_user_count + 1)
