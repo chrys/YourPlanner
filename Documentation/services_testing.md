@@ -203,8 +203,8 @@
 **Post-conditions:** None.
 
 **Case ID:** services_TC_M_I_012
-**Title:** Item with blank description and SKU
-**Description:** Verify an `Item` can be created with blank `description` and `sku`.
+**Title:** Item with blank description 
+**Description:** Verify an `Item` can be created with blank `description` 
 **Pre-conditions:** A `Service` instance exists.
 **Dependencies:** `Service` model.
 **Steps:**
@@ -258,46 +258,6 @@
 - A `ValidationError` is raised with a message like 'Price amount cannot be negative'.
 **Post-conditions:** The instance is not in a savable state if `clean()` is enforced.
 
-
-**Case ID:** services_TC_M_P_007
-**Title:** Price string representation
-**Description:** Verify the `__str__` method of `Price` returns the correct format.
-**Pre-conditions:** An `Item` (e.g., title "Test Item") and a `Price` (e.g., 100 USD, Monthly) for it exist.
-**Dependencies:** `Item` model.
-**Steps:**
-1. Retrieve the `Price` instance.
-2. Call `str()` on the instance.
-**Expected Result:**
-- The string representation is `"{self.amount} {self.currency} ({self.frequency}) for {self.item.title}"`, e.g., "100.00 USD (MONTHLY) for Test Item".
-**Post-conditions:** None.
-
-**Case ID:** services_TC_M_P_008
-**Title:** Price `active` manager
-**Description:** Verify the `active` manager returns only prices where `is_active=True`.
-**Pre-conditions:**
-- Multiple `Price` instances exist for an item, some `is_active=True`, some `is_active=False`.
-**Dependencies:** `Item` model.
-**Steps:**
-1. Query `Price.active.all()`.
-**Expected Result:**
-- Only `Price` instances with `is_active=True` are returned.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_M_P_009
-**Title:** `is_valid_now` method - currently valid price
-**Description:** Verify `is_valid_now()` returns `True` for an active price within its validity period or with no dates.
-**Pre-conditions:** An `Item` and `Price` exist. Price `is_active=True`.
-    - Scenario 1: `valid_from` is past, `valid_until` is future.
-    - Scenario 2: `valid_from` is past, `valid_until` is None.
-    - Scenario 3: `valid_from` is None, `valid_until` is future.
-    - Scenario 4: `valid_from` is None, `valid_until` is None.
-**Dependencies:** `Item` model.
-**Steps:**
-1. For each scenario, set dates accordingly.
-2. Call `is_valid_now()` on the price instance.
-**Expected Result:**
-- The method returns `True` for all scenarios.
-**Post-conditions:** None.
 
 
 **Case ID:** services_TC_M_P_015
@@ -381,66 +341,6 @@
 - An error message is displayed (e.g., "You do not have permission...").
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_MIX_005
-**Title:** `UserOwnsParentServiceMixin` - Access granted for owner of parent Service (for Item views)
-**Description:** Verify professional who owns the parent Service can access Item views.
-**Pre-conditions:**
-    - User (P1) is logged in and is a `Professional`.
-    - `Service` S1 exists, `S1.professional == P1`.
-    - `Item` I1 exists, `I1.service == S1`.
-    - URL requires `service_pk` for S1.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:** (Tested implicitly by accessing e.g. `ItemCreateView` for S1 as P1)
-1. P1 attempts to access an Item view related to S1.
-**Expected Result:**
-- View is accessible. `self.service` is set to S1 in the view.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_MIX_006
-**Title:** `UserOwnsParentServiceMixin` - Access denied for non-owner of parent Service
-**Description:** Verify professional who does not own the parent Service is denied access to Item views.
-**Pre-conditions:**
-    - User (P1) is logged in, is a `Professional`.
-    - `Service` S2 exists, `S2.professional` is another professional (P2).
-    - URL requires `service_pk` for S2.
-**Dependencies:** `users.Professional`, `Service` model.
-**Steps:** (Tested implicitly)
-1. P1 attempts to access an Item view related to S2.
-**Expected Result:**
-- Redirected, error message displayed. `self.service` might be None or raise Http404 internally first.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_MIX_007
-**Title:** `UserOwnsGrandparentServiceViaItemMixin` - Access granted (for Price views)
-**Description:** Verify professional owning grandparent Service (via Item) can access Price views.
-**Pre-conditions:**
-    - User (P1) is logged in, `Professional`.
-    - `Service` S1 exists, `S1.professional == P1`.
-    - `Item` I1 exists, `I1.service == S1`.
-    - `Price` Prc1 exists, `Prc1.item == I1`.
-    - URL requires `service_pk` for S1 and `item_pk` for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:** (Tested implicitly, e.g. `PriceCreateView` for I1 under S1 as P1)
-1. P1 attempts to access a Price view related to I1 (which is under S1).
-**Expected Result:**
-- View accessible. `self.service` is S1, `self.item` is I1.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_MIX_008
-**Title:** `UserOwnsGrandparentServiceViaItemMixin` - Access denied for non-owner
-**Description:** Verify access denied if professional does not own the grandparent Service.
-**Pre-conditions:**
-    - User (P1) is logged in, `Professional`.
-    - `Service` S2 by another professional (P2). `Item` I2 under S2.
-    - URL for Price view under I2, S2.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:** (Tested implicitly)
-1. P1 attempts to access Price view related to I2.
-**Expected Result:**
-- Redirected, error message.
-**Post-conditions:** None.
-
----
 
 ### Service Views
 
@@ -523,84 +423,7 @@
 - Redirected to login page (HTTP 302).
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_SLV_002
-**Title:** `ServiceListView` GET request - Logged in, professional
-**Description:** Verify professional sees only their services.
-**Pre-conditions:**
-    - User (P1) is logged in, has `Professional` profile.
-    - P1 has created services S1, S2.
-    - Another professional (P2) has created service S3.
-**Dependencies:** `users.Professional`, `Service` models.
-**Steps:**
-1. P1 GETs the `services:service_list` URL.
-**Expected Result:**
-- HTTP 200 OK.
-- Template `services/service_list.html` is rendered.
-- Context `services` contains S1, S2, ordered by `-created_at`.
-- Context `services` does NOT contain S3.
-- Context `professional` is P1's profile.
-- Context `page_title` is "My Services".
-**Post-conditions:** None.
 
-**Case ID:** services_TC_V_SLV_003
-**Title:** `ServiceListView` GET request - Logged in, no professional profile
-**Description:** Verify user with no professional profile sees an empty list or appropriate message.
-**Pre-conditions:** User is logged in but does not have a `Professional` profile.
-**Dependencies:** `Service` model.
-**Steps:**
-1. GET the `services:service_list` URL.
-**Expected Result:**
-- HTTP 200 OK.
-- Template `services/service_list.html` is rendered.
-- Context `services` is empty (`Service.objects.none()`).
-- Context `professional` is None.
-- An appropriate message might be shown in the template (e.g., "You have not created any services yet.").
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_SLV_004
-**Title:** `ServiceListView` - No services created by professional
-**Description:** Verify page renders correctly when professional has no services.
-**Pre-conditions:** User (P1) is logged in, has `Professional` profile, but has not created any services.
-**Dependencies:** `users.Professional` model.
-**Steps:**
-1. P1 GETs the `services:service_list` URL.
-**Expected Result:**
-- HTTP 200 OK.
-- Template `services/service_list.html` is rendered.
-- Context `services` is empty.
-- Template shows a message like "You have not created any services yet." and a link to create one.
-**Post-conditions:** None.
-
-#### View: `ServiceDetailView` (`services:service_detail`, pk=service.pk)
-
-**Case ID:** services_TC_V_SDV_001
-**Title:** Access `ServiceDetailView` - Not logged in
-**Description:** Verify unauthenticated users are redirected to login.
-**Pre-conditions:** A `Service` (s1) exists. User is not logged in.
-**Dependencies:** `Service` model.
-**Steps:**
-1. Attempt to GET `services:service_detail` for s1.
-**Expected Result:**
-- Redirected to login page (HTTP 302).
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_SDV_002
-**Title:** `ServiceDetailView` GET - Owner viewing their service
-**Description:** Professional views detail of their own service (active or inactive).
-**Pre-conditions:**
-    - User (P1) is logged in, `Professional` profile.
-    - Service S1 exists, `S1.professional == P1`. S1 can be active or inactive.
-**Dependencies:** `users.Professional`, `Service` model.
-**Steps:**
-1. P1 GETs `services:service_detail` for S1.
-**Expected Result:**
-- HTTP 200 OK.
-- Template `services/service_detail.html` is rendered.
-- Context `service` is S1.
-- Context `page_title` is S1.title.
-- Context `user_owns_service` is True.
-- Associated items and prices are displayed (if any).
-**Post-conditions:** None.
 
 **Case ID:** services_TC_V_SDV_003
 **Title:** `ServiceDetailView` GET - Non-owner viewing (current: denied)
@@ -629,17 +452,6 @@
 - HTTP 404 Not Found.
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_SDV_005
-**Title:** `ServiceDetailView` - Service not found
-**Description:** Verify HTTP 404 if service with given PK does not exist.
-**Pre-conditions:** User is logged in and is a professional.
-**Dependencies:** None.
-**Steps:**
-1. GET `services:service_detail` with a non-existent PK.
-**Expected Result:**
-- HTTP 404 Not Found.
-**Post-conditions:** None.
-
 #### View: `ServiceUpdateView` (`services:service_update`, pk=service.pk)
 
 **Case ID:** services_TC_V_SUV_001
@@ -664,18 +476,6 @@
 - Redirected (e.g. to `users:profile_choice`), error message.
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_SUV_003
-**Title:** Access `ServiceUpdateView` - Logged in, professional, but not owner
-**Description:** Redirected by `ProfessionalOwnsObjectMixin`.
-**Pre-conditions:**
-    - User (P1) logged in, `Professional`.
-    - Service S2 by another professional (P2) exists.
-**Dependencies:** `users.Professional`, `Service` models.
-**Steps:**
-1. P1 attempts GET on `services:service_update` for S2.
-**Expected Result:**
-- Redirected (e.g. to `services:service_list`), error message.
-**Post-conditions:** None.
 
 **Case ID:** services_TC_V_SUV_004
 **Title:** `ServiceUpdateView` GET request - Owner
@@ -731,27 +531,6 @@
 - Redirect to login.
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_SDV_D_002
-**Title:** Access `ServiceDeleteView` - Logged in, not professional
-**Description:** Redirected by `ProfessionalRequiredMixin`.
-**Pre-conditions:** Service S1 exists. User logged in, no professional profile.
-**Dependencies:** `Service` model.
-**Steps:**
-1. Attempt GET on `services:service_delete` for S1.
-**Expected Result:**
-- Redirected, error message.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_SDV_D_003
-**Title:** Access `ServiceDeleteView` - Logged in, professional, but not owner
-**Description:** Redirected by `ProfessionalOwnsObjectMixin`.
-**Pre-conditions:** User (P1) logged in, `Professional`. Service S2 by P2 exists.
-**Dependencies:** `users.Professional`, `Service` models.
-**Steps:**
-1. P1 attempts GET on `services:service_delete` for S2.
-**Expected Result:**
-- Redirected, error message.
-**Post-conditions:** None.
 
 **Case ID:** services_TC_V_SDV_D_004
 **Title:** `ServiceDeleteView` GET request - Owner
@@ -808,16 +587,7 @@
 - Redirect to login.
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_ICV_002
-**Title:** Access `ItemCreateView` - Logged in, not professional
-**Description:** Redirected by `ProfessionalRequiredMixin`.
-**Pre-conditions:** Service S1 exists. User logged in, no professional profile.
-**Dependencies:** `Service` model.
-**Steps:**
-1. Attempt GET on `services:item_create` for S1.
-**Expected Result:**
-- Redirected (e.g. to `users:profile_choice`), error message.
-**Post-conditions:** None.
+
 
 **Case ID:** services_TC_V_ICV_003
 **Title:** Access `ItemCreateView` - Logged in, professional, but not owner of parent Service
@@ -847,33 +617,6 @@
 - Context `page_title` is "Add Item to {S1.title}".
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_ICV_005
-**Title:** `ItemCreateView` POST request - Valid data by parent Service owner
-**Description:** Owner creates a new item for their service with valid data.
-**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 POSTs valid data (e.g., `title`, `description`, optional `image`) to `services:item_create` for S1.
-**Expected Result:**
-- A new `Item` object is created, associated with S1.
-- Redirect to `services:service_detail` for S1 (HTTP 302).
-- Success message displayed (e.g., "Item '{item.title}' created for service '{S1.title}'.").
-**Post-conditions:** New `Item` record exists.
-
-**Case ID:** services_TC_V_ICV_006
-**Title:** `ItemCreateView` POST request - Invalid data by parent Service owner
-**Description:** Form re-renders with errors for invalid data.
-**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
-**Dependencies:** `users.Professional`, `Service` models.
-**Steps:**
-1. P1 POSTs invalid data (e.g., title="") to `services:item_create` for S1.
-**Expected Result:**
-- HTTP 200 OK (form re-rendered).
-- Template `services/item_form.html` rendered.
-- Form in context contains errors.
-- Context `service` is S1.
-- No new `Item` object is created.
-**Post-conditions:** No new `Item` record.
 
 **Case ID:** services_TC_V_ICV_007
 **Title:** `ItemCreateView` GET - Parent service not found
@@ -884,132 +627,6 @@
 1. GET `services:item_create` with a non-existent `service_pk`.
 **Expected Result:**
 - HTTP 404 Not Found (due to `get_object_or_404` in `UserOwnsParentServiceMixin`).
-**Post-conditions:** None.
-
-#### View: `ItemListView` (`services:item_list`, service_pk=service.pk)
-*(Note: This view might be integrated into `ServiceDetailView` in practice. If standalone, these tests apply.)*
-
-**Case ID:** services_TC_V_ILV_001
-**Title:** Access `ItemListView` - Not logged in
-**Description:** Verify unauthenticated users are redirected.
-**Pre-conditions:** Service S1 exists. User not logged in.
-**Dependencies:** `Service` model.
-**Steps:**
-1. Attempt GET on `services:item_list` for S1.
-**Expected Result:**
-- Redirect to login.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_ILV_002
-**Title:** `ItemListView` GET - Owner of parent service
-**Description:** Professional views list of items for their own service.
-**Pre-conditions:**
-    - User (P1) is logged in, `Professional`.
-    - Service S1 exists, `S1.professional == P1`.
-    - Items I1, I2 exist, associated with S1.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 GETs `services:item_list` for S1.
-**Expected Result:**
-- HTTP 200 OK.
-- Template `services/item_list.html` is rendered.
-- Context `items` contains I1, I2 (ordered by `-created_at`).
-- Context `service` is S1.
-- Context `page_title` is "Items for {S1.title}".
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_ILV_003
-**Title:** `ItemListView` GET - Non-owner of parent service
-**Description:** Redirected by `UserOwnsParentServiceMixin`.
-**Pre-conditions:** User (P1) logged in, `Professional`. Service S2 by P2 exists.
-**Dependencies:** `users.Professional`, `Service` models.
-**Steps:**
-1. P1 attempts GET on `services:item_list` for S2.
-**Expected Result:**
-- Redirected, error message.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_ILV_004
-**Title:** `ItemListView` - Service has no items
-**Description:** Page renders correctly if parent service has no items.
-**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (owned by P1) exists but has no items.
-**Dependencies:** `users.Professional`, `Service` model.
-**Steps:**
-1. P1 GETs `services:item_list` for S1.
-**Expected Result:**
-- HTTP 200 OK.
-- Context `items` is empty.
-- Template shows a "no items" message.
-**Post-conditions:** None.
-
-#### View: `ItemDetailView` (`services:item_detail`, service_pk=service.pk, pk=item.pk)
-
-**Case ID:** services_TC_V_IDV_001
-**Title:** Access `ItemDetailView` - Not logged in
-**Description:** Verify unauthenticated users are redirected.
-**Pre-conditions:** Service S1, Item I1 (in S1) exist. User not logged in.
-**Dependencies:** `Service`, `Item` models.
-**Steps:**
-1. Attempt GET on `services:item_detail` for I1 under S1.
-**Expected Result:**
-- Redirect to login.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_IDV_002
-**Title:** `ItemDetailView` GET - Owner of parent service
-**Description:** Professional views detail of an item within their own service.
-**Pre-conditions:**
-    - User (P1) is logged in, `Professional`.
-    - Service S1 exists, `S1.professional == P1`.
-    - Item I1 exists, `I1.service == S1`.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 GETs `services:item_detail` for I1 under S1.
-**Expected Result:**
-- HTTP 200 OK.
-- Template `services/item_detail.html` rendered.
-- Context `item` is I1.
-- Context `service` is S1.
-- Context `page_title` is "Item: {I1.title}".
-- Context `user_owns_service` is True.
-- Associated prices for I1 are displayed.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_IDV_003
-**Title:** `ItemDetailView` GET - Non-owner of parent service
-**Description:** Redirected by `UserOwnsParentServiceMixin`.
-**Pre-conditions:**
-    - User (P1) logged in, `Professional`.
-    - Service S2 by P2 exists. Item I2 in S2.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 attempts GET on `services:item_detail` for I2 under S2.
-**Expected Result:**
-- HTTP 404 (or redirect with error if mixin handles it differently before `get_queryset`). `UserOwnsParentServiceMixin`'s `dispatch` will make `self.service` None or raise Http404, then `get_queryset` will fail to find the item.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_IDV_004
-**Title:** `ItemDetailView` GET - Item not found in specified service
-**Description:** HTTP 404 if item PK exists but not under service_pk.
-**Pre-conditions:**
-    - User (P1) logged in, `Professional`. Owns Service S1.
-    - Item I1 exists in S1. Item I2 exists in Service S2 (owned by P2).
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 attempts GET `services:item_detail` with `service_pk=S1.pk` and `pk=I2.pk`.
-**Expected Result:**
-- HTTP 404 Not Found (because `get_queryset` filters by `service=self.service`).
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_IDV_005
-**Title:** `ItemDetailView` GET - Item PK does not exist at all
-**Description:** HTTP 404 if item PK is invalid.
-**Pre-conditions:** User (P1) logged in, `Professional`. Owns Service S1.
-**Dependencies:** `users.Professional`, `Service` model.
-**Steps:**
-1. P1 attempts GET `services:item_detail` for S1 with a non-existent item PK.
-**Expected Result:**
-- HTTP 404 Not Found.
 **Post-conditions:** None.
 
 #### View: `ItemUpdateView` (`services:item_update`, service_pk=service.pk, pk=item.pk)
@@ -1090,17 +707,6 @@
 - Redirect to login.
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_IDV_D_002
-**Title:** Access `ItemDeleteView` - Non-owner of parent Service
-**Description:** Redirected by `UserOwnsParentServiceMixin`.
-**Pre-conditions:** User (P1) logged in, Professional. Service S2 by P2, Item I2 in S2.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 attempts GET on `services:item_delete` for I2 under S2.
-**Expected Result:**
-- Redirected/HTTP 404.
-**Post-conditions:** None.
-
 **Case ID:** services_TC_V_IDV_D_003
 **Title:** `ItemDeleteView` GET request - Owner
 **Description:** Owner accesses delete confirmation page for item.
@@ -1145,31 +751,6 @@
 - Redirect to login.
 **Post-conditions:** None.
 
-**Case ID:** services_TC_V_PCV_002
-**Title:** Access `PriceCreateView` - Non-owner of grandparent Service
-**Description:** Redirected by `UserOwnsGrandparentServiceViaItemMixin`.
-**Pre-conditions:** User (P1) logged in, `Professional`. Service S2 by P2, Item I2 in S2.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 attempts GET on `services:price_create` for I2 under S2.
-**Expected Result:**
-- Redirected/HTTP 404.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PCV_003
-**Title:** `PriceCreateView` GET request - Owner of grandparent Service
-**Description:** Owner accesses price creation form for their item.
-**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 GETs `services:price_create` for I1 under S1.
-**Expected Result:**
-- HTTP 200 OK.
-- Template `services/price_form.html` rendered.
-- Unbound `PriceForm` in context.
-- Context `service` is S1, `item` is I1.
-- Context `page_title` is "Add Price to {I1.title} ({S1.title})".
-**Post-conditions:** None.
 
 **Case ID:** services_TC_V_PCV_004
 **Title:** `PriceCreateView` POST - Valid data by owner
@@ -1195,216 +776,4 @@
 - HTTP 200 OK. Form in context has errors.
 - No new `Price` created.
 **Post-conditions:** No new `Price` record.
-
-**Case ID:** services_TC_V_PCV_006
-**Title:** `PriceCreateView` GET - Parent Item or Service not found
-**Description:** HTTP 404 if `service_pk` or `item_pk` in URL is invalid/mismatched.
-**Pre-conditions:** User logged in, professional.
-**Dependencies:** None.
-**Steps:**
-1. GET `services:price_create` with a non-existent `service_pk` or `item_pk`.
-**Expected Result:**
-- HTTP 404 Not Found (due to `get_object_or_404` in `UserOwnsGrandparentServiceViaItemMixin`).
-**Post-conditions:** None.
-
-#### View: `PriceListView` (`services:price_list`, service_pk=service.pk, item_pk=item.pk)
-*(Note: This view might be integrated into `ItemDetailView`. If standalone, these tests apply.)*
-
-**Case ID:** services_TC_V_PLV_001
-**Title:** Access `PriceListView` - Not logged in
-**Description:** Redirect.
-**Pre-conditions:** Service S1, Item I1 exist. User not logged in.
-**Dependencies:** `Service`, `Item` models.
-**Steps:**
-1. Attempt GET `services:price_list` for I1 under S1.
-**Expected Result:**
-- Redirect to login.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PLV_002
-**Title:** `PriceListView` GET - Owner of grandparent service
-**Description:** Professional views list of prices for an item in their service.
-**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1. Prices Prc1, Prc2 for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 GETs `services:price_list` for I1 under S1.
-**Expected Result:**
-- HTTP 200 OK. Template `services/price_list.html` rendered.
-- Context `prices` contains Prc1, Prc2 (ordered by `-created_at`).
-- Context `service` is S1, `item` is I1.
-- Context `page_title` is "Prices for {I1.title}".
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PLV_003
-**Title:** `PriceListView` GET - Non-owner of grandparent service
-**Description:** Redirected.
-**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2.
-**Dependencies:** `users.Professional`, `Service`, `Item` models.
-**Steps:**
-1. P1 attempts GET `services:price_list` for I2 under S2.
-**Expected Result:**
-- Redirected/HTTP 404.
-**Post-conditions:** None.
-
-#### View: `PriceDetailView` (`services:price_detail`, service_pk=service.pk, item_pk=item.pk, pk=price.pk)
-
-**Case ID:** services_TC_V_PDV_001
-**Title:** Access `PriceDetailView` - Not logged in
-**Description:** Redirect.
-**Pre-conditions:** S1, I1 in S1, Price Prc1 for I1 exist. User not logged in.
-**Dependencies:** `Service`, `Item`, `Price` models.
-**Steps:**
-1. Attempt GET `services:price_detail` for Prc1.
-**Expected Result:**
-- Redirect to login.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PDV_002
-**Title:** `PriceDetailView` GET - Owner of grandparent service
-**Description:** Owner views price details.
-**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 GETs `services:price_detail` for Prc1 under I1, S1.
-**Expected Result:**
-- HTTP 200 OK. Template `services/price_detail.html` rendered.
-- Context `price` is Prc1, `item` is I1, `service` is S1.
-- Context `page_title` is "Price Details for {I1.title}".
-- Context `user_owns_service` is True.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PDV_003
-**Title:** `PriceDetailView` GET - Non-owner of grandparent service
-**Description:** Redirected/HTTP 404.
-**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2, Prc2 for I2.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 attempts GET `services:price_detail` for Prc2.
-**Expected Result:**
-- Redirected/HTTP 404.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PDV_004
-**Title:** `PriceDetailView` GET - Price not found for specified item/service
-**Description:** HTTP 404 if price PK exists but not under specified item_pk/service_pk.
-**Pre-conditions:** User (P1) logged in, `Professional`. Owns S1, I1. Price PrcX exists for another item/service.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 attempts GET `services:price_detail` with `service_pk=S1.pk`, `item_pk=I1.pk`, but `pk=PrcX.pk`.
-**Expected Result:**
-- HTTP 404.
-**Post-conditions:** None.
-
-#### View: `PriceUpdateView` (`services:price_update`, service_pk=service.pk, item_pk=item.pk, pk=price.pk)
-
-**Case ID:** services_TC_V_PUV_001
-**Title:** Access `PriceUpdateView` - Not logged in
-**Description:** Redirect.
-**Pre-conditions:** S1, I1, Prc1 exist. User not logged in.
-**Dependencies:** `Service`, `Item`, `Price` models.
-**Steps:**
-1. Attempt GET `services:price_update` for Prc1.
-**Expected Result:**
-- Redirect to login.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PUV_002
-**Title:** Access `PriceUpdateView` - Non-owner of grandparent service
-**Description:** Redirected/HTTP 404.
-**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2, Prc2 for I2.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 attempts GET `services:price_update` for Prc2.
-**Expected Result:**
-- Redirected/HTTP 404.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PUV_003
-**Title:** `PriceUpdateView` GET - Owner
-**Description:** Owner accesses price update form.
-**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 GETs `services:price_update` for Prc1.
-**Expected Result:**
-- HTTP 200 OK. Template `services/price_form.html` rendered.
-- Form bound with Prc1's data.
-- Context `service` is S1, `item` is I1.
-- Context `page_title` is "Edit Price for {I1.title}".
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PUV_004
-**Title:** `PriceUpdateView` POST - Valid data by owner
-**Description:** Owner updates price with valid data.
-**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 POSTs valid updated price data to `services:price_update` for Prc1.
-**Expected Result:**
-- Prc1 is updated.
-- Redirect to `services:price_detail` for Prc1.
-- Success message.
-**Post-conditions:** Prc1 record modified.
-
-**Case ID:** services_TC_V_PUV_005
-**Title:** `PriceUpdateView` POST - Invalid data by owner
-**Description:** Form re-renders with errors.
-**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 POSTs invalid data (e.g. amount="text") to `services:price_update` for Prc1.
-**Expected Result:**
-- HTTP 200 OK. Form has errors.
-- Prc1 not updated.
-**Post-conditions:** Prc1 unchanged.
-
-#### View: `PriceDeleteView` (`services:price_delete`, service_pk=service.pk, item_pk=item.pk, pk=price.pk)
-
-**Case ID:** services_TC_V_PDV_D_001
-**Title:** Access `PriceDeleteView` - Not logged in
-**Description:** Redirect.
-**Pre-conditions:** S1, I1, Prc1 exist. User not logged in.
-**Dependencies:** `Service`, `Item`, `Price` models.
-**Steps:**
-1. Attempt GET `services:price_delete` for Prc1.
-**Expected Result:**
-- Redirect to login.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PDV_D_002
-**Title:** Access `PriceDeleteView` - Non-owner
-**Description:** Redirected/HTTP 404.
-**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2, Prc2 for I2.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 attempts GET `services:price_delete` for Prc2.
-**Expected Result:**
-- Redirected/HTTP 404.
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PDV_D_003
-**Title:** `PriceDeleteView` GET - Owner
-**Description:** Owner accesses delete confirmation page for price.
-**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 GETs `services:price_delete` for Prc1.
-**Expected Result:**
-- HTTP 200 OK. Template `services/price_confirm_delete.html` rendered.
-- Context `price` is Prc1, `item` is I1, `service` is S1.
-- Context `page_title` is "Delete Price for {I1.title}".
-**Post-conditions:** None.
-
-**Case ID:** services_TC_V_PDV_D_004
-**Title:** `PriceDeleteView` POST - Owner confirms deletion
-**Description:** Owner deletes their price.
-**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
-**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
-**Steps:**
-1. P1 POSTs to `services:price_delete` for Prc1.
-**Expected Result:**
-- Prc1 is deleted.
-- Redirect to `services:item_detail` for I1 under S1.
-- Success message.
-**Post-conditions:** Prc1 record no longer exists.
 
