@@ -39,7 +39,7 @@ class CustomerRequiredMixin(UserPassesTestMixin):
 class UserRegistrationView(CreateView):
     form_class = RegistrationForm
     template_name = 'users/register.html'
-    success_url = reverse_lazy('login')
+    success_url = reverse_lazy('users:user_management')  # Changed from 'login' to 'users:user_management'
 
     def form_valid(self, form):
         email = form.cleaned_data['email']
@@ -69,8 +69,16 @@ class UserRegistrationView(CreateView):
                         user=user,
                         title=form.cleaned_data['title']
                     )
-            messages.success(self.request, 'Registration successful. You can now log in.')
-            return HttpResponseRedirect(self.get_success_url())
+            messages.success(self.request, 'Registration successful.')
+            # Automatically log in the user after registration
+            from django.contrib.auth import login
+            from django.contrib.auth import authenticate
+            user = authenticate(username=email, password=form.cleaned_data['password'])
+            if user is not None:
+                login(self.request, user)
+                return HttpResponseRedirect(self.get_success_url())
+            else:
+                return HttpResponseRedirect(reverse_lazy('login'))
         except Exception as e: # Catch any other unexpected error during transaction
             # Log the error e
             messages.error(self.request, "An unexpected error occurred during registration. Please try again.")
@@ -129,7 +137,7 @@ class UserManagementView(LoginRequiredMixin, View):
                     ProfessionalCustomerLink.objects.filter(
                         customer=customer,
                         status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-                    ).delete() # Or set to INACTIVE
+                    ).delete() # Or set to INACTIVE if history is important
 
                     ProfessionalCustomerLink.objects.create(
                         professional=professional,
