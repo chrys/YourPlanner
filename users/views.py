@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.utils.safestring import mark_safe
 # from django.core.exceptions import ValidationError # Not used
 from django.db import transaction
-# from django.utils.html import escape # Not used
+from django.contrib.auth import login
+from django.utils.html import escape #
 from django.urls import reverse, reverse_lazy
 from django.http import HttpResponseRedirect
 from django.views.generic import CreateView, View, TemplateView, FormView
@@ -39,56 +40,60 @@ class CustomerRequiredMixin(UserPassesTestMixin):
 class UserRegistrationView(CreateView):
     form_class = RegistrationForm
     template_name = 'users/register.html'
-    success_url = reverse_lazy('users:user_management')  # Changed from 'login' to 'users:user_management'
+    success_url = reverse_lazy('users:user_management')
 
     def form_valid(self, form):
+        print("FORM VALID", form.cleaned_data)
         email = form.cleaned_data['email']
+        
+        # Check for existing email first
         if User.objects.filter(email=email).exists():
             login_url = reverse('login')
-            error_html = mark_safe(
-                f'This email is already registered. Please <a href="{escape(login_url)}">log in instead</a>.'
+            error_message = mark_safe(
+                f'Email address {escape(email)} already exists, please <a href="{escape(login_url)}">login instead</a>'
             )
-            # form.add_error('email', error_html) # This way might render escaped HTML in form
-            messages.error(self.request, error_html) # Use messages framework for this kind of error
+            messages.error(self.request, error_message)
             return self.form_invalid(form)
 
         try:
             with transaction.atomic():
+                # Create user first
                 user = User.objects.create_user(
-                    username=email, # Using email as username
+                    username=email,
                     email=email,
                     first_name=form.cleaned_data['first_name'],
                     last_name=form.cleaned_data['last_name'],
-                    password=form.cleaned_data['password'],
+                    password=form.cleaned_data['password']
                 )
-                role = form.cleaned_data['role']
-                if role == 'customer':
+                print(f"Created user: {user.email} ID: {user.id}")
+
+                # Create corresponding profile
+                if form.cleaned_data['role'] == 'customer':
                     Customer.objects.create(user=user)
-                else: # Professional
-                    Professional.objects.create(
+                    print("Created customer profile")
+                else:
+                    prof = Professional.objects.create(
                         user=user,
                         title=form.cleaned_data['title']
                     )
-            messages.success(self.request, 'Registration successful.')
-            # Automatically log in the user after registration
-            from django.contrib.auth import login
-            from django.contrib.auth import authenticate
-            user = authenticate(username=email, password=form.cleaned_data['password'])
-            if user is not None:
+                    print("Created professional profile:", prof.title)
+
+                # Log in user directly
                 login(self.request, user)
-                return HttpResponseRedirect(self.get_success_url())
-            else:
-                return HttpResponseRedirect(reverse_lazy('login'))
-        except Exception as e: # Catch any other unexpected error during transaction
-            # Log the error e
+                messages.success(self.request, 'Registration successful. You are now logged in.')
+                return redirect(self.success_url)
+
+        except Exception as e:
+            print(f"EXCEPTION DURING REGISTRATION: {repr(e)}")
+            if 'user' in locals():
+                print("Cleaning up - deleting created user")
+                user.delete()
             messages.error(self.request, "An unexpected error occurred during registration. Please try again.")
             return self.form_invalid(form)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = "Register" # Example of adding more context
-        return context
-
+    def form_invalid(self, form):
+        print("FORM INVALID", form.errors)
+        return super().form_invalid(form)
 
 class UserManagementView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
@@ -152,8 +157,10 @@ class UserManagementView(LoginRequiredMixin, View):
                 return redirect('users:user_management')
             except Exception as e:
                 # Log error e
-                messages.error(request, "An error occurred while linking with the professional. Please try again.")
-
+                print("EXCEPTION DURING REGISTRATION:", e)
+                messages.error(self.request, "An unexpected error occurred during registration. Please try again.")
+                return self.form_invalid(form)
+                
         # Form is invalid or an error occurred, re-render the choice form
         return render(request, 'users/customer_choose_professional.html', {
             'form': form,

@@ -13,8 +13,6 @@
                 <div class="card-body p-4">
                     <h2 class="card-title text-center mb-4">{{ page_title|default:"Create Your Account" }}</h2>
 
-                    {% include "_messages.html" %} {# Standard way to show messages #}
-
                     <form method="post" id="registration-form">
                         {% csrf_token %}
 

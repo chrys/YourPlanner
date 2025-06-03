@@ -111,9 +111,9 @@ class ProfessionalCustomerLinkingTests(TestCase):
         
         # Verify error message
         self.assertFormError(
-            response, 'form', 'professional', 
+            response.context['form'], 'professional', 
             'Select a valid choice. That choice is not one of the available choices.'
-        )
+)
         
         # Verify no new link was created
         self.assertEqual(ProfessionalCustomerLink.objects.count(), initial_link_count)
