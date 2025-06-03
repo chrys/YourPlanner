@@ -76,7 +76,7 @@ class Customer(TimeStampedModel):
     company_name = models.CharField(max_length=200, blank=True, null=True)
     shipping_address = models.TextField(blank=True, null=True, help_text="Default shipping address")
     billing_address = models.TextField(blank=True, null=True, help_text="Default billing address")
-    preferred_currency = models.CharField(max_length=3, default='EUR', help_text="Preferred currency for pricing")
+    preferred_currency = models.CharField(max_length=3, default='EUR', blank=True, help_text="Preferred currency for pricing")
     marketing_preferences = models.JSONField(
         default=dict,
         blank=True,
