@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.http import Http404, HttpResponseForbidden # HttpResponseForbidden might be useful
 from django.db.models import Q, Prefetch # For complex queries in OrderListView, Added Prefetch
 from django.shortcuts import render # Added render for SelectItemsView GET
+from django.db import transaction
 import json # Moved json import to the top
 
 from .models import Order, OrderItem
@@ -266,7 +267,7 @@ class OrderDetailView(LoginRequiredMixin, UserCanViewOrderMixin, DetailView):
             'price__item'
         )
         context['order_items'] = order_items
-        context['page_title'] = f"Order #{self.object.pk_formatted}" # Using pk_formatted from model
+        context['page_title'] = f"Order #{self.object.pk}" 
 
         # Determine if actions like adding/removing items or cancelling are allowed
         context['can_modify_items'] = False
@@ -507,12 +508,12 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
 
     def get_context_data(self, **kwargs):
         # self.order is loaded by UserCanModifyOrderItemsMixin
-        services_qs = Service.objects.filter(is_active=True, professional__is_active=True) \
+        services_qs = Service.objects.filter(is_active=True, professional__user__is_active=True) \
             .prefetch_related(
                 Prefetch('items', queryset=Item.objects.filter(is_active=True)
-                         .prefetch_related(Prefetch('prices', queryset=Price.objects.filter(is_active=True).order_by('amount'))) # Order prices
+                    .prefetch_related(Prefetch('prices', queryset=Price.objects.filter(is_active=True).order_by('amount')))
                 )
-            ).order_by('title')
+        ).order_by('title')
 
         services_list = []
         for service in services_qs:
@@ -550,7 +551,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
             # 'services': services_qs, # Keep original queryset if needed by other parts, though Vue uses JSON
             'services_json': json.dumps(services_list),
             'current_quantities_json': json.dumps(current_quantities_dict),
-            'page_title': f"Select Items for Order #{self.order.pk_formatted}",
+            'page_title': f"Select Items for Order #{self.order.pk}",
         }
         context.update(kwargs)
         return context
@@ -582,14 +583,21 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                     return render(request, self.template_name, self.get_context_data(error="Invalid data."))
 
         with transaction.atomic():
-            # Update existing or create new OrderItems
             for price_id, quantity in quantities.items():
                 price = get_object_or_404(Price, pk=price_id, is_active=True, item__is_active=True, item__service__is_active=True)
                 order_item, created = OrderItem.objects.update_or_create(
                     order=self.order,
                     price=price,
-                    defaults={'quantity': quantity}
-                )
+                    defaults={
+                        'quantity': quantity,
+                        'item': price.item,
+                        'service': price.item.service,
+                        'professional': price.item.service.professional,
+                        'price_amount_at_order': price.amount,
+                        'price_currency_at_order': price.currency,
+                        'price_frequency_at_order': price.frequency,
+                    }
+            )
                 if created:
                     messages.success(request, f"Added '{price.item.title}' (x{quantity}) to your order.")
                 elif order_item.quantity != quantity: # Check if quantity actually changed before messaging

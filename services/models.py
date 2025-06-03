@@ -109,6 +109,8 @@ class Item(TimeStampedModel):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='item_images/', null=True, blank=True)
+    is_active = models.BooleanField(default=True, help_text="Is this item currently available?")
+
     sku = models.CharField(
         max_length=50, 
         blank=True, 
