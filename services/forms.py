@@ -38,3 +38,11 @@ class PriceForm(forms.ModelForm):
             'frequency': 'Frequency',
             'is_active': 'Active',
         }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Use model's choices
+        self.fields['currency'].choices = Price.CURRENCY_CHOICES
+        # Set initial only if not editing an instance and not POST
+        if not self.instance.pk and not self.data.get('currency'):
+            self.initial['currency'] = 'EUR'
