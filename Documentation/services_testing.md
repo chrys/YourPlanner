@@ -1,1667 +1,2659 @@
-# Service Testing Strategy
+# Test Cases for Django App: Services
 
-This document outlines the strategy for testing services in this project.
+## Test Cases for Models (`services/models.py`)
 
-## 1. Introduction
+### Model: `ServiceCategory`
 
-Effective testing is crucial for ensuring the reliability, maintainability, and correctness of our services. As services often form the backbone of our applications, their robustness directly impacts user experience and system stability. This document outlines a comprehensive testing strategy designed to catch defects early, facilitate refactoring, and provide confidence in our service deployments. The goal is to establish clear guidelines and best practices for different types of testing applicable to our services.
-
-## 2. Types of Tests
-
-### 2.1. Unit Tests
-- **Purpose and Scope**: Unit tests are the first line of defense in identifying bugs. They focus on testing the smallest testable parts of a service, such as individual functions, methods, or classes, in isolation from the rest of the system. The scope is narrow, ensuring that each unit of code behaves as expected.
-- **What to Test**:
-    - Business logic within functions/methods.
-    - Validation rules and error handling.
-    - Boundary conditions and edge cases.
-    - Correctness of algorithms and data transformations.
-- **Mocking Dependencies**: To achieve true isolation, external dependencies such as databases, other microservices, file systems, or third-party APIs must be mocked or stubbed. This ensures that unit tests are fast, repeatable, and not affected by external factors.
-- **Tools and Frameworks**:
-    - For Python services, `pytest` is the recommended framework for writing concise and powerful unit tests.
-    - `unittest.mock` (or `pytest-mock`) should be used for creating mock objects.
-
-### 2.2. Integration Tests
-- **Purpose and Scope**: Integration tests verify the interactions between a service and its direct dependencies. These dependencies can include databases, message brokers, caching layers, or other microservices that the service communicates with directly. The goal is to ensure that these components work together correctly.
-- **Testing with Databases**:
-    - Use dedicated test databases, separate from development or production.
-    - Employ tools like Docker to spin up ephemeral database instances for test runs.
-    - Utilize database migration tools to ensure the schema is up-to-date.
-    - Focus on testing data persistence, retrieval, and querying logic.
-    - Ensure proper test data setup before tests and cleanup afterwards to maintain test independence. In-memory databases (e.g., H2, SQLite) can be an option for faster tests if they are compatible with the production database.
-- **Testing with Other Services**:
-    - When testing interactions with other services, prefer using contract testing or mock servers (e.g., using `WireMock`, `Pact`, or custom mocks with `Flask`/`FastAPI`) to simulate the behavior of external services. This avoids the flakiness and complexity of deploying multiple live services for testing.
-    - If live integration is necessary, it should be done in a dedicated, controlled test environment.
-    - Ensure that contracts (e.g., API specifications like OpenAPI) are validated.
-- **Tools and Frameworks**:
-    - `pytest` can be used to structure integration tests.
-    - `Docker` and `docker-compose` for managing dependency services (databases, message queues).
-    - HTTP client libraries like `requests` (Python) for testing API integrations.
-    - For message queues, specific client libraries can be used to publish and consume messages.
-
-### 2.3. End-to-End Tests
-- **Purpose and Scope**: End-to-End (E2E) tests simulate real user scenarios by testing the entire application flow from the entry point (e.g., API gateway, UI) through all relevant services and backend components. The goal is to ensure that all parts of the system work together correctly to deliver the expected functionality. E2E tests are typically broader in scope than integration tests.
-- **Identifying Critical User Flows**:
-    - Focus on the most critical functionalities and user journeys of the application.
-    - Prioritize flows that involve interactions between multiple services or represent core business value.
-    - Use analytics or user feedback to identify common and important paths through the system.
-- **Tools and Frameworks**:
-    - For services primarily exposing APIs, tools like `Postman` (with Newman for CLI execution), `RestAssured` (Java), or Python frameworks like `pytest` combined with the `requests` library can be used to create E2E tests.
-    - `Karate DSL` is another powerful open-source tool for API automation and E2E testing.
-    - If a UI is part of the flow, tools like `Selenium`, `Cypress`, or `Playwright` might be used, although these are typically managed separately from backend service testing.
-    - Test data management is crucial for E2E tests; ensure that test environments can be consistently set up and torn down, or that data can be isolated.
-
-## 3. Tooling and Frameworks
-
-This section summarizes the common tools and frameworks for service testing. The specific choice may vary based on the programming language of the service and project requirements. The following are commonly used in a Python-based service environment:
-
-| Test Type         | Primary Tools (Python context) | Other Notable Tools/Concepts      |
-|-------------------|--------------------------------|-----------------------------------|
-| **Unit Tests**    | `pytest`, `unittest.mock`      | Coverage.py (for code coverage)   |
-| **Integration Tests** | `pytest`, `Docker`, `requests` | `docker-compose`, Mock servers (e.g., `Pact`, `Wiremock` if not using Python-based mocks) |
-| **End-to-End Tests** | `pytest` with `requests`       | `Postman/Newman`, `Karate DSL`, `Selenium`/`Cypress` (if UI involved) |
-
--   **`pytest`**: A versatile Python testing framework suitable for all levels of testing.
--   **`unittest.mock` / `pytest-mock`**: For creating mock objects in Python.
--   **`Docker` / `docker-compose`**: For managing dependencies like databases or message brokers in isolated environments.
--   **`requests`**: A simple and elegant HTTP library for Python, useful for API testing.
--   **Contract Testing Tools (e.g., `Pact`)**: Useful for ensuring reliable integrations between services by defining and verifying contracts.
--   **CI/CD Pipeline Integration**: All test types should be integrated into the CI/CD pipeline to ensure automated execution and feedback. Tools like Jenkins, GitLab CI, GitHub Actions are common.
-
-## 4. Best Practices
-
-Adhering to best practices ensures that our testing efforts are effective, maintainable, and provide maximum value.
-
--   **Test Independence**:
-    -   Each test case should be self-contained and not depend on the outcome or state of other tests.
-    -   Tests should be able to run in any order.
-    -   Ensure proper setup and teardown for each test or test suite to restore the environment to a known state.
-
--   **Write Clear and Maintainable Tests**:
-    -   Test code should be treated with the same quality standards as production code. It should be readable, well-structured, and commented where necessary.
-    -   Avoid complex logic in test cases. If a test is hard to understand, it's hard to maintain.
-    -   Use descriptive names for test methods and variables.
-
--   **Focus on Testing Behavior, Not Implementation**:
-    -   Tests should ideally verify the public contract or behavior of a component, rather than its internal implementation details. This makes tests less brittle to refactoring.
-
--   **Code Coverage**:
-    -   Aim for a high level of code coverage (e.g., using tools like `Coverage.py`) but understand its limitations. High coverage doesn't guarantee high-quality tests.
-    -   Focus on covering critical paths, business logic, and error conditions.
-    -   Use coverage reports to identify untested parts of the codebase.
-
--   **Test Data Management**:
-    -   Develop a clear strategy for managing test data.
-    -   For unit tests, use hardcoded or generated data within the test.
-    -   For integration and E2E tests, ensure that test data is representative of real-world scenarios and can be reliably created and cleaned up. Consider using fixture libraries or data generation tools.
-    -   Avoid relying on data in shared development environments that can change unexpectedly.
-
--   **Continuous Integration (CI)**:
-    -   Integrate all types of tests into the Continuous Integration (CI) pipeline.
-    -   Tests should run automatically on every code commit or pull request.
-    -   Fail the build if any tests fail, providing fast feedback to developers.
-
--   **Fast and Reliable Tests**:
-    -   Strive to keep tests, especially unit tests, running quickly. Slow tests can hinder developer productivity.
-    -   Identify and address flaky tests (tests that pass or fail inconsistently) as they erode trust in the test suite.
-
--   **Review and Maintenance**:
-    -   Test code should be reviewed as part of the code review process.
-    -   Regularly review and refactor the test suite to remove redundant tests, improve clarity, and adapt to changes in the application.
-    -   Outdated or irrelevant tests should be removed.
-
-## 5. Conclusion
-
-This service testing strategy provides a framework for ensuring the quality and reliability of our services. By implementing a balanced approach that includes unit, integration, and end-to-end tests, and by adhering to the best practices outlined, we can build robust and maintainable systems.
-
-This document is a living guide. As our services evolve, so too will our testing approaches and tools. Regular review and updates to this strategy will be necessary to ensure its continued relevance and effectiveness. Feedback and contributions from all team members are encouraged to help refine and improve our testing practices.
-
-## 6. Example Test Cases for a 'Service' Model
-
-This section provides example test cases for a hypothetical 'Service' model. These test cases are designed to be illustrative and should be adapted based on the actual attributes, validations, relationships, and custom methods of the Service model in your project.
-
-### 6.1. CRUD Operations
-
-**Case id:** service_TC001
-**Title:** Verify successful creation of a new service with all required fields.
-**Description:** This test case ensures that a user can create a new service by providing valid values for all mandatory fields.
-**Pre-conditions:**
-    - User has the necessary permissions to create a service.
-    - Any dependent entities (e.g., Owner if an owner_id is required) exist.
-**Dependencies:** None beyond basic service management functionality.
+**Case ID:** services_TC_M_SC_001
+**Title:** Create ServiceCategory with valid data
+**Description:** Verify that a `ServiceCategory` instance can be created with all valid fields.
+**Pre-conditions:** None
+**Dependencies:** None
 **Steps:**
-    1. Prepare service data with all required fields (e.g., name, description, version, status).
-    2. Send a request to the create service endpoint/execute function to create the service with the prepared data.
-    3. Query the system/database to retrieve the created service by its unique identifier.
-**Expected result:**
-    - The service is successfully created with the provided data.
-    - The system returns a success response (e.g., HTTP 201 Created).
-    - All fields of the retrieved service match the input data.
-    - Default fields (e.g., creation timestamp, initial status if not provided) are set correctly.
-**Post-conditions:**
-    - The newly created service exists in the system.
-    - Audit logs (if applicable) record the service creation.
+1. Create a `ServiceCategory` instance with a unique `name` and `description`.
+2. Save the instance.
+**Expected Result:**
+- The `ServiceCategory` instance is created successfully.
+- The `slug` field is auto-generated based on the `name`.
+- The instance is saved to the database.
+**Post-conditions:** The created `ServiceCategory` instance exists in the database.
 
-**Case id:** service_TC002
-**Title:** Verify successful retrieval of an existing service by its ID.
-**Description:** This test case ensures that a user can retrieve the details of an existing service using its unique ID.
-**Pre-conditions:**
-    - A service with a known ID exists in the system.
-    - User has the necessary permissions to view a service.
-**Dependencies:** A service must exist (e.g., created by service_TC001).
+**Case ID:** services_TC_M_SC_002
+**Title:** Create ServiceCategory with missing name (invalid)
+**Description:** Verify that creating a `ServiceCategory` without a `name` raises a validation error.
+**Pre-conditions:** None
+**Dependencies:** None
 **Steps:**
-    1. Obtain the ID of an existing service.
-    2. Send a request to the get service endpoint/execute function with the service ID.
-**Expected result:**
-    - The system returns a success response (e.g., HTTP 200 OK).
-    - The response contains the correct details of the requested service.
+1. Attempt to create a `ServiceCategory` instance with `name` = None or empty string.
+2. Try to save the instance.
+**Expected Result:**
+- A `ValidationError` (or equivalent database error for blank=False) is raised.
+- The instance is not saved to the database.
+**Post-conditions:** No new `ServiceCategory` instance is created.
+
+**Case ID:** services_TC_M_SC_003
+**Title:** ServiceCategory slug auto-generation
+**Description:** Verify that the `slug` is correctly auto-generated from the `name` upon saving if not provided.
+**Pre-conditions:** None
+**Dependencies:** None
+**Steps:**
+1. Create a `ServiceCategory` instance with a specific `name` (e.g., "New Category 123").
+2. Do not provide a `slug`.
+3. Save the instance.
+**Expected Result:**
+- The instance is saved successfully.
+- The `slug` field is populated with the slugified version of the name (e.g., "new-category-123").
+**Post-conditions:** The `ServiceCategory` instance exists with an auto-generated slug.
+
+**Case ID:** services_TC_M_SC_004
+**Title:** ServiceCategory slug uniqueness
+**Description:** Verify that attempting to save a `ServiceCategory` with a duplicate slug raises an integrity error.
+**Pre-conditions:** A `ServiceCategory` with a specific slug (e.g., "unique-slug") already exists.
+**Dependencies:** None
+**Steps:**
+1. Create another `ServiceCategory` instance.
+2. Manually set its `slug` to be identical to an existing one ("unique-slug").
+3. Attempt to save the new instance.
+**Expected Result:**
+- An `IntegrityError` (or similar database error) is raised due to the unique constraint on the `slug` field.
+- The new instance is not saved.
+**Post-conditions:** No new `ServiceCategory` instance with the duplicate slug is created.
+
+**Case ID:** services_TC_M_SC_005
+**Title:** ServiceCategory string representation
+**Description:** Verify the `__str__` method of `ServiceCategory` returns the category name.
+**Pre-conditions:** A `ServiceCategory` instance exists with a known name.
+**Dependencies:** None
+**Steps:**
+1. Retrieve an existing `ServiceCategory` instance.
+2. Call `str()` on the instance.
+**Expected Result:**
+- The string representation is equal to the `name` of the category.
 **Post-conditions:** None.
 
-**Case id:** service_TC003
-**Title:** Verify successful update of an existing service.
-**Description:** This test case ensures that a user can update one or more attributes of an existing service.
-**Pre-conditions:**
-    - A service with a known ID exists in the system.
-    - User has the necessary permissions to update a service.
-**Dependencies:** A service must exist.
+**Case ID:** services_TC_M_SC_006
+**Title:** Create ServiceCategory with blank description
+**Description:** Verify that a `ServiceCategory` instance can be created with a blank `description`.
+**Pre-conditions:** None
+**Dependencies:** None
 **Steps:**
-    1. Obtain the ID of an existing service.
-    2. Prepare updated data for one or more fields (e.g., update description, change status).
-    3. Send a request to the update service endpoint/execute function with the service ID and updated data.
-    4. Retrieve the service again by its ID.
-**Expected result:**
-    - The system returns a success response (e.g., HTTP 200 OK or 204 No Content).
-    - The retrieved service details reflect the applied updates.
-    - Fields not included in the update request remain unchanged.
-**Post-conditions:**
-    - The service's attributes are updated in the system.
-    - Audit logs (if applicable) record the service update.
+1. Create a `ServiceCategory` instance with a unique `name` and `description` = "" or None.
+2. Save the instance.
+**Expected Result:**
+- The `ServiceCategory` instance is created successfully.
+- The instance is saved to the database.
+**Post-conditions:** The created `ServiceCategory` instance exists in the database.
 
-**Case id:** service_TC004
-**Title:** Verify successful deletion of an existing service.
-**Description:** This test case ensures that a user can delete an existing service.
+### Model: `Service`
+
+**Case ID:** services_TC_M_S_001
+**Title:** Create Service with valid data
+**Description:** Verify that a `Service` instance can be created with all valid required fields.
 **Pre-conditions:**
-    - A service with a known ID exists in the system.
-    - User has the necessary permissions to delete a service.
-    - The service is in a state that allows deletion (e.g., no critical dependencies).
-**Dependencies:** A service must exist.
+- A `users.Professional` instance exists.
+- A `ServiceCategory` instance exists (optional, as category can be null).
+**Dependencies:** `users.Professional` model, `ServiceCategory` model.
 **Steps:**
-    1. Obtain the ID of an existing service.
-    2. Send a request to the delete service endpoint/execute function with the service ID.
-    3. Attempt to retrieve the service by its ID.
-**Expected result:**
-    - The system returns a success response (e.g., HTTP 200 OK or 204 No Content).
-    - The service is no longer retrievable (e.g., attempting to get it returns HTTP 404 Not Found).
-**Post-conditions:**
-    - The service is marked as deleted or physically removed from the system.
-    - Audit logs (if applicable) record the service deletion.
+1. Create a `Service` instance, providing `professional`, `title`.
+2. Optionally, provide `category`, `description`, `is_active`, `featured`.
+3. Save the instance.
+**Expected Result:**
+- The `Service` instance is created successfully.
+- The `slug` field is auto-generated based on the `title` and `professional.pk`.
+- The instance is saved to the database.
+**Post-conditions:** The created `Service` instance exists in the database.
 
-### 6.2. Validations
+**Case ID:** services_TC_M_S_002
+**Title:** Create Service without a professional (invalid)
+**Description:** Verify that creating a `Service` without a `professional` raises an error.
+**Pre-conditions:** None
+**Dependencies:** None
+**Steps:**
+1. Attempt to create a `Service` instance with `professional` = None.
+2. Set other required fields like `title`.
+3. Try to save the instance.
+**Expected Result:**
+- An `IntegrityError` or `ValidationError` is raised because `professional` cannot be null.
+- The instance is not saved.
+**Post-conditions:** No new `Service` instance is created.
 
-**Case id:** service_TC005
-**Title:** Verify service creation fails if a required field (e.g., name) is missing.
-**Description:** This test case ensures that appropriate validation prevents service creation when mandatory information is not provided.
+**Case ID:** services_TC_M_S_003
+**Title:** Create Service without a title (invalid via `clean` method)
+**Description:** Verify that the `clean` method prevents saving a `Service` without a `title`.
+**Pre-conditions:** A `users.Professional` instance exists.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a `Service` instance with a `professional` but `title` = "" or None.
+2. Call the `clean()` method on the instance.
+**Expected Result:**
+- A `ValidationError` is raised with a message like 'Service title cannot be empty'.
+**Post-conditions:** The instance is not in a savable state if `clean()` is enforced before save.
+
+**Case ID:** services_TC_M_S_004
+**Title:** Service slug auto-generation
+**Description:** Verify that the `slug` is correctly auto-generated from `title` and `professional.pk` upon saving if not provided.
+**Pre-conditions:** A `users.Professional` instance (e.g., with pk=1) exists.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a `Service` instance with `professional` and `title` (e.g., "My Awesome Service").
+2. Do not provide a `slug`.
+3. Save the instance.
+**Expected Result:**
+- The instance is saved successfully.
+- The `slug` field is populated (e.g., "my-awesome-service-1").
+**Post-conditions:** The `Service` instance exists with an auto-generated slug.
+
+**Case ID:** services_TC_M_S_005
+**Title:** Service slug uniqueness per professional
+**Description:** Verify `UniqueConstraint(fields=['professional', 'slug'], name='unique_professional_service_slug')`.
 **Pre-conditions:**
-    - User has the necessary permissions to attempt service creation.
+- A `users.Professional` (P1) exists.
+- P1 has a `Service` (S1) with a specific slug (e.g., "my-service-slug").
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a new `Service` instance (S2) for the same professional P1.
+2. Manually set its `slug` to be identical to S1's slug ("my-service-slug").
+3. Attempt to save S2.
+**Expected Result:**
+- An `IntegrityError` is raised.
+- S2 is not saved.
+**Post-conditions:** No new `Service` instance with the duplicate professional/slug combination is created.
+
+**Case ID:** services_TC_M_S_006
+**Title:** Service slug can be non-unique for different professionals
+**Description:** Verify that two different professionals can have services with the same slug.
+**Pre-conditions:**
+- Two `users.Professional` instances (P1, P2) exist.
+- P1 has a `Service` (S1) with a specific slug (e.g., "common-slug").
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a new `Service` instance (S2) for professional P2.
+2. Set its `slug` to "common-slug".
+3. Save S2.
+**Expected Result:**
+- S2 is saved successfully.
+**Post-conditions:** S2 exists in the database.
+
+**Case ID:** services_TC_M_S_007
+**Title:** Service `clean` method - duplicate title for the same professional
+**Description:** Verify `clean()` prevents a professional from having two services with the exact same title.
+**Pre-conditions:**
+- A `users.Professional` (P1) exists.
+- P1 has a `Service` (S1) with `title` = "Unique Title for P1".
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a new `Service` instance (S2) for professional P1.
+2. Set `title` of S2 to "Unique Title for P1".
+3. Call `clean()` on S2.
+**Expected Result:**
+- A `ValidationError` is raised with a message like 'You already have a service with this title'.
+**Post-conditions:** S2 is not in a savable state if `clean()` is enforced.
+
+**Case ID:** services_TC_M_S_008
+**Title:** Service `clean` method - allows same title for different professionals
+**Description:** Verify `clean()` allows different professionals to have services with the same title.
+**Pre-conditions:**
+- `users.Professional` P1 exists and has a service titled "Common Service Title".
+- `users.Professional` P2 exists.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a new `Service` instance (S_P2) for professional P2.
+2. Set `title` of S_P2 to "Common Service Title".
+3. Call `clean()` on S_P2.
+**Expected Result:**
+- No `ValidationError` is raised regarding the title.
+**Post-conditions:** S_P2 is considered valid by the `clean` method regarding its title.
+
+**Case ID:** services_TC_M_S_009
+**Title:** Service string representation
+**Description:** Verify the `__str__` method of `Service` returns the correct format.
+**Pre-conditions:** A `Service` instance exists with a known `title` and `professional`.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Retrieve an existing `Service` instance.
+2. Call `str()` on the instance.
+**Expected Result:**
+- The string representation is `"{self.title} (by {self.professional})"`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_M_S_010
+**Title:** Service `active` manager
+**Description:** Verify the `active` manager returns only services where `is_active=True`.
+**Pre-conditions:**
+- Multiple `Service` instances exist, some with `is_active=True`, some with `is_active=False`.
 **Dependencies:** None.
 **Steps:**
-    1. Prepare service data without the 'name' field (or with an empty 'name').
-    2. Send a request to the create service endpoint/execute function.
-**Expected result:**
-    - The system rejects the request with an appropriate error response (e.g., HTTP 400 Bad Request).
-    - The error message clearly indicates that the 'name' field is required.
-    - No new service is created in the system.
+1. Query `Service.active.all()`.
+**Expected Result:**
+- Only `Service` instances with `is_active=True` are returned.
+- Instances with `is_active=False` are excluded.
 **Post-conditions:** None.
 
-**Case id:** service_TC006
-**Title:** Verify service creation fails if a field value violates format rules (e.g., invalid version format).
-**Description:** This test case ensures that field format validations are enforced. Assume 'version' must follow semantic versioning (e.g., X.Y.Z).
-**Pre-conditions:**
-    - User has the necessary permissions to attempt service creation.
+**Case ID:** services_TC_M_S_011
+**Title:** Create Service with blank description
+**Description:** Verify a `Service` can be created with a blank `description`.
+**Pre-conditions:** A `users.Professional` instance exists.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a `Service` with `professional`, `title`, and `description` = "".
+2. Save the instance.
+**Expected Result:**
+- The `Service` is created and saved successfully.
+**Post-conditions:** The `Service` instance exists.
+
+**Case ID:** services_TC_M_S_012
+**Title:** `calculate_average_rating` method (placeholder)
+**Description:** Verify the `calculate_average_rating` method returns 0.0 as per current implementation.
+**Pre-conditions:** A `Service` instance exists.
 **Dependencies:** None.
 **Steps:**
-    1. Prepare service data with all required fields, but provide an invalid 'version' (e.g., "abc").
-    2. Send a request to the create service endpoint/execute function.
-**Expected result:**
-    - The system rejects the request with an appropriate error response (e.g., HTTP 400 Bad Request).
-    - The error message indicates the 'version' format is invalid.
-    - No new service is created.
+1. Call `calculate_average_rating()` on the service instance.
+**Expected Result:**
+- The method returns `0.0`.
 **Post-conditions:** None.
 
-### 6.3. Relationships
-
-**Case id:** service_TC007
-**Title:** Verify assigning an existing owner to a service.
-**Description:** This test case ensures that a service can be correctly associated with an existing owner entity. (Assuming a Service has an `owner_id` field or similar relationship).
+**Case ID:** services_TC_M_S_013
+**Title:** Service associated with a Category
+**Description:** Verify a service can be successfully associated with a `ServiceCategory`.
 **Pre-conditions:**
-    - A service exists.
-    - An owner entity (e.g., a user or team) exists with a known ID.
-    - User has permissions to modify the service's owner.
-**Dependencies:** Existing service and owner entities.
+- A `users.Professional` instance exists.
+- A `ServiceCategory` (SC1) instance exists.
+**Dependencies:** `users.Professional`, `ServiceCategory` models.
 **Steps:**
-    1. Obtain the ID of an existing service.
-    2. Obtain the ID of an existing owner.
-    3. Send a request to update the service, setting its `owner_id` to the owner's ID.
-    4. Retrieve the service and inspect its owner information.
-**Expected result:**
-    - The service is successfully updated with the new owner.
-    - The retrieved service details show the correct `owner_id` or owner details.
-**Post-conditions:** The service is now associated with the specified owner.
+1. Create a `Service` instance, providing `professional`, `title`, and `category` = SC1.
+2. Save the instance.
+3. Retrieve the service and check its `category` attribute.
+**Expected Result:**
+- The `Service` is saved successfully.
+- `service.category` is equal to SC1.
+- SC1.services.all() includes the created service.
+**Post-conditions:** The `Service` instance exists and is linked to SC1.
 
-### 6.4. Custom Methods
+**Case ID:** services_TC_M_S_014
+**Title:** Service with null Category
+**Description:** Verify a service can be created with `category` = None.
+**Pre-conditions:** A `users.Professional` instance exists.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. Create a `Service` instance, providing `professional`, `title`, and `category` = None.
+2. Save the instance.
+**Expected Result:**
+- The `Service` is saved successfully.
+- `service.category` is None.
+**Post-conditions:** The `Service` instance exists with no category.
 
-**Case id:** service_TC008
-**Title:** Verify successful activation of a service using a custom 'activate' method/endpoint.
-**Description:** This test case ensures that the custom business logic for activating a service functions correctly. (Assuming a service has a 'status' field: 'inactive', 'active', 'deprecated' and an 'activate' action).
+### Model: `Item`
+
+**Case ID:** services_TC_M_I_001
+**Title:** Create Item with valid data
+**Description:** Verify that an `Item` instance can be created with all valid required fields.
+**Pre-conditions:** A `Service` instance exists.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Create an `Item` instance, providing `service` and `title`.
+2. Optionally, provide `description`, `image`, `sku`, `stock`, `position`.
+3. Save the instance.
+**Expected Result:**
+- The `Item` instance is created successfully.
+- The `slug` field is auto-generated based on the `title` and `service.pk`.
+- The instance is saved to the database.
+- The item is associated with the correct service (`item.service`).
+**Post-conditions:** The created `Item` instance exists in the database and is linked to the specified `Service`.
+
+**Case ID:** services_TC_M_I_002
+**Title:** Create Item without a service (invalid)
+**Description:** Verify that creating an `Item` without a `service` raises an error.
+**Pre-conditions:** None
+**Dependencies:** None
+**Steps:**
+1. Attempt to create an `Item` instance with `service` = None.
+2. Set other required fields like `title`.
+3. Try to save the instance.
+**Expected Result:**
+- An `IntegrityError` or `ValidationError` is raised because `service` cannot be null.
+- The instance is not saved.
+**Post-conditions:** No new `Item` instance is created.
+
+**Case ID:** services_TC_M_I_003
+**Title:** Create Item without a title (invalid via `clean` method)
+**Description:** Verify that the `clean` method prevents saving an `Item` without a `title`.
+**Pre-conditions:** A `Service` instance exists.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Create an `Item` instance with a `service` but `title` = "" or None.
+2. Call the `clean()` method on the instance.
+**Expected Result:**
+- A `ValidationError` is raised with a message like 'Item title cannot be empty'.
+**Post-conditions:** The instance is not in a savable state if `clean()` is enforced before save.
+
+**Case ID:** services_TC_M_I_004
+**Title:** Item slug auto-generation
+**Description:** Verify that the `slug` is correctly auto-generated from `title` and `service.pk` upon saving if not provided.
+**Pre-conditions:** A `Service` instance (e.g., with pk=1) exists.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Create an `Item` instance with `service` and `title` (e.g., "New Component").
+2. Do not provide a `slug`.
+3. Save the instance.
+**Expected Result:**
+- The instance is saved successfully.
+- The `slug` field is populated (e.g., "new-component-1").
+**Post-conditions:** The `Item` instance exists with an auto-generated slug.
+
+**Case ID:** services_TC_M_I_005
+**Title:** Item slug uniqueness per service
+**Description:** Verify `UniqueConstraint(fields=['service', 'slug'], name='unique_service_item_slug')`.
 **Pre-conditions:**
-    - A service exists in an 'inactive' state.
-    - User has permissions to activate the service.
-**Dependencies:** An existing service in a suitable initial state.
+- A `Service` (S1) exists.
+- S1 has an `Item` (I1) with a specific slug (e.g., "item-slug-a").
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Ensure a service exists with `status = 'inactive'`. Obtain its ID.
-    2. Send a request to the 'activate' service endpoint/execute function for the service.
-    3. Retrieve the service by its ID.
-**Expected result:**
-    - The system returns a success response.
-    - The retrieved service's `status` is now 'active'.
-    - Any side-effects of activation (e.g., notifications, resource allocation) are triggered (these might need separate verification).
-**Post-conditions:** The service status is 'active'.
+1. Create a new `Item` instance (I2) for the same service S1.
+2. Manually set its `slug` to be identical to I1's slug ("item-slug-a").
+3. Attempt to save I2.
+**Expected Result:**
+- An `IntegrityError` is raised.
+- I2 is not saved.
+**Post-conditions:** No new `Item` instance with the duplicate service/slug combination is created.
 
-**Case id:** service_TC009
-**Title:** Verify 'activate' method fails if the service is already active.
-**Description:** This test case ensures that the custom 'activate' logic prevents re-activation of an already active service.
+**Case ID:** services_TC_M_I_006
+**Title:** Item slug can be non-unique for different services
+**Description:** Verify that two different services can have items with the same slug.
 **Pre-conditions:**
-    - A service exists in an 'active' state.
-    - User has permissions to attempt to activate the service.
-**Dependencies:** An existing service in 'active' state.
+- Two `Service` instances (S1, S2) exist.
+- S1 has an `Item` (I1) with a specific slug (e.g., "common-item-slug").
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Ensure a service exists with `status = 'active'`. Obtain its ID.
-    2. Send a request to the 'activate' service endpoint/execute function for the service.
-**Expected result:**
-    - The system returns an appropriate error response (e.g., HTTP 409 Conflict or 400 Bad Request).
-    - The error message indicates that the service is already active.
-    - The service's `status` remains 'active'.
-**Post-conditions:** The service status remains 'active'.
+1. Create a new `Item` instance (I2) for service S2.
+2. Set its `slug` to "common-item-slug".
+3. Save I2.
+**Expected Result:**
+- I2 is saved successfully.
+**Post-conditions:** I2 exists in the database.
 
-## 7. Example Test Cases for an 'Item' Model
-
-This section provides example test cases for a hypothetical 'Item' model. These test cases are illustrative and should be adapted based on the actual attributes, validations, relationships, and custom methods of the Item model in your project. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 7.1. CRUD Operations
-
-**Case id:** appName_ITEM_TC001
-**Title:** Verify successful creation of a new item with all required fields.
-**Description:** This test case ensures that a user can create a new item by providing valid values for all mandatory fields (e.g., name, price, stock_quantity).
-**Pre-conditions:**
-    - User has the necessary permissions to create an item.
-    - Any dependent entities (e.g., Category if a category_id is required) exist.
-**Dependencies:** None beyond basic item management functionality.
+**Case ID:** services_TC_M_I_007
+**Title:** Item string representation
+**Description:** Verify the `__str__` method of `Item` returns the correct format.
+**Pre-conditions:** An `Item` instance exists, linked to a `Service` with a known title.
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Prepare item data with all required fields (e.g., name="Laptop", description="High-performance laptop", price=1200.00, stock_quantity=50).
-    2. Send a request to the create item endpoint/execute function with the prepared data.
-    3. Query the system/database to retrieve the created item by its unique identifier.
-**Expected result:**
-    - The item is successfully created with the provided data.
-    - The system returns a success response (e.g., HTTP 201 Created).
-    - All fields of the retrieved item match the input data.
-    - Default fields (e.g., date_added) are set correctly.
-**Post-conditions:**
-    - The newly created item exists in the system.
-    - Inventory levels are updated if applicable.
-
-**Case id:** appName_ITEM_TC002
-**Title:** Verify successful retrieval of an existing item by its ID.
-**Description:** This test case ensures that a user can retrieve the details of an existing item using its unique ID.
-**Pre-conditions:**
-    - An item with a known ID exists in the system.
-    - User has the necessary permissions to view an item.
-**Dependencies:** An item must exist (e.g., created by appName_ITEM_TC001).
-**Steps:**
-    1. Obtain the ID of an existing item.
-    2. Send a request to the get item endpoint/execute function with the item ID.
-**Expected result:**
-    - The system returns a success response (e.g., HTTP 200 OK).
-    - The response contains the correct details of the requested item.
+1. Retrieve an existing `Item` instance (e.g., item title "Sample Item", service title "Main Service").
+2. Call `str()` on the instance.
+**Expected Result:**
+- The string representation is `"{self.title} (in Service: {self.service.title})"`, e.g., "Sample Item (in Service: Main Service)".
 **Post-conditions:** None.
 
-**Case id:** appName_ITEM_TC003
-**Title:** Verify successful update of an existing item's attributes.
-**Description:** This test case ensures that a user can update attributes of an existing item, such as its price or description.
-**Pre-conditions:**
-    - An item with a known ID exists in the system.
-    - User has the necessary permissions to update an item.
-**Dependencies:** An item must exist.
-**Steps:**
-    1. Obtain the ID of an existing item.
-    2. Prepare updated data for one or more fields (e.g., update price=1150.00, description="Updated description").
-    3. Send a request to the update item endpoint/execute function with the item ID and updated data.
-    4. Retrieve the item again by its ID.
-**Expected result:**
-    - The system returns a success response (e.g., HTTP 200 OK).
-    - The retrieved item details reflect the applied updates.
-**Post-conditions:**
-    - The item's attributes are updated in the system.
-
-**Case id:** appName_ITEM_TC004
-**Title:** Verify successful deletion of an existing item.
-**Description:** This test case ensures that a user can delete an existing item.
-**Pre-conditions:**
-    - An item with a known ID exists in the system.
-    - User has the necessary permissions to delete an item.
-    - The item is not part of any active orders or has other critical dependencies preventing deletion.
-**Dependencies:** An item must exist.
-**Steps:**
-    1. Obtain the ID of an existing item.
-    2. Send a request to the delete item endpoint/execute function with the item ID.
-    3. Attempt to retrieve the item by its ID.
-**Expected result:**
-    - The system returns a success response (e.g., HTTP 200 OK or 204 No Content).
-    - The item is no longer retrievable (e.g., attempting to get it returns HTTP 404 Not Found).
-**Post-conditions:**
-    - The item is marked as deleted or physically removed from the system.
-    - Inventory levels are updated if applicable.
-
-### 7.2. Validations
-
-**Case id:** appName_ITEM_TC005
-**Title:** Verify item creation fails if 'price' is negative.
-**Description:** This test case ensures that an item cannot be created with a negative price value.
-**Pre-conditions:**
-    - User has the necessary permissions to attempt item creation.
+**Case ID:** services_TC_M_I_008
+**Title:** Item `is_available` method - stock > 0
+**Description:** Verify `is_available()` returns `True` if `stock` is greater than 0.
+**Pre-conditions:** An `Item` instance exists with `stock` = 10.
 **Dependencies:** None.
 **Steps:**
-    1. Prepare item data with a negative value for the 'price' field (e.g., price=-10.00), and other required fields.
-    2. Send a request to the create item endpoint/execute function.
-**Expected result:**
-    - The system rejects the request with an appropriate error response (e.g., HTTP 400 Bad Request).
-    - The error message indicates that the 'price' must be non-negative.
-    - No new item is created.
+1. Call `is_available()` on the item instance.
+**Expected Result:**
+- The method returns `True`.
 **Post-conditions:** None.
 
-**Case id:** appName_ITEM_TC006
-**Title:** Verify item creation fails if 'stock_quantity' is not a whole number.
-**Description:** This test case ensures that 'stock_quantity' must be an integer.
-**Pre-conditions:**
-    - User has the necessary permissions to attempt item creation.
+**Case ID:** services_TC_M_I_009
+**Title:** Item `is_available` method - stock = 0 (unlimited/not applicable)
+**Description:** Verify `is_available()` returns `True` if `stock` is 0.
+**Pre-conditions:** An `Item` instance exists with `stock` = 0.
 **Dependencies:** None.
 **Steps:**
-    1. Prepare item data with a non-integer value for 'stock_quantity' (e.g., 10.5), and other required fields.
-    2. Send a request to the create item endpoint/execute function.
-**Expected result:**
-    - The system rejects the request with an appropriate error response (e.g., HTTP 400 Bad Request).
-    - The error message indicates 'stock_quantity' must be an integer.
-    - No new item is created.
+1. Call `is_available()` on the item instance.
+**Expected Result:**
+- The method returns `True`.
 **Post-conditions:** None.
 
-### 7.3. Relationships
-
-**Case id:** appName_ITEM_TC007
-**Title:** Verify associating an item with an existing category.
-**Description:** This test case ensures an item can be correctly linked to a 'Category' (assuming an item has a `category_id` field).
-**Pre-conditions:**
-    - An item exists.
-    - A category entity exists with a known ID.
-    - User has permissions to modify the item's category.
-**Dependencies:** Existing item and category entities.
+**Case ID:** services_TC_M_I_010
+**Title:** Item with image upload
+**Description:** Verify an `Item` can be created with an image.
+**Pre-conditions:** A `Service` instance exists. A valid image file is available.
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Obtain the ID of an existing item.
-    2. Obtain the ID of an existing category.
-    3. Send a request to update the item, setting its `category_id` to the category's ID.
-    4. Retrieve the item and inspect its category information.
-**Expected result:**
-    - The item is successfully updated with the new category.
-    - The retrieved item details show the correct `category_id` or category details.
-**Post-conditions:** The item is now associated with the specified category.
+1. Create an `Item` instance with `service`, `title`, and provide a file to the `image` field.
+2. Save the instance.
+**Expected Result:**
+- The `Item` is saved successfully.
+- The `image` field has a path to the uploaded image.
+**Post-conditions:** The `Item` instance exists with an associated image.
 
-### 7.4. Custom Methods
-
-**Case id:** appName_ITEM_TC008
-**Title:** Verify 'restock_item' method correctly increases stock quantity.
-**Description:** This test case ensures that a custom 'restock_item' method/endpoint correctly increases the item's stock quantity. (Assuming an item has a `stock_quantity` field and a `restock_item(quantity_to_add)` method).
-**Pre-conditions:**
-    - An item exists with a known `stock_quantity` (e.g., 20).
-    - User has permissions to restock items.
-**Dependencies:** An existing item.
+**Case ID:** services_TC_M_I_011
+**Title:** Item with default stock and position
+**Description:** Verify `Item` is created with default `stock` (0) and `position` (0) if not provided.
+**Pre-conditions:** A `Service` instance exists.
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Obtain the ID of an existing item and its current `stock_quantity` (e.g., current_stock = 20).
-    2. Define a restock amount (e.g., restock_amount = 30).
-    3. Send a request to the 'restock_item' endpoint/execute function for the item, providing the restock_amount.
-    4. Retrieve the item by its ID.
-**Expected result:**
-    - The system returns a success response.
-    - The retrieved item's `stock_quantity` is now current_stock + restock_amount (e.g., 20 + 30 = 50).
-**Post-conditions:** The item's `stock_quantity` is updated.
+1. Create an `Item` instance with `service` and `title`, without specifying `stock` or `position`.
+2. Save the instance.
+3. Retrieve the item and check its `stock` and `position`.
+**Expected Result:**
+- `item.stock` is 0.
+- `item.position` is 0.
+**Post-conditions:** The `Item` instance exists with default stock and position.
 
-**Case id:** appName_ITEM_TC009
-**Title:** Verify 'restock_item' method fails if restock quantity is zero or negative.
-**Description:** This test case ensures the 'restock_item' method handles invalid restock quantities appropriately.
-**Pre-conditions:**
-    - An item exists.
-    - User has permissions to attempt to restock items.
-**Dependencies:** An existing item.
+**Case ID:** services_TC_M_I_012
+**Title:** Item with blank description and SKU
+**Description:** Verify an `Item` can be created with blank `description` and `sku`.
+**Pre-conditions:** A `Service` instance exists.
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Obtain the ID of an existing item.
-    2. Attempt to restock with a quantity of 0.
-    3. Verify error.
-    4. Attempt to restock with a quantity of -5.
-    5. Verify error.
-**Expected result:**
-    - For both attempts (zero and negative quantity):
-        - The system returns an appropriate error response (e.g., HTTP 400 Bad Request).
-        - The error message indicates that the restock quantity must be positive.
-        - The item's `stock_quantity` remains unchanged.
-**Post-conditions:** The item's `stock_quantity` is unchanged.
+1. Create an `Item` instance with `service`, `title`, `description`="", and `sku`="".
+2. Save the instance.
+**Expected Result:**
+- The `Item` is saved successfully.
+**Post-conditions:** The `Item` instance exists.
 
-## 8. Example Test Cases for a 'Price' Model
+### Model: `Price`
 
-This section provides example test cases for a hypothetical 'Price' model. These test cases are illustrative and should be adapted based on the actual attributes, validations, relationships, and custom methods of the Price model in your project. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 8.1. CRUD Operations
-
-**Case id:** appName_PRICE_TC001
-**Title:** Verify successful creation of a new price for an item.
-**Description:** This test case ensures that a new price (e.g., for a specific item, with amount, currency, and effective date) can be created.
-**Pre-conditions:**
-    - User has permissions to create/manage prices.
-    - An Item (e.g., item_id=123) for which the price is being defined exists.
-    - Currency codes are pre-defined or validated against a standard list (e.g., "USD", "EUR").
-**Dependencies:** An existing Item model/entity.
+**Case ID:** services_TC_M_P_001
+**Title:** Create Price with valid data
+**Description:** Verify that a `Price` instance can be created with all valid required fields.
+**Pre-conditions:** An `Item` instance exists.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Prepare price data: item_id=123, amount=99.99, currency="USD", effective_date="YYYY-MM-DD", price_type="retail".
-    2. Send a request to create the price entry with the prepared data.
-    3. Query the system to retrieve the created price entry by its unique identifier or by item_id and effective_date.
-**Expected result:**
-    - The price entry is successfully created.
-    - System returns a success response (e.g., HTTP 201 Created).
-    - All fields of the retrieved price entry match the input data.
-**Post-conditions:**
-    - The new price entry exists in the system, associated with the specified item.
+1. Create a `Price` instance, providing `item`, `amount`.
+2. Optionally, provide `currency`, `frequency`, `description`, `is_active`, `valid_from`, `valid_until`, `min_quantity`, `max_quantity`, `discount_percentage`.
+3. Save the instance.
+**Expected Result:**
+- The `Price` instance is created successfully.
+- Default values for `currency` (EUR), `frequency` (ONE_TIME), `min_quantity` (1), `discount_percentage` (0.00) are applied if not provided.
+- The instance is saved to the database.
+- The price is associated with the correct item (`price.item`).
+**Post-conditions:** The created `Price` instance exists in the database and is linked to the specified `Item`.
 
-**Case id:** appName_PRICE_TC002
-**Title:** Verify successful retrieval of an existing price entry.
-**Description:** This test case ensures that details of an existing price entry can be retrieved.
-**Pre-conditions:**
-    - A price entry with a known ID (or associated with a known item_id and effective_date) exists.
-    - User has permissions to view prices.
-**Dependencies:** An existing price entry.
+**Case ID:** services_TC_M_P_002
+**Title:** Create Price without an item (invalid)
+**Description:** Verify that creating a `Price` without an `item` raises an error.
+**Pre-conditions:** None
+**Dependencies:** None
 **Steps:**
-    1. Obtain the ID (or unique identifiers like item_id+effective_date) of an existing price entry.
-    2. Send a request to get the price entry.
-**Expected result:**
-    - System returns a success response (e.g., HTTP 200 OK).
-    - The response contains the correct details of the requested price entry.
+1. Attempt to create a `Price` instance with `item` = None.
+2. Set other required fields like `amount`.
+3. Try to save the instance.
+**Expected Result:**
+- An `IntegrityError` or `ValidationError` is raised because `item` cannot be null.
+- The instance is not saved.
+**Post-conditions:** No new `Price` instance is created.
+
+**Case ID:** services_TC_M_P_003
+**Title:** Create Price with negative amount (invalid via `clean` method)
+**Description:** Verify that the `clean` method prevents saving a `Price` with a negative `amount`.
+**Pre-conditions:** An `Item` instance exists.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Create a `Price` instance with an `item` but `amount` = -10.00.
+2. Call the `clean()` method on the instance.
+**Expected Result:**
+- A `ValidationError` is raised with a message like 'Price amount cannot be negative'.
+**Post-conditions:** The instance is not in a savable state if `clean()` is enforced.
+
+**Case ID:** services_TC_M_P_004
+**Title:** Price `clean` method - `valid_from` after `valid_until`
+**Description:** Verify `clean()` prevents saving if `valid_from` is after `valid_until`.
+**Pre-conditions:** An `Item` instance exists.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Create a `Price` instance with `valid_from` = (today + 1 day), `valid_until` = today.
+2. Call `clean()` on the instance.
+**Expected Result:**
+- A `ValidationError` is raised with a message like 'End date must be after start date'.
+**Post-conditions:** Not savable.
+
+**Case ID:** services_TC_M_P_005
+**Title:** Price `clean` method - `min_quantity` less than 1
+**Description:** Verify `clean()` prevents saving if `min_quantity` is less than 1.
+**Pre-conditions:** An `Item` instance exists.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Create a `Price` instance with `min_quantity` = 0.
+2. Call `clean()` on the instance.
+**Expected Result:**
+- A `ValidationError` is raised with a message like 'Minimum quantity must be at least 1'.
+**Post-conditions:** Not savable.
+
+**Case ID:** services_TC_M_P_006
+**Title:** Price `clean` method - `min_quantity` greater than `max_quantity`
+**Description:** Verify `clean()` prevents saving if `min_quantity` > `max_quantity` (and `max_quantity` is set).
+**Pre-conditions:** An `Item` instance exists.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Create a `Price` instance with `min_quantity` = 10, `max_quantity` = 5.
+2. Call `clean()` on the instance.
+**Expected Result:**
+- A `ValidationError` is raised with a message like 'Maximum quantity must be greater than minimum quantity'.
+**Post-conditions:** Not savable.
+
+**Case ID:** services_TC_M_P_007
+**Title:** Price string representation
+**Description:** Verify the `__str__` method of `Price` returns the correct format.
+**Pre-conditions:** An `Item` (e.g., title "Test Item") and a `Price` (e.g., 100 USD, Monthly) for it exist.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Retrieve the `Price` instance.
+2. Call `str()` on the instance.
+**Expected Result:**
+- The string representation is `"{self.amount} {self.currency} ({self.frequency}) for {self.item.title}"`, e.g., "100.00 USD (MONTHLY) for Test Item".
 **Post-conditions:** None.
 
-**Case id:** appName_PRICE_TC003
-**Title:** Verify successful update of an existing price entry (e.g., amount or effective date).
-**Description:** This test case ensures that attributes of an existing price entry can be updated.
+**Case ID:** services_TC_M_P_008
+**Title:** Price `active` manager
+**Description:** Verify the `active` manager returns only prices where `is_active=True`.
 **Pre-conditions:**
-    - A price entry exists.
-    - User has permissions to update prices.
-**Dependencies:** An existing price entry.
+- Multiple `Price` instances exist for an item, some `is_active=True`, some `is_active=False`.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Obtain the ID of an existing price entry.
-    2. Prepare updated data (e.g., amount=95.99, effective_date="YYYY-MM-DD+1").
-    3. Send a request to update the price entry.
-    4. Retrieve the price entry again.
-**Expected result:**
-    - System returns a success response (e.g., HTTP 200 OK).
-    - Retrieved price entry details reflect the applied updates.
-**Post-conditions:**
-    - The price entry's attributes are updated.
-
-**Case id:** appName_PRICE_TC004
-**Title:** Verify successful deletion (or marking as inactive) of a price entry.
-**Description:** This test case ensures a price entry can be removed or deactivated.
-**Pre-conditions:**
-    - A price entry exists.
-    - User has permissions to delete prices.
-    - The price is not currently locked or in use in a way that prevents deletion (e.g., part of a closed transaction).
-**Dependencies:** An existing price entry.
-**Steps:**
-    1. Obtain the ID of an existing price entry.
-    2. Send a request to delete/deactivate the price entry.
-    3. Attempt to retrieve the active price entry.
-**Expected result:**
-    - System returns a success response (e.g., HTTP 200 OK or 204 No Content).
-    - The price entry is no longer actively retrievable or is marked inactive.
-**Post-conditions:**
-    - The price entry is removed or marked inactive.
-
-### 8.2. Validations
-
-**Case id:** appName_PRICE_TC005
-**Title:** Verify price creation fails if 'amount' is zero or negative.
-**Description:** Ensures a price cannot be created with a zero or negative amount.
-**Pre-conditions:**
-    - User has permissions to create prices.
-    - An item exists to associate the price with.
-**Dependencies:** Existing Item.
-**Steps:**
-    1. Prepare price data with amount = -10.00 (and another attempt with amount = 0).
-    2. Send a request to create the price entry.
-**Expected result:**
-    - System rejects the request with an error (e.g., HTTP 400 Bad Request).
-    - Error message indicates 'amount' must be positive.
-    - No new price entry is created.
+1. Query `Price.active.all()`.
+**Expected Result:**
+- Only `Price` instances with `is_active=True` are returned.
 **Post-conditions:** None.
 
-**Case id:** appName_PRICE_TC006
-**Title:** Verify price creation fails if 'currency' code is invalid.
-**Description:** Ensures currency codes are validated against an accepted list (e.g., ISO 4217).
-**Pre-conditions:**
-    - User has permissions to create prices.
-    - An item exists.
-**Dependencies:** Existing Item; defined list of valid currency codes.
+**Case ID:** services_TC_M_P_009
+**Title:** `is_valid_now` method - currently valid price
+**Description:** Verify `is_valid_now()` returns `True` for an active price within its validity period or with no dates.
+**Pre-conditions:** An `Item` and `Price` exist. Price `is_active=True`.
+    - Scenario 1: `valid_from` is past, `valid_until` is future.
+    - Scenario 2: `valid_from` is past, `valid_until` is None.
+    - Scenario 3: `valid_from` is None, `valid_until` is future.
+    - Scenario 4: `valid_from` is None, `valid_until` is None.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Prepare price data with an invalid currency code (e.g., "XYZ").
-    2. Send a request to create the price entry.
-**Expected result:**
-    - System rejects the request with an error (e.g., HTTP 400 Bad Request).
-    - Error message indicates invalid currency code.
-    - No new price entry is created.
+1. For each scenario, set dates accordingly.
+2. Call `is_valid_now()` on the price instance.
+**Expected Result:**
+- The method returns `True` for all scenarios.
 **Post-conditions:** None.
 
-**Case id:** appName_PRICE_TC007
-**Title:** Verify price creation fails if 'effective_date' is in an invalid format or a past date if business rule restricts it.
-**Description:** Ensures 'effective_date' validation. (Assuming effective dates cannot be in the past for new base prices).
-**Pre-conditions:**
-    - User has permissions to create prices.
-    - An item exists.
-**Dependencies:** Existing Item.
+**Case ID:** services_TC_M_P_010
+**Title:** `is_valid_now` method - not yet valid price
+**Description:** Verify `is_valid_now()` returns `False` if `valid_from` is in the future.
+**Pre-conditions:** An `Item` and `Price` exist. Price `is_active=True`, `valid_from` is set to tomorrow.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Prepare price data with an effective_date in the past (e.g., "YYYY-MM-DD-1").
-    2. Send a request to create the price entry.
-**Expected result:**
-    - System rejects the request with an error (e.g., HTTP 400 Bad Request).
-    - Error message indicates issue with effective_date.
-    - No new price entry is created.
+1. Call `is_valid_now()` on the price instance.
+**Expected Result:**
+- The method returns `False`.
 **Post-conditions:** None.
 
-### 8.3. Relationships
-
-**Case id:** appName_PRICE_TC008
-**Title:** Verify a price entry is correctly associated with an Item.
-**Description:** This test ensures that a created price is linked to the correct item.
-**Pre-conditions:**
-    - An item (e.g., item_id=XYZ) exists.
-    - User has permissions to create prices.
-**Dependencies:** Existing Item.
+**Case ID:** services_TC_M_P_011
+**Title:** `is_valid_now` method - expired price
+**Description:** Verify `is_valid_now()` returns `False` if `valid_until` is in the past.
+**Pre-conditions:** An `Item` and `Price` exist. Price `is_active=True`, `valid_until` is set to yesterday.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Create a price with item_id=XYZ, amount=50.00, currency="USD", effective_date="YYYY-MM-DD".
-    2. Retrieve the item XYZ and check its associated prices.
-    3. Alternatively, retrieve the price entry and verify its item_id field.
-**Expected result:**
-    - The price entry is created and correctly linked to item XYZ.
-    - Retrieving item XYZ shows the new price among its prices.
-    - The price entry's data correctly references item XYZ.
-**Post-conditions:** Price entry associated with the correct item.
-
-### 8.4. Custom Methods
-
-**Case id:** appName_PRICE_TC009
-**Title:** Verify 'get_active_price_for_item' method returns the correct current price for an item.
-**Description:** Ensures a custom method to fetch the currently active price for an item works correctly, considering effective dates.
-**Pre-conditions:**
-    - An item exists.
-    - Multiple price entries exist for the item with different effective dates:
-        - Price A: amount=100, effective_date=Today-5days
-        - Price B: amount=110, effective_date=Today-1day (current active price)
-        - Price C: amount=120, effective_date=Today+5days
-    - User has permissions to view prices.
-**Dependencies:** Existing Item and multiple Price entries.
-**Steps:**
-    1. Call the `get_active_price_for_item` method/endpoint for the item, for today's date.
-**Expected result:**
-    - The method returns Price B details (amount=110).
+1. Call `is_valid_now()` on the price instance.
+**Expected Result:**
+- The method returns `False`.
 **Post-conditions:** None.
 
-**Case id:** appName_PRICE_TC010
-**Title:** Verify 'apply_discount_percentage' method correctly calculates a new temporary price.
-**Description:** Test a custom method that applies a percentage discount to a base price, perhaps creating a new temporary 'sale' price entry or returning a calculated value. (Assuming it returns a calculated price structure, not persisting it directly).
-**Pre-conditions:**
-    - A base price entry exists (e.g., item_id=ABC, amount=200.00, currency="USD", type="retail").
-    - User has permissions.
-**Dependencies:** Existing Price entry.
+**Case ID:** services_TC_M_P_012
+**Title:** `is_valid_now` method - inactive price
+**Description:** Verify `is_valid_now()` returns `False` if `is_active=False`, even if dates are valid.
+**Pre-conditions:** An `Item` and `Price` exist. Price `is_active=False`. Dates are otherwise valid.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Obtain the base price ID or details.
-    2. Call `apply_discount_percentage` method with the base price and a discount percentage (e.g., 10%).
-**Expected result:**
-    - Method returns a calculated price structure (e.g., {original_amount: 200.00, discounted_amount: 180.00, currency: "USD", discount_percentage: 10}).
-    - No permanent price change to the base price entry unless the method's specific function is to create a new sale price.
-**Post-conditions:** None, or a temporary 'sale' price entry might be created if that's the method's behavior.
-
-## 9. Example Test Cases for a 'ServiceForm' (UI/Form Testing)
-
-This section provides example test cases for a hypothetical 'ServiceForm'. This form is assumed to be used for creating or updating services. These test cases focus on UI-level interactions, validation, and submission processes. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 9.1. Form Rendering
-
-**Case id:** appName_SERVICEFORM_TC001
-**Title:** Verify ServiceForm renders correctly with all expected fields and default values.
-**Description:** This test case ensures that the ServiceForm is displayed to the user with all its fields (e.g., Service Name, Description, Version, Status dropdown) and any pre-defined default values or placeholders.
-**Pre-conditions:**
-    - User navigates to the page containing the ServiceForm (e.g., "Create Service" page or "Edit Service" page with an existing service loaded).
-**Dependencies:** UI framework, routing.
-**Steps:**
-    1. Navigate to the page where the ServiceForm is rendered.
-    2. If editing, ensure an existing service's data is loaded into the form.
-    3. Visually inspect the form.
-**Expected result:**
-    - The form title (e.g., "Create New Service" or "Edit Service") is displayed.
-    - All expected input fields (e.g., text input for Name, textarea for Description, text input for Version) are present.
-    - Dropdown for 'Status' (if applicable) is present with correct options (e.g., 'Active', 'Inactive', 'Deprecated').
-    - Placeholder texts are correctly displayed in empty fields.
-    - If editing, fields are populated with the existing service's data.
-    - "Submit" and "Cancel" (or "Reset") buttons are visible.
+1. Call `is_valid_now()` on the price instance.
+**Expected Result:**
+- The method returns `False`.
 **Post-conditions:** None.
 
-### 9.2. Form Validation
-
-**Case id:** appName_SERVICEFORM_TC002
-**Title:** Verify successful form submission with all valid required and optional data.
-**Description:** This test case ensures that the form can be submitted successfully when all fields are filled with valid data.
-**Pre-conditions:**
-    - User is on the ServiceForm page.
-**Dependencies:** Backend service endpoint for form submission.
+**Case ID:** services_TC_M_P_013
+**Title:** `get_discounted_amount` method - no discount
+**Description:** Verify `get_discounted_amount()` returns original amount if `discount_percentage` is 0.
+**Pre-conditions:** A `Price` instance exists with `amount` = 100.00, `discount_percentage` = 0.00.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Enter a valid unique service name in the 'Service Name' field (e.g., "My New Service").
-    2. Enter a valid description in the 'Description' field (e.g., "Detailed description of my new service.").
-    3. Enter a valid version in the 'Version' field (e.g., "1.0.0").
-    4. Select a valid status from the 'Status' dropdown (e.g., "Active").
-    5. Fill any optional fields with valid data.
-    6. Click the "Submit" button.
-**Expected result:**
-    - Form submits successfully.
-    - A success message is displayed to the user (e.g., "Service 'My New Service' created successfully!").
-    - User might be redirected to a service list page or the details page of the newly created/updated service.
-    - The corresponding service entity is created/updated in the backend.
-**Post-conditions:** A new service is created, or an existing service is updated in the system.
-
-**Case id:** appName_SERVICEFORM_TC003
-**Title:** Verify form submission fails if a required field (Service Name) is empty.
-**Description:** This test case ensures that client-side and/or server-side validation prevents form submission if the mandatory 'Service Name' field is left empty.
-**Pre-conditions:**
-    - User is on the ServiceForm page.
-**Dependencies:** Validation logic (client-side JS, backend API).
-**Steps:**
-    1. Leave the 'Service Name' field empty.
-    2. Fill all other required fields with valid data.
-    3. Click the "Submit" button.
-**Expected result:**
-    - Form submission is prevented.
-    - An inline error message is displayed next to the 'Service Name' field (e.g., "Service Name is required.").
-    - The field might be highlighted (e.g., red border).
-    - No service creation/update request is sent to the backend, or if sent, the backend returns a validation error.
-**Post-conditions:** No new service is created. Form remains on the page with error messages.
-
-**Case id:** appName_SERVICEFORM_TC004
-**Title:** Verify form submission fails if 'Version' field has an invalid format.
-**Description:** This test case ensures validation for the 'Version' field format (e.g., semantic versioning X.Y.Z).
-**Pre-conditions:**
-    - User is on the ServiceForm page.
-**Dependencies:** Validation logic.
-**Steps:**
-    1. Enter valid data for all required fields except 'Version'.
-    2. Enter an invalid version in the 'Version' field (e.g., "alpha-1", "1", "1.x").
-    3. Click the "Submit" button.
-**Expected result:**
-    - Form submission is prevented.
-    - An inline error message is displayed next to the 'Version' field (e.g., "Version must be in X.Y.Z format, e.g., 1.0.2.").
-    - No service creation/update request is sent, or backend returns a validation error.
-**Post-conditions:** No new service is created.
-
-**Case id:** appName_SERVICEFORM_TC005
-**Title:** Verify character limit validation for 'Description' field (if applicable).
-**Description:** This test case ensures that if the 'Description' field has a maximum character limit, it is enforced.
-**Pre-conditions:**
-    - User is on the ServiceForm page.
-    - A maximum character limit is defined for the 'Description' field (e.g., 500 characters).
-**Dependencies:** Validation logic.
-**Steps:**
-    1. Enter text exceeding the character limit in the 'Description' field.
-    2. Fill all other required fields with valid data.
-    3. Attempt to submit the form or observe validation messages as text is entered.
-**Expected result:**
-    - User is prevented from typing more characters than the limit, or an error message is displayed if submission is attempted.
-    - Error message indicates "Description cannot exceed 500 characters."
-    - Form submission fails if invalid data is submitted.
-**Post-conditions:** No new service is created with an overly long description.
-
-### 9.3. Form Submission & Post-Submission Behavior
-
-**Case id:** appName_SERVICEFORM_TC006
-**Title:** Verify "Cancel" button functionality.
-**Description:** This test case ensures that clicking the "Cancel" button discards any changes and redirects the user appropriately or clears the form.
-**Pre-conditions:**
-    - User is on the ServiceForm page.
-    - Some data may or may not be entered into the form fields.
-**Dependencies:** Routing.
-**Steps:**
-    1. Enter some data into one or more fields of the ServiceForm.
-    2. Click the "Cancel" button.
-**Expected result:**
-    - User is prompted with a confirmation message if data has been entered (e.g., "Are you sure you want to discard changes?").
-    - If confirmed, or if no data was entered, the form fields are cleared (for a create form) or reset to original values (for an edit form).
-    - User is redirected to a previous page (e.g., service list) or the form is simply reset.
-    - No data is submitted to the backend.
-**Post-conditions:** Form state is reset, no entity is created/updated.
-
-**Case id:** appName_SERVICEFORM_TC007
-**Title:** Verify form behavior on submission error from the backend (e.g., duplicate service name).
-**Description:** This test case ensures the form correctly displays backend errors to the user after submission (e.g., if a service with the same name already exists and this is only caught by the backend).
-**Pre-conditions:**
-    - User is on the ServiceForm page.
-    - A service with the name "Existing Service" already exists in the backend.
-**Dependencies:** Backend service endpoint, error handling mechanism.
-**Steps:**
-    1. Enter "Existing Service" in the 'Service Name' field.
-    2. Fill all other fields with valid data.
-    3. Click the "Submit" button.
-**Expected result:**
-    - Form submits, but the backend returns an error (e.g., HTTP 409 Conflict or 400 Bad Request).
-    - A user-friendly error message is displayed on the form (e.g., "A service with this name already exists. Please choose a different name.").
-    - The entered data remains in the form fields to allow the user to correct it.
-**Post-conditions:** No new service is created. User is informed of the error.
-
-## 10. Example Test Cases for an 'ItemForm' (UI/Form Testing)
-
-This section provides example test cases for a hypothetical 'ItemForm'. This form is assumed to be used for creating or updating items. These test cases focus on UI-level interactions, validation, and submission processes. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 10.1. Form Rendering
-
-**Case id:** appName_ITEMFORM_TC001
-**Title:** Verify ItemForm renders correctly with all expected fields.
-**Description:** Ensures the ItemForm displays with fields like Item Name, Description, Price, Stock Quantity, and Category dropdown.
-**Pre-conditions:**
-    - User navigates to the page containing the ItemForm (e.g., "Create Item" or "Edit Item" page).
-    - If editing, an existing item's data is ready to be loaded.
-    - Categories for the dropdown are available.
-**Dependencies:** UI framework, routing, Category data source.
-**Steps:**
-    1. Navigate to the ItemForm page.
-    2. If editing, ensure existing item data is loaded.
-    3. Visually inspect the form.
-**Expected result:**
-    - Form title (e.g., "Create New Item" or "Edit Item") is displayed.
-    - Fields: Item Name (text input), Description (textarea), Price (number input), Stock Quantity (number input), Category (select/dropdown) are present.
-    - Placeholder texts are correct.
-    - If editing, fields are populated with the item's data.
-    - "Submit" and "Cancel" buttons are visible.
+1. Call `get_discounted_amount()` on the price instance.
+**Expected Result:**
+- The method returns 100.00.
 **Post-conditions:** None.
 
-### 10.2. Form Validation
-
-**Case id:** appName_ITEMFORM_TC002
-**Title:** Verify successful form submission with valid item data.
-**Description:** Ensures the ItemForm can be submitted successfully with all valid data.
-**Pre-conditions:**
-    - User is on the ItemForm page.
-    - Valid categories are loaded in the Category dropdown.
-**Dependencies:** Backend service endpoint for item submission.
+**Case ID:** services_TC_M_P_014
+**Title:** `get_discounted_amount` method - with discount
+**Description:** Verify `get_discounted_amount()` returns correctly calculated discounted amount.
+**Pre-conditions:** A `Price` instance exists with `amount` = 100.00, `discount_percentage` = 10.00 (i.e., 10%).
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Enter a valid item name (e.g., "New Gadget").
-    2. Enter a description (e.g., "A useful new gadget.").
-    3. Enter a valid price (e.g., "29.99").
-    4. Enter a valid stock quantity (e.g., "100").
-    5. Select a valid category from the dropdown.
-    6. Click the "Submit" button.
-**Expected result:**
-    - Form submits successfully.
-    - Success message is displayed (e.g., "Item 'New Gadget' created successfully!").
-    - User might be redirected to an item list or the new item's detail page.
-    - The item is created/updated in the backend.
-**Post-conditions:** A new item is created/updated in the system.
-
-**Case id:** appName_ITEMFORM_TC003
-**Title:** Verify form submission fails if 'Item Name' (required) is empty.
-**Description:** Ensures validation prevents submission if the mandatory 'Item Name' is empty.
-**Pre-conditions:**
-    - User is on the ItemForm page.
-**Dependencies:** Validation logic.
-**Steps:**
-    1. Leave 'Item Name' field empty.
-    2. Fill other fields with valid data.
-    3. Click "Submit".
-**Expected result:**
-    - Submission is prevented.
-    - Error message next to 'Item Name' (e.g., "Item Name is required.").
-    - Field may be highlighted.
-**Post-conditions:** No item created. Form shows errors.
-
-**Case id:** appName_ITEMFORM_TC004
-**Title:** Verify form submission fails if 'Price' is not a valid number or is negative.
-**Description:** Ensures 'Price' field validation for numeric, non-negative values.
-**Pre-conditions:**
-    - User is on the ItemForm page.
-**Dependencies:** Validation logic.
-**Steps:**
-    1. Enter "abc" in the 'Price' field. Click "Submit". Verify error.
-    2. Enter "-10" in the 'Price' field. Click "Submit". Verify error.
-    3. Enter "0" in the 'Price' field (assuming price must be > 0, adjust if 0 is allowed). Click "Submit". Verify error/success based on rule.
-**Expected result:**
-    - For invalid inputs ("abc", "-10"):
-        - Submission is prevented.
-        - Error message for 'Price' (e.g., "Price must be a valid positive number.").
-    - For "0": Behavior depends on whether zero price is allowed. If not, similar error.
-**Post-conditions:** No item created with invalid price.
-
-**Case id:** appName_ITEMFORM_TC005
-**Title:** Verify form submission fails if 'Stock Quantity' is not a whole number or is negative.
-**Description:** Ensures 'Stock Quantity' validation for integer, non-negative values.
-**Pre-conditions:**
-    - User is on the ItemForm page.
-**Dependencies:** Validation logic.
-**Steps:**
-    1. Enter "10.5" in 'Stock Quantity'. Click "Submit". Verify error.
-    2. Enter "-5" in 'Stock Quantity'. Click "Submit". Verify error.
-**Expected result:**
-    - For invalid inputs ("10.5", "-5"):
-        - Submission is prevented.
-        - Error message for 'Stock Quantity' (e.g., "Stock Quantity must be a valid non-negative whole number.").
-**Post-conditions:** No item created with invalid stock quantity.
-
-**Case id:** appName_ITEMFORM_TC006
-**Title:** Verify form submission fails if no 'Category' is selected (if required).
-**Description:** Ensures that if Category is a mandatory selection, the form validates it.
-**Pre-conditions:**
-    - User is on the ItemForm page.
-    - Category is a required field.
-**Dependencies:** Validation logic.
-**Steps:**
-    1. Fill all other fields with valid data.
-    2. Do not select any category from the dropdown (ensure it's possible to have no default selection or select a "null" option if present).
-    3. Click "Submit".
-**Expected result:**
-    - Submission is prevented.
-    - Error message for 'Category' (e.g., "Please select a category.").
-**Post-conditions:** No item created without a category.
-
-### 10.3. Form Submission & Post-Submission Behavior
-
-**Case id:** appName_ITEMFORM_TC007
-**Title:** Verify "Reset" or "Clear" button functionality (if present).
-**Description:** Ensures a "Reset" or "Clear" button, if available, clears all entered data from the form fields.
-**Pre-conditions:**
-    - User is on the ItemForm page.
-**Dependencies:** Form logic.
-**Steps:**
-    1. Enter data into several fields (Item Name, Price, etc.).
-    2. Click the "Reset" (or "Clear") button.
-**Expected result:**
-    - All fillable form fields are cleared and reset to their default state (empty or default selection for dropdowns).
-**Post-conditions:** Form is cleared. No data submitted.
-
-**Case id:** appName_ITEMFORM_TC008
-**Title:** Verify form behavior on submission success when editing an existing item.
-**Description:** Ensures that after successfully editing an item, appropriate feedback is given, and data is updated.
-**Pre-conditions:**
-    - User is on the ItemForm page, loaded with data for an existing item.
-**Dependencies:** Backend service endpoint, routing.
-**Steps:**
-    1. Modify one or more fields (e.g., change the price of the item).
-    2. Click the "Submit" (or "Update") button.
-**Expected result:**
-    - Form submits successfully.
-    - Success message is displayed (e.g., "Item 'Updated Gadget' updated successfully!").
-    - User might be redirected to the item list or the updated item's detail page.
-    - The item's data is updated in the backend.
-**Post-conditions:** The item's details are updated in the system.
-
-## 11. Example Test Cases for a 'PriceForm' (UI/Form Testing)
-
-This section provides example test cases for a hypothetical 'PriceForm'. This form is assumed to be used for creating or updating price entries for items. These test cases focus on UI-level interactions, validation, and submission processes. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 11.1. Form Rendering
-
-**Case id:** appName_PRICEFORM_TC001
-**Title:** Verify PriceForm renders correctly with all expected fields.
-**Description:** Ensures the PriceForm displays with fields like Item selection (dropdown/search), Amount, Currency (dropdown), Effective Date (date picker), and Price Type (dropdown).
-**Pre-conditions:**
-    - User navigates to the page containing the PriceForm.
-    - Items are available for selection.
-    - Currency codes and Price Types are available for dropdowns.
-**Dependencies:** UI framework, routing, Item data source, Currency & Price Type data.
-**Steps:**
-    1. Navigate to the PriceForm page.
-    2. If editing an existing price, ensure its data is loaded.
-    3. Visually inspect the form.
-**Expected result:**
-    - Form title (e.g., "Add New Price" or "Edit Price") is displayed.
-    - Fields: Item (select/search), Amount (number input), Currency (select), Effective Date (date input/picker), Price Type (select) are present.
-    - Placeholder texts and default selections (e.g., default currency) are correct.
-    - If editing, fields are populated.
-    - "Submit" and "Cancel" buttons are visible.
+1. Call `get_discounted_amount()` on the price instance.
+**Expected Result:**
+- The method returns 90.00.
 **Post-conditions:** None.
 
-### 11.2. Form Validation
-
-**Case id:** appName_PRICEFORM_TC002
-**Title:** Verify successful form submission with valid price data.
-**Description:** Ensures the PriceForm can be submitted successfully with all valid data.
-**Pre-conditions:**
-    - User is on the PriceForm page.
-    - An item is selected.
-    - Valid currencies and price types are available.
-**Dependencies:** Backend service endpoint for price submission.
+**Case ID:** services_TC_M_P_015
+**Title:** Price with default currency and frequency
+**Description:** Verify `Price` is created with default `currency` ('EUR') and `frequency` ('ONCE') if not provided.
+**Pre-conditions:** An `Item` instance exists.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Select a valid item.
-    2. Enter a valid price amount (e.g., "49.99").
-    3. Select a valid currency (e.g., "USD").
-    4. Select/enter a valid effective date.
-    5. Select a valid price type (e.g., "Retail").
-    6. Click the "Submit" button.
-**Expected result:**
-    - Form submits successfully.
-    - Success message is displayed (e.g., "Price for item 'XYZ' created successfully!").
-    - User might be redirected or the form cleared/updated.
-    - The price entry is created/updated in the backend.
-**Post-conditions:** A new price entry is created/updated.
+1. Create a `Price` instance with `item` and `amount`, without specifying `currency` or `frequency`.
+2. Save and retrieve the instance.
+**Expected Result:**
+- `price.currency` is 'EUR'.
+- `price.frequency` is 'ONCE'.
+**Post-conditions:** The `Price` instance exists with default currency and frequency.
 
-**Case id:** appName_PRICEFORM_TC003
-**Title:** Verify form submission fails if 'Item' is not selected (if required).
-**Description:** Ensures validation prevents submission if no item is selected for the price.
-**Pre-conditions:**
-    - User is on the PriceForm page.
-**Dependencies:** Validation logic.
+**Case ID:** services_TC_M_P_016
+**Title:** Price with all optional fields filled
+**Description:** Verify a `Price` can be created with all optional fields (description, valid_from, valid_until, min_quantity, max_quantity, discount_percentage) correctly set.
+**Pre-conditions:** An `Item` instance exists.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Do not select an Item.
-    2. Fill other fields with valid data.
-    3. Click "Submit".
-**Expected result:**
-    - Submission is prevented.
-    - Error message for 'Item' selection (e.g., "Please select an item.").
-**Post-conditions:** No price entry created.
+1. Create a `Price` instance providing valid values for all fields including all optional ones.
+2. Save and retrieve the instance.
+**Expected Result:**
+- All fields are stored and retrieved correctly.
+**Post-conditions:** The `Price` instance exists with all specified data.
 
-**Case id:** appName_PRICEFORM_TC004
-**Title:** Verify form submission fails if 'Amount' is empty, not a number, or negative/zero.
-**Description:** Ensures 'Amount' field validation for numeric, positive values.
-**Pre-conditions:**
-    - User is on the PriceForm page.
-**Dependencies:** Validation logic.
+## Test Cases for Forms (`services/forms.py`)
+
+### Form: `ServiceForm`
+
+**Case ID:** services_TC_F_SF_001
+**Title:** Render empty ServiceForm
+**Description:** Verify that an unbound `ServiceForm` renders correctly with all its fields and widgets.
+**Pre-conditions:** None
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Leave 'Amount' empty. Click "Submit". Verify error.
-    2. Enter "free" in 'Amount'. Click "Submit". Verify error.
-    3. Enter "-5.00" in 'Amount'. Click "Submit". Verify error.
-    4. Enter "0" in 'Amount'. Click "Submit". Verify error (assuming prices must be > 0).
-**Expected result:**
-    - For all invalid inputs:
-        - Submission is prevented.
-        - Error message for 'Amount' (e.g., "Amount must be a valid positive number.").
-**Post-conditions:** No price entry created with invalid amount.
-
-**Case id:** appName_PRICEFORM_TC005
-**Title:** Verify form submission fails if 'Effective Date' is empty or invalid format.
-**Description:** Ensures 'Effective Date' validation.
-**Pre-conditions:**
-    - User is on the PriceForm page.
-**Dependencies:** Validation logic, date picker component.
-**Steps:**
-    1. Leave 'Effective Date' empty. Click "Submit". Verify error.
-    2. Enter an invalid date format (e.g., "tomorrow" or "2023/30/01"). Click "Submit". Verify error.
-**Expected result:**
-    - Submission is prevented.
-    - Error message for 'Effective Date' (e.g., "Effective Date is required." or "Invalid date format.").
-**Post-conditions:** No price entry created.
-
-**Case id:** appName_PRICEFORM_TC006
-**Title:** Verify form submission fails if no 'Currency' is selected.
-**Description:** Ensures a currency must be selected.
-**Pre-conditions:**
-    - User is on the PriceForm page.
-**Dependencies:** Validation logic.
-**Steps:**
-    1. Do not select a 'Currency' (ensure default is non-valid or "Select..." option).
-    2. Fill other fields with valid data.
-    3. Click "Submit".
-**Expected result:**
-    - Submission is prevented.
-    - Error message for 'Currency' (e.g., "Please select a currency.").
-**Post-conditions:** No price entry created.
-
-### 11.3. Form Submission & Post-Submission Behavior
-
-**Case id:** appName_PRICEFORM_TC007
-**Title:** Verify form behavior on submission error (e.g., overlapping price period for the same item and price type).
-**Description:** Ensures the form displays backend errors correctly, such as trying to create a price that overlaps with an existing one for the same item and type.
-**Pre-conditions:**
-    - User is on the PriceForm page.
-    - An existing price for Item X, Type 'Retail' is effective from YYYY-MM-01 to YYYY-MM-31.
-**Dependencies:** Backend validation logic, error handling.
-**Steps:**
-    1. Select Item X.
-    2. Enter valid amount, currency.
-    3. Select Price Type 'Retail'.
-    4. Enter an Effective Date of YYYY-MM-15.
-    5. Click "Submit".
-**Expected result:**
-    - Form submits, but backend returns an error (e.g., HTTP 409 Conflict).
-    - User-friendly error message (e.g., "A price for this item and type already exists for the selected period.").
-    - Entered data remains in the form.
-**Post-conditions:** No new price created. User informed of the conflict.
-
-## 12. Example Test Cases for Service Views (View/Controller Testing)
-
-This section provides example test cases for views (or controllers in an MVC pattern) related to the 'Service' entity. These test cases focus on view rendering, data display, authentication, authorization, and basic flow between views. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 12.1. Service List View
-
-**Case id:** appName_SERVICEVIEW_TC001
-**Title:** Verify Service List View loads and displays services for authenticated user with permission.
-**Description:** Ensures an authenticated user with appropriate permissions can access the service list view and see a list of services.
-**Pre-conditions:**
-    - User is logged in and has 'view_service' permission.
-    - Several service entities exist in the database.
-**Dependencies:** Authentication system, Authorization system, Service model, Database with service data.
-**Steps:**
-    1. Log in as a user with 'view_service' permission.
-    2. Navigate to the Service List URL (e.g., /services/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - The 'Service List' template is rendered.
-    - The page title is "Services" or similar.
-    - A table or list of services is displayed, showing key attributes like Name, Version, Status.
-    - Pagination controls are present if many services exist.
-    - A link/button to "Create New Service" is visible.
+1. Instantiate an empty `ServiceForm`.
+2. Render the form (e.g., using `as_p()`, `as_table()`, or by rendering a template containing the form).
+**Expected Result:**
+- The form renders with fields: `title`, `description`, `is_active`.
+- `title` widget is `forms.TextInput` with class `form-control`.
+- `description` widget is `forms.Textarea` with class `form-control` and `rows: 3`.
+- `is_active` widget is `forms.CheckboxInput` with class `form-check-input`.
 **Post-conditions:** None.
 
-**Case id:** appName_SERVICEVIEW_TC002
-**Title:** Verify Service List View redirects to login for unauthenticated user.
-**Description:** Ensures an unauthenticated user is redirected to the login page when attempting to access the service list view (assuming it's not public).
-**Pre-conditions:**
-    - User is not logged in.
-    - The Service List View requires authentication.
-**Dependencies:** Authentication system, Routing.
+**Case ID:** services_TC_F_SF_002
+**Title:** Render bound ServiceForm with initial data
+**Description:** Verify that a `ServiceForm` bound to a `Service` instance displays the instance's data.
+**Pre-conditions:** A `Service` instance (s1) exists with known `title`, `description`, and `is_active` status.
+**Dependencies:** `Service` model.
 **Steps:**
-    1. Attempt to navigate to the Service List URL (e.g., /services/).
-**Expected result:**
-    - HTTP status 302 Found (redirect).
-    - User is redirected to the login page (e.g., /login/?next=/services/).
+1. Instantiate `ServiceForm` with `instance=s1`.
+2. Render the form.
+**Expected Result:**
+- The form fields are pre-populated with the data from s1.
+- `title` field shows s1.title.
+- `description` field shows s1.description.
+- `is_active` checkbox reflects s1.is_active.
 **Post-conditions:** None.
 
-**Case id:** appName_SERVICEVIEW_TC003
-**Title:** Verify Service List View shows forbidden (403) for authenticated user without permission.
-**Description:** Ensures an authenticated user without 'view_service' permission is denied access.
-**Pre-conditions:**
-    - User is logged in but LACKS 'view_service' permission.
-**Dependencies:** Authentication system, Authorization system.
+**Case ID:** services_TC_F_SF_003
+**Title:** Submit ServiceForm with valid data (create new)
+**Description:** Verify that a `ServiceForm` submitted with valid data passes validation and can save a new `Service` instance.
+**Pre-conditions:** A `users.Professional` instance (prof1) exists to associate the service with.
+**Dependencies:** `Service` model, `users.Professional` model.
 **Steps:**
-    1. Log in as a user without 'view_service' permission.
-    2. Attempt to navigate to the Service List URL (e.g., /services/).
-**Expected result:**
-    - HTTP status 403 Forbidden.
-    - A "Permission Denied" or similar error page is displayed.
+1. Prepare valid data for the form: `title` = "New Test Service", `description` = "Details", `is_active` = True.
+2. Instantiate `ServiceForm` with the prepared data.
+3. Check if `form.is_valid()` is True.
+4. If valid, call `form.save(commit=False)` to get an instance.
+5. Assign `form.instance.professional = prof1`.
+6. Call `form.instance.save()` (or `form.save()` if professional is handled by the view).
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- `form.errors` is empty.
+- A new `Service` instance is created with the submitted data and associated professional.
+**Post-conditions:** A new `Service` record exists in the database.
+
+**Case ID:** services_TC_F_SF_004
+**Title:** Submit ServiceForm with valid data (update existing)
+**Description:** Verify that a `ServiceForm` submitted with valid data can update an existing `Service` instance.
+**Pre-conditions:** A `Service` instance (s1) exists.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Prepare valid data for update: `title` = "Updated Test Service", `description` = "Updated Details", `is_active` = False.
+2. Instantiate `ServiceForm` with `data=prepared_data` and `instance=s1`.
+3. Check if `form.is_valid()` is True.
+4. If valid, call `form.save()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- `form.errors` is empty.
+- The `Service` instance s1 is updated in the database with the new data.
+**Post-conditions:** The `Service` record s1 is updated.
+
+**Case ID:** services_TC_F_SF_005
+**Title:** Submit ServiceForm with missing title (invalid)
+**Description:** Verify that submitting a `ServiceForm` without a `title` results in a validation error.
+**Pre-conditions:** None
+**Dependencies:** `Service` model.
+**Steps:**
+1. Prepare data with `title` = "" or None, valid `description` and `is_active`.
+2. Instantiate `ServiceForm` with this data.
+3. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `False`.
+- `form.errors` contains an error for the `title` field (e.g., "This field is required.").
+**Post-conditions:** No `Service` instance is created or updated.
+
+**Case ID:** services_TC_F_SF_006
+**Title:** Submit ServiceForm with description only spaces (valid)
+**Description:** Verify that submitting a `ServiceForm` with a description containing only spaces is considered valid as description is not mandatory and can be blank.
+**Pre-conditions:** None
+**Dependencies:** `Service` model.
+**Steps:**
+1. Prepare data with valid `title`, `description` = "   ", `is_active` = True.
+2. Instantiate `ServiceForm` with this data.
+3. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- `form.cleaned_data['description']` should be "   " (or stripped, depending on form/model cleaning).
+**Post-conditions:** No `Service` instance is created or updated if not saved.
+
+**Case ID:** services_TC_F_SF_007
+**Title:** ServiceForm fields attribute check
+**Description:** Verify that `ServiceForm.Meta.fields` includes 'title', 'description', 'is_active'.
+**Pre-conditions:** None
+**Dependencies:** None
+**Steps:**
+1. Inspect `ServiceForm.Meta.fields`.
+**Expected Result:**
+- The fields list is `['title', 'description', 'is_active']`.
 **Post-conditions:** None.
 
-### 12.2. Service Detail View
+### Form: `ItemForm`
 
-**Case id:** appName_SERVICEVIEW_TC004
-**Title:** Verify Service Detail View loads and displays correct service data.
-**Description:** Ensures the detail view for a specific service shows all relevant information.
-**Pre-conditions:**
-    - User is logged in and has 'view_service' permission.
-    - A service with a known ID (e.g., service_id=1) exists.
-**Dependencies:** Authentication, Authorization, Service model, Database.
+**Case ID:** services_TC_F_IF_001
+**Title:** Render empty ItemForm
+**Description:** Verify that an unbound `ItemForm` renders correctly with all its fields and widgets.
+**Pre-conditions:** None
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Log in as a user with 'view_service' permission.
-    2. Navigate to the Service Detail URL (e.g., /services/1/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - The 'Service Detail' template is rendered.
-    - Page title includes the service name (e.g., "Details for MyService1").
-    - All relevant fields of service_id=1 (Name, Description, Version, Status, Owner, etc.) are displayed correctly.
-    - Links/buttons for "Edit Service" and "Delete Service" are visible (if user has those permissions).
+1. Instantiate an empty `ItemForm`.
+2. Render the form.
+**Expected Result:**
+- The form renders with fields: `title`, `description`, `image`.
+- `title` widget is `forms.TextInput` with class `form-control`.
+- `description` widget is `forms.Textarea` with class `form-control` and `rows: 3`.
+- `image` widget is `forms.ClearableFileInput` with class `form-control-file`.
+- Help text for `image` field is displayed: "Upload an image for the item (optional)."
 **Post-conditions:** None.
 
-**Case id:** appName_SERVICEVIEW_TC005
-**Title:** Verify Service Detail View returns 404 for non-existent service.
-**Description:** Ensures a 404 Not Found error is returned when trying to view a service that doesn't exist.
-**Pre-conditions:**
-    - User is logged in and has 'view_service' permission.
-    - No service exists with service_id=9999.
-**Dependencies:** Authentication, Authorization, Routing.
+**Case ID:** services_TC_F_IF_002
+**Title:** Render bound ItemForm with initial data (including image)
+**Description:** Verify that an `ItemForm` bound to an `Item` instance displays the instance's data, including image information.
+**Pre-conditions:** An `Item` instance (i1) exists with known `title`, `description`, and an uploaded `image`.
+**Dependencies:** `Item` model.
 **Steps:**
-    1. Log in as a user with 'view_service' permission.
-    2. Navigate to the Service Detail URL for a non-existent service (e.g., /services/9999/).
-**Expected result:**
-    - HTTP status 404 Not Found.
-    - A "Service Not Found" or similar error page is displayed.
+1. Instantiate `ItemForm` with `instance=i1`.
+2. Render the form.
+**Expected Result:**
+- The form fields are pre-populated. `title` shows i1.title, `description` shows i1.description.
+- The `image` field shows information about the current image and options to clear or change it.
 **Post-conditions:** None.
 
-### 12.3. Service Create View
-
-**Case id:** appName_SERVICEVIEW_TC006
-**Title:** Verify Service Create View (GET) renders the service form.
-**Description:** Ensures the view for creating a new service correctly displays the empty ServiceForm.
-**Pre-conditions:**
-    - User is logged in and has 'add_service' permission.
-**Dependencies:** Authentication, Authorization, ServiceForm.
+**Case ID:** services_TC_F_IF_003
+**Title:** Submit ItemForm with valid data (create new, no image)
+**Description:** Verify `ItemForm` submitted with valid text data (no image) passes validation and can save a new `Item`.
+**Pre-conditions:** A `Service` instance (s1) exists to associate the item with.
+**Dependencies:** `Item` model, `Service` model.
 **Steps:**
-    1. Log in as a user with 'add_service' permission.
-    2. Navigate to the Service Create URL (e.g., /services/create/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - The 'Service Create' template is rendered, containing the ServiceForm.
-    - Form fields are empty or have default values.
+1. Prepare valid data: `title` = "New Test Item", `description` = "Item Details". (No image file).
+2. Instantiate `ItemForm` with `data=prepared_data`.
+3. Check `form.is_valid()`.
+4. If valid, `form.save(commit=False)`, then set `form.instance.service = s1`.
+5. `form.instance.save()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- `form.errors` is empty.
+- A new `Item` instance is created with the submitted data, associated service, and no image.
+**Post-conditions:** A new `Item` record exists.
+
+**Case ID:** services_TC_F_IF_004
+**Title:** Submit ItemForm with valid data (create new, with image)
+**Description:** Verify `ItemForm` submitted with valid data including an image file passes validation and saves the `Item` with the image.
+**Pre-conditions:**
+    - A `Service` instance (s1) exists.
+    - A valid image file is prepared for upload.
+**Dependencies:** `Item` model, `Service` model.
+**Steps:**
+1. Prepare data: `title` = "Item With Image", `description` = "Desc.".
+2. Prepare files data: `image` = (UploadedFile object for the image).
+3. Instantiate `ItemForm` with `data=prepared_data`, `files=prepared_files_data`.
+4. Check `form.is_valid()`.
+5. If valid, `form.save(commit=False)`, then set `form.instance.service = s1`.
+6. `form.instance.save()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- A new `Item` is created with the image correctly uploaded and associated.
+**Post-conditions:** A new `Item` record exists with an image.
+
+**Case ID:** services_TC_F_IF_005
+**Title:** Submit ItemForm with valid data (update existing, change image)
+**Description:** Verify `ItemForm` can update an existing `Item` and change its image.
+**Pre-conditions:**
+    - An `Item` instance (i1) exists, possibly with an old image.
+    - A new valid image file is prepared.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Prepare data: `title` = i1.title (or new title).
+2. Prepare files data: `image` = (UploadedFile for the new image).
+3. Instantiate `ItemForm` with `data=prepared_data`, `files=prepared_files_data`, `instance=i1`.
+4. Check `form.is_valid()`.
+5. If valid, `form.save()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- Item i1 is updated, and its `image` field points to the new image. The old image might be deleted depending on storage backend.
+**Post-conditions:** Item i1 is updated with the new image.
+
+**Case ID:** services_TC_F_IF_006
+**Title:** Submit ItemForm with valid data (update existing, clear image)
+**Description:** Verify `ItemForm` can update an `Item` and clear its existing image.
+**Pre-conditions:** An `Item` instance (i1) exists with an image.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Prepare data: `title` = i1.title, and include the special form field for clearing the image (e.g., `image-clear` = 'on', depending on how `ClearableFileInput` works).
+2. Instantiate `ItemForm` with `data=prepared_data`, `instance=i1`.
+3. Check `form.is_valid()`.
+4. If valid, `form.save()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- Item i1 is updated, and its `image` field becomes empty/None.
+**Post-conditions:** Item i1's image is cleared.
+
+**Case ID:** services_TC_F_IF_007
+**Title:** Submit ItemForm with missing title (invalid)
+**Description:** Verify submitting `ItemForm` without a `title` results in a validation error.
+**Pre-conditions:** None
+**Dependencies:** `Item` model.
+**Steps:**
+1. Prepare data with `title` = "", valid `description`.
+2. Instantiate `ItemForm` with this data.
+3. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `False`.
+- `form.errors` contains an error for `title`.
+**Post-conditions:** No `Item` is created/updated.
+
+**Case ID:** services_TC_F_IF_008
+**Title:** Submit ItemForm with invalid image file type
+**Description:** Verify submitting `ItemForm` with an invalid file type for the image results in a validation error.
+**Pre-conditions:** A non-image file (e.g., a .txt file) is prepared.
+**Dependencies:** `Item` model.
+**Steps:**
+1. Prepare data: `title` = "Item with Bad Image".
+2. Prepare files data: `image` = (UploadedFile object for the .txt file).
+3. Instantiate `ItemForm` with `data=prepared_data`, `files=prepared_files_data`.
+4. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `False`.
+- `form.errors` contains an error for the `image` field related to invalid file type.
+**Post-conditions:** No `Item` is created/updated.
+
+**Case ID:** services_TC_F_IF_009
+**Title:** ItemForm fields attribute check
+**Description:** Verify that `ItemForm.Meta.fields` includes 'title', 'description', 'image'.
+**Pre-conditions:** None
+**Dependencies:** None
+**Steps:**
+1. Inspect `ItemForm.Meta.fields`.
+**Expected Result:**
+- The fields list is `['title', 'description', 'image']`.
 **Post-conditions:** None.
 
-**Case id:** appName_SERVICEVIEW_TC007
-**Title:** Verify Service Create View (POST) creates a new service with valid data and redirects.
-**Description:** Ensures submitting valid data to the create view results in a new service and redirects.
-**Pre-conditions:**
-    - User is logged in and has 'add_service' permission.
-**Dependencies:** Authentication, Authorization, ServiceForm, Service model, Database.
-**Steps:**
-    1. Log in as a user with 'add_service' permission.
-    2. Navigate to the Service Create URL (e.g., /services/create/).
-    3. Fill the ServiceForm with valid data (Name, Description, Version, Status, etc.).
-    4. Submit the form (POST request).
-**Expected result:**
-    - HTTP status 302 Found (redirect).
-    - A new service record is created in the database with the submitted data.
-    - User is redirected to the Service List page or the detail page of the newly created service.
-    - A success message is displayed on the target page (e.g., "Service 'NewServiceName' created successfully.").
-**Post-conditions:** A new service exists in the database.
+### Form: `PriceForm`
 
-**Case id:** appName_SERVICEVIEW_TC008
-**Title:** Verify Service Create View (POST) re-renders form with errors for invalid data.
-**Description:** Ensures that if invalid data is POSTed, the form is re-rendered with error messages.
-**Pre-conditions:**
-    - User is logged in and has 'add_service' permission.
-**Dependencies:** Authentication, Authorization, ServiceForm, Validation logic.
+**Case ID:** services_TC_F_PF_001
+**Title:** Render empty PriceForm
+**Description:** Verify that an unbound `PriceForm` renders correctly with its fields, widgets, and initial values.
+**Pre-conditions:** None
+**Dependencies:** `Price` model.
 **Steps:**
-    1. Log in as a user with 'add_service' permission.
-    2. Navigate to the Service Create URL (e.g., /services/create/).
-    3. Fill the ServiceForm with invalid data (e.g., empty required field 'Name').
-    4. Submit the form (POST request).
-**Expected result:**
-    - HTTP status 200 OK (or 400 Bad Request, depending on implementation).
-    - The 'Service Create' template is re-rendered with the submitted data still in the form.
-    - Validation error messages are displayed next to the invalid fields (e.g., "Service Name is required.").
-    - No new service is created in the database.
-**Post-conditions:** No new service created.
-
-### 12.4. Service Update View
-
-**Case id:** appName_SERVICEVIEW_TC009
-**Title:** Verify Service Update View (GET) renders form pre-filled with existing service data.
-**Description:** Ensures the edit view for a service loads the ServiceForm populated with that service's current data.
-**Pre-conditions:**
-    - User is logged in and has 'change_service' permission.
-    - A service with service_id=1 exists.
-**Dependencies:** Authentication, Authorization, ServiceForm, Service model.
-**Steps:**
-    1. Log in as a user with 'change_service' permission.
-    2. Navigate to the Service Update URL (e.g., /services/1/edit/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - The 'Service Update' template is rendered, containing the ServiceForm.
-    - Form fields are pre-filled with the data from service_id=1.
+1. Instantiate an empty `PriceForm`.
+2. Render the form.
+**Expected Result:**
+- The form renders with fields: `amount`, `currency`, `frequency`, `description`, `is_active`.
+- `amount` widget is `forms.NumberInput` with class `form-control`.
+- `currency` widget is `forms.Select` with class `form-select`, populated with `Price.CURRENCY_CHOICES`. Initial value should be 'EUR' due to form's `__init__`.
+- `frequency` widget is `forms.Select` with class `form-select`, populated with `Price.FrequencyChoices.choices`.
+- `description` widget is `forms.Textarea` with class `form-control`, `rows: 2`.
+- `is_active` widget is `forms.CheckboxInput` with class `form-check-input`.
+- Labels are: 'Price' for `amount`, 'Currency' for `currency`, 'Frequency' for `frequency`, 'Active' for `is_active`.
 **Post-conditions:** None.
 
-**Case id:** appName_SERVICEVIEW_TC010
-**Title:** Verify Service Update View (POST) updates service with valid data and redirects.
-**Description:** Ensures submitting valid data to the update view updates the service and redirects.
-**Pre-conditions:**
-    - User is logged in and has 'change_service' permission.
-    - A service with service_id=1 exists.
-**Dependencies:** Authentication, Authorization, ServiceForm, Service model.
+**Case ID:** services_TC_F_PF_002
+**Title:** Render bound PriceForm with initial data
+**Description:** Verify that a `PriceForm` bound to a `Price` instance displays the instance's data.
+**Pre-conditions:** A `Price` instance (p1) exists with known values for all fields.
+**Dependencies:** `Price` model.
 **Steps:**
-    1. Log in as a user with 'change_service' permission.
-    2. Navigate to the Service Update URL (e.g., /services/1/edit/).
-    3. Modify data in the ServiceForm (e.g., change description).
-    4. Submit the form (POST request).
-**Expected result:**
-    - HTTP status 302 Found (redirect).
-    - The service record (service_id=1) is updated in the database.
-    - User is redirected to the Service List page or the detail page of the updated service.
-    - A success message is displayed (e.g., "Service 'UpdatedName' updated successfully.").
-**Post-conditions:** Service data is updated in the database.
-
-**Case id:** appName_SERVICEVIEW_TC011
-**Title:** Verify Service Update View (POST) re-renders form with errors for invalid data.
-**Description:** Ensures that if invalid data is POSTed to update, the form re-renders with errors.
-**Pre-conditions:**
-    - User is logged in and has 'change_service' permission.
-    - A service with service_id=1 exists.
-**Dependencies:** Authentication, Authorization, ServiceForm, Validation logic.
-**Steps:**
-    1. Log in.
-    2. Navigate to /services/1/edit/.
-    3. Change a field to an invalid value (e.g., clear the 'Name' field).
-    4. Submit the form.
-**Expected result:**
-    - HTTP status 200 OK (or 400).
-    - Form re-rendered with submitted data and validation errors.
-    - Service data is NOT updated in the database.
-**Post-conditions:** Service data unchanged.
-
-### 12.5. Service Delete View
-
-**Case id:** appName_SERVICEVIEW_TC012
-**Title:** Verify Service Delete View (GET) shows confirmation page.
-**Description:** Ensures navigating to the delete URL for a service displays a confirmation page.
-**Pre-conditions:**
-    - User is logged in and has 'delete_service' permission.
-    - A service with service_id=1 exists.
-**Dependencies:** Authentication, Authorization, Service model.
-**Steps:**
-    1. Log in.
-    2. Navigate to the Service Delete URL (e.g., /services/1/delete/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - A confirmation page/dialog is displayed (e.g., "Are you sure you want to delete 'Service Name'?").
-    - A "Confirm Delete" button and a "Cancel" link/button are present.
+1. Instantiate `PriceForm` with `instance=p1`.
+2. Render the form.
+**Expected Result:**
+- Form fields are pre-populated with data from p1 (amount, currency, frequency, description, is_active status).
 **Post-conditions:** None.
 
-**Case id:** appName_SERVICEVIEW_TC013
-**Title:** Verify Service Delete View (POST) deletes the service and redirects.
-**Description:** Ensures that confirming deletion (POST) removes the service and redirects.
-**Pre-conditions:**
-    - User is logged in and has 'delete_service' permission.
-    - A service with service_id=1 exists.
-**Dependencies:** Authentication, Authorization, Service model.
+**Case ID:** services_TC_F_PF_003
+**Title:** Submit PriceForm with valid data (create new)
+**Description:** Verify `PriceForm` submitted with valid data passes validation and can save a new `Price` instance.
+**Pre-conditions:** An `Item` instance (i1) exists to associate the price with.
+**Dependencies:** `Price` model, `Item` model.
 **Steps:**
-    1. Log in.
-    2. Navigate to /services/1/delete/.
-    3. Click the "Confirm Delete" button (issues a POST request).
-**Expected result:**
-    - HTTP status 302 Found (redirect).
-    - The service (service_id=1) is deleted from the database.
-    - User is redirected to the Service List page.
-    - A success message is displayed (e.g., "Service 'ServiceName' deleted successfully.").
-**Post-conditions:** Service is removed from the database.
+1. Prepare valid data: `amount`=50.00, `currency`='USD', `frequency`='HOURLY', `description`="Hourly rate", `is_active`=True.
+2. Instantiate `PriceForm` with this data.
+3. Check `form.is_valid()`.
+4. If valid, `form.save(commit=False)`, then set `form.instance.item = i1`.
+5. `form.instance.save()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- `form.errors` is empty.
+- A new `Price` instance is created with submitted data and associated item.
+**Post-conditions:** A new `Price` record exists.
 
-**Case id:** appName_SERVICEVIEW_TC014
-**Title:** Verify Service Delete View (POST) for non-existent service returns 404.
-**Description:** Ensures attempting to delete a service that doesn't exist results in a 404.
-**Pre-conditions:**
-    - User is logged in and has 'delete_service' permission.
-    - Service with service_id=9999 does not exist.
-**Dependencies:** Authentication, Authorization.
+**Case ID:** services_TC_F_PF_004
+**Title:** Submit PriceForm with valid data (update existing)
+**Description:** Verify `PriceForm` can update an existing `Price` instance.
+**Pre-conditions:** A `Price` instance (p1) exists.
+**Dependencies:** `Price` model.
 **Steps:**
-    1. Log in.
-    2. Manually issue a POST request to /services/9999/delete/ (or navigate to GET and try to confirm if UI allows).
-**Expected result:**
-    - HTTP status 404 Not Found.
-**Post-conditions:** No service deleted.
+1. Prepare update data: `amount`=75.00, `currency`='GBP', `is_active`=False.
+2. Instantiate `PriceForm` with `data=prepared_data`, `instance=p1`.
+3. Check `form.is_valid()`.
+4. If valid, `form.save()`.
+**Expected Result:**
+- `form.is_valid()` returns `True`.
+- Price instance p1 is updated in the database.
+**Post-conditions:** Price record p1 is updated.
 
-## 13. Example Test Cases for Item Views (View/Controller Testing)
-
-This section provides example test cases for views related to the 'Item' entity. These focus on view rendering, data display, authentication, authorization, and basic workflow. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 13.1. Item List View
-
-**Case id:** appName_ITEMVIEW_TC001
-**Title:** Verify Item List View loads and displays items for authenticated user with permission.
-**Description:** Ensures an authenticated user with 'view_item' permission can access the item list view.
-**Pre-conditions:**
-    - User is logged in and has 'view_item' permission.
-    - Several item entities exist in the database.
-**Dependencies:** Authentication system, Authorization system, Item model, Database.
+**Case ID:** services_TC_F_PF_005
+**Title:** Submit PriceForm with missing amount (invalid)
+**Description:** Verify submitting `PriceForm` without `amount` results in a validation error.
+**Pre-conditions:** None
+**Dependencies:** `Price` model.
 **Steps:**
-    1. Log in as a user with 'view_item' permission.
-    2. Navigate to the Item List URL (e.g., /items/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - 'Item List' template is rendered.
-    - Page title is "Items" or similar.
-    - List/table of items is displayed (Name, Price, Stock).
-    - Pagination is present if many items exist.
-    - "Create New Item" link/button is visible.
+1. Prepare data with `amount`=None, other fields valid.
+2. Instantiate `PriceForm` with this data.
+3. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `False`.
+- `form.errors` contains an error for `amount`.
+**Post-conditions:** No `Price` is created/updated.
+
+**Case ID:** services_TC_F_PF_006
+**Title:** Submit PriceForm with invalid amount (e.g., text)
+**Description:** Verify submitting `PriceForm` with non-numeric `amount` results in validation error.
+**Pre-conditions:** None
+**Dependencies:** `Price` model.
+**Steps:**
+1. Prepare data with `amount`="abc", other fields valid.
+2. Instantiate `PriceForm` with this data.
+3. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `False`.
+- `form.errors` contains an error for `amount` (e.g., "Enter a number.").
+**Post-conditions:** No `Price` is created/updated.
+
+**Case ID:** services_TC_F_PF_007
+**Title:** Submit PriceForm with invalid currency choice
+**Description:** Verify submitting `PriceForm` with a `currency` value not in `Price.CURRENCY_CHOICES` results in a validation error.
+**Pre-conditions:** None
+**Dependencies:** `Price` model.
+**Steps:**
+1. Prepare data with `currency`="XYZ", other fields valid.
+2. Instantiate `PriceForm` with this data.
+3. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `False`.
+- `form.errors` contains an error for `currency` (e.g., "Select a valid choice. XYZ is not one of the available choices.").
+**Post-conditions:** No `Price` is created/updated.
+
+**Case ID:** services_TC_F_PF_008
+**Title:** Submit PriceForm with invalid frequency choice
+**Description:** Verify submitting `PriceForm` with a `frequency` value not in `Price.FrequencyChoices` results in a validation error.
+**Pre-conditions:** None
+**Dependencies:** `Price` model.
+**Steps:**
+1. Prepare data with `frequency`="SOMETIMES", other fields valid.
+2. Instantiate `PriceForm` with this data.
+3. Check `form.is_valid()`.
+**Expected Result:**
+- `form.is_valid()` returns `False`.
+- `form.errors` contains an error for `frequency`.
+**Post-conditions:** No `Price` is created/updated.
+
+**Case ID:** services_TC_F_PF_009
+**Title:** PriceForm `__init__` currency default for new instance
+**Description:** Verify that a new, unbound `PriceForm` has `initial['currency']` set to 'EUR'.
+**Pre-conditions:** None
+**Dependencies:** `Price` model.
+**Steps:**
+1. Instantiate `form = PriceForm()`.
+2. Check `form.initial.get('currency')`.
+**Expected Result:**
+- `form.initial.get('currency')` is 'EUR'.
 **Post-conditions:** None.
 
-**Case id:** appName_ITEMVIEW_TC002
-**Title:** Verify Item List View redirects to login for unauthenticated user.
-**Description:** Ensures unauthenticated users are redirected to login if the view is protected.
+**Case ID:** services_TC_F_PF_010
+**Title:** PriceForm `__init__` currency not overridden for instance or POST data
+**Description:** Verify `initial['currency']` is not set if form is bound to an instance or has POST data.
 **Pre-conditions:**
-    - User is not logged in.
-    - Item List View requires authentication.
-**Dependencies:** Authentication system, Routing.
+    - Scenario 1: A `Price` instance (p_usd) with `currency`='USD'.
+    - Scenario 2: POST data `{'currency': 'GBP', ...}`.
+**Dependencies:** `Price` model.
 **Steps:**
-    1. Attempt to navigate to the Item List URL (e.g., /items/).
-**Expected result:**
-    - HTTP status 302 Found.
-    - User is redirected to the login page (e.g., /login/?next=/items/).
+1. Scenario 1: `form = PriceForm(instance=p_usd)`. Check `form.initial.get('currency')`.
+2. Scenario 2: `form = PriceForm(data=post_data)`. Check `form.initial.get('currency')`.
+**Expected Result:**
+- Scenario 1: `form.initial.get('currency')` is None (initial is not used to override instance data). The rendered form should show 'USD'.
+- Scenario 2: `form.initial.get('currency')` is None. The rendered form should show 'GBP' (from data).
 **Post-conditions:** None.
 
-**Case id:** appName_ITEMVIEW_TC003
-**Title:** Verify Item List View shows 403 for user without 'view_item' permission.
-**Description:** Ensures users without correct permission are denied access.
-**Pre-conditions:**
-    - User is logged in but LACKS 'view_item' permission.
-**Dependencies:** Authentication, Authorization.
+**Case ID:** services_TC_F_PF_011
+**Title:** PriceForm fields attribute check
+**Description:** Verify `PriceForm.Meta.fields` list.
+**Pre-conditions:** None
+**Dependencies:** None
 **Steps:**
-    1. Log in as user without 'view_item' permission.
-    2. Attempt to navigate to Item List URL (e.g., /items/).
-**Expected result:**
-    - HTTP status 403 Forbidden.
-    - "Permission Denied" page displayed.
+1. Inspect `PriceForm.Meta.fields`.
+**Expected Result:**
+- Fields are `['amount', 'currency', 'frequency', 'description', 'is_active']`.
 **Post-conditions:** None.
 
-### 13.2. Item Detail View
+## Test Cases for Views (`services/views.py`)
 
-**Case id:** appName_ITEMVIEW_TC004
-**Title:** Verify Item Detail View loads and displays correct item data.
-**Description:** Ensures the detail view for an item shows its information.
-**Pre-conditions:**
-    - User is logged in and has 'view_item' permission.
-    - An item with ID=1 exists.
-**Dependencies:** Authentication, Authorization, Item model, Database.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Detail URL (e.g., /items/1/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - 'Item Detail' template rendered.
-    - Page title includes item name.
-    - All relevant fields of item_id=1 (Name, Description, Price, Stock, Category, etc.) are displayed.
-    - "Edit Item" and "Delete Item" links/buttons visible (if user has permissions).
+### Mixins (General Behavior to be verified in context of views)
+
+**Case ID:** services_TC_V_MIX_001
+**Title:** `ProfessionalRequiredMixin` - Access granted for professional user
+**Description:** Verify users with a professional profile can access views using this mixin.
+**Pre-conditions:** User is logged in AND has a `Professional` profile.
+**Dependencies:** `users.Professional` model.
+**Steps:** (Tested implicitly by accessing a view that uses this mixin, e.g., `ServiceCreateView`)
+1. Logged-in professional user attempts to access the view.
+**Expected Result:**
+- View is accessible (HTTP 200 for GET, or proceeds to logic for POST).
+- No redirection to login or 'profile_choice'.
 **Post-conditions:** None.
 
-**Case id:** appName_ITEMVIEW_TC005
-**Title:** Verify Item Detail View returns 404 for non-existent item.
-**Description:** Ensures 404 for non-existent item ID.
-**Pre-conditions:**
-    - User is logged in, has 'view_item' permission.
-    - No item exists with item_id=9999.
-**Dependencies:** Authentication, Authorization, Routing.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Detail URL (e.g., /items/9999/).
-**Expected result:**
-    - HTTP status 404 Not Found.
-    - "Item Not Found" page displayed.
+**Case ID:** services_TC_V_MIX_002
+**Title:** `ProfessionalRequiredMixin` - Access denied for non-professional user
+**Description:** Verify users without a professional profile are redirected.
+**Pre-conditions:** User is logged in BUT does NOT have a `Professional` profile.
+**Dependencies:** None.
+**Steps:** (Tested implicitly)
+1. Logged-in non-professional user attempts to access a view using this mixin.
+**Expected Result:**
+- User is redirected (e.g., to `users:profile_choice`).
+- An error message is displayed (e.g., "You are not registered as a professional.").
 **Post-conditions:** None.
 
-### 13.3. Item Create View
-
-**Case id:** appName_ITEMVIEW_TC006
-**Title:** Verify Item Create View (GET) renders the item form.
-**Description:** Ensures the view for creating a new item displays the empty ItemForm.
+**Case ID:** services_TC_V_MIX_003
+**Title:** `ProfessionalOwnsObjectMixin` - Access granted for owner
+**Description:** Verify professional who owns the object can access views using this mixin (e.g., update/delete).
 **Pre-conditions:**
-    - User is logged in and has 'add_item' permission.
-**Dependencies:** Authentication, Authorization, ItemForm.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Create URL (e.g., /items/create/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - 'Item Create' template rendered, containing ItemForm.
-    - Form fields are empty/default.
+    - User is logged in and is a `Professional` (P1).
+    - An object (e.g., `Service` S1) exists where `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` (or other relevant model).
+**Steps:** (Tested implicitly by accessing e.g. `ServiceUpdateView` for S1 as P1)
+1. P1 attempts to access the view for S1.
+**Expected Result:**
+- View is accessible (HTTP 200 for GET, or proceeds to logic for POST).
 **Post-conditions:** None.
 
-**Case id:** appName_ITEMVIEW_TC007
-**Title:** Verify Item Create View (POST) creates a new item with valid data and redirects.
-**Description:** Ensures submitting valid data creates an item and redirects.
+**Case ID:** services_TC_V_MIX_004
+**Title:** `ProfessionalOwnsObjectMixin` - Access denied for non-owner
+**Description:** Verify professional who does NOT own the object is denied access.
 **Pre-conditions:**
-    - User is logged in and has 'add_item' permission.
-**Dependencies:** Authentication, Authorization, ItemForm, Item model, Database.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Create URL.
-    3. Fill ItemForm with valid data.
-    4. Submit form (POST).
-**Expected result:**
-    - HTTP status 302 Found.
-    - New item record created in database.
-    - Redirected to Item List or new item's detail page.
-    - Success message displayed.
-**Post-conditions:** New item exists.
-
-**Case id:** appName_ITEMVIEW_TC008
-**Title:** Verify Item Create View (POST) re-renders form with errors for invalid data.
-**Description:** Ensures invalid POST data re-renders the form with errors.
-**Pre-conditions:**
-    - User is logged in and has 'add_item' permission.
-**Dependencies:** Authentication, Authorization, ItemForm, Validation logic.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Create URL.
-    3. Fill ItemForm with invalid data (e.g., empty name, negative price).
-    4. Submit form (POST).
-**Expected result:**
-    - HTTP status 200 OK (or 400).
-    - 'Item Create' template re-rendered with submitted data and validation errors.
-    - No new item created.
-**Post-conditions:** No new item created.
-
-### 13.4. Item Update View
-
-**Case id:** appName_ITEMVIEW_TC009
-**Title:** Verify Item Update View (GET) renders form with existing item data.
-**Description:** Ensures edit view for an item loads ItemForm with current data.
-**Pre-conditions:**
-    - User is logged in and has 'change_item' permission.
-    - Item with ID=1 exists.
-**Dependencies:** Authentication, Authorization, ItemForm, Item model.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Update URL (e.g., /items/1/edit/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - 'Item Update' template rendered, with ItemForm.
-    - Form fields pre-filled with data from item_id=1.
+    - User (P1) is logged in and is a `Professional`.
+    - Another `Professional` (P2) exists.
+    - An object (e.g., `Service` S2) exists where `S2.professional == P2`.
+**Dependencies:** `users.Professional`, `Service` model.
+**Steps:** (Tested implicitly)
+1. P1 attempts to access a view using this mixin for object S2.
+**Expected Result:**
+- User is redirected (e.g., to `services:service_list`).
+- An error message is displayed (e.g., "You do not have permission...").
 **Post-conditions:** None.
 
-**Case id:** appName_ITEMVIEW_TC010
-**Title:** Verify Item Update View (POST) updates item with valid data and redirects.
-**Description:** Ensures valid POST data updates the item and redirects.
+**Case ID:** services_TC_V_MIX_005
+**Title:** `UserOwnsParentServiceMixin` - Access granted for owner of parent Service (for Item views)
+**Description:** Verify professional who owns the parent Service can access Item views.
 **Pre-conditions:**
-    - User is logged in and has 'change_item' permission.
-    - Item with ID=1 exists.
-**Dependencies:** Authentication, Authorization, ItemForm, Item model.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Update URL (e.g., /items/1/edit/).
-    3. Modify data in ItemForm.
-    4. Submit form (POST).
-**Expected result:**
-    - HTTP status 302 Found.
-    - Item record (ID=1) updated in database.
-    - Redirected to Item List or updated item's detail page.
-    - Success message displayed.
-**Post-conditions:** Item data updated.
-
-### 13.5. Item Delete View
-
-**Case id:** appName_ITEMVIEW_TC011
-**Title:** Verify Item Delete View (GET) shows confirmation page.
-**Description:** Ensures navigating to delete URL for an item shows confirmation.
-**Pre-conditions:**
-    - User is logged in and has 'delete_item' permission.
-    - Item with ID=1 exists.
-**Dependencies:** Authentication, Authorization, Item model.
-**Steps:**
-    1. Log in.
-    2. Navigate to Item Delete URL (e.g., /items/1/delete/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - Confirmation page/dialog displayed.
-    - "Confirm Delete" and "Cancel" options available.
+    - User (P1) is logged in and is a `Professional`.
+    - `Service` S1 exists, `S1.professional == P1`.
+    - `Item` I1 exists, `I1.service == S1`.
+    - URL requires `service_pk` for S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:** (Tested implicitly by accessing e.g. `ItemCreateView` for S1 as P1)
+1. P1 attempts to access an Item view related to S1.
+**Expected Result:**
+- View is accessible. `self.service` is set to S1 in the view.
 **Post-conditions:** None.
 
-**Case id:** appName_ITEMVIEW_TC012
-**Title:** Verify Item Delete View (POST) deletes the item and redirects.
-**Description:** Ensures confirming deletion removes the item and redirects.
+**Case ID:** services_TC_V_MIX_006
+**Title:** `UserOwnsParentServiceMixin` - Access denied for non-owner of parent Service
+**Description:** Verify professional who does not own the parent Service is denied access to Item views.
 **Pre-conditions:**
-    - User is logged in and has 'delete_item' permission.
-    - Item with ID=1 exists.
-**Dependencies:** Authentication, Authorization, Item model.
-**Steps:**
-    1. Log in.
-    2. Navigate to /items/1/delete/.
-    3. Click "Confirm Delete" (issues POST).
-**Expected result:**
-    - HTTP status 302 Found.
-    - Item (ID=1) deleted from database.
-    - Redirected to Item List page.
-    - Success message displayed.
-**Post-conditions:** Item removed.
-
-## 14. Example Test Cases for Price Views (View/Controller Testing)
-
-This section provides example test cases for views related to the 'Price' entity. Prices are often managed in the context of an Item. The `appName` in `Case id` should be replaced with the actual application name.
-
-### 14.1. Price List View (within Item context)
-
-**Case id:** appName_PRICEVIEW_TC001
-**Title:** Verify Price List for an Item displays correctly for authenticated user with permission.
-**Description:** Ensures an authenticated user with 'view_item' (or 'view_price') permission can see prices listed, typically on an item's detail page or a dedicated price management page for an item.
-**Pre-conditions:**
-    - User is logged in and has 'view_item' (or 'view_price') permission.
-    - An Item (item_id=1) exists with several Price entries (e.g., retail, sale, different dates).
-**Dependencies:** Authentication, Authorization, Item model, Price model, Database.
-**Steps:**
-    1. Log in as a user with relevant permissions.
-    2. Navigate to the Item Detail page for item_id=1 (e.g., /items/1/) or a specific price listing URL for that item.
-**Expected result:**
-    - HTTP status 200 OK.
-    - The item's detail template (or a price list template) is rendered.
-    - A section/table lists prices for item_id=1, showing Amount, Currency, Effective Date, Price Type.
-    - Links/buttons to "Add Price", "Edit Price", "Delete Price" for each entry might be visible (if user has those permissions).
+    - User (P1) is logged in, is a `Professional`.
+    - `Service` S2 exists, `S2.professional` is another professional (P2).
+    - URL requires `service_pk` for S2.
+**Dependencies:** `users.Professional`, `Service` model.
+**Steps:** (Tested implicitly)
+1. P1 attempts to access an Item view related to S2.
+**Expected Result:**
+- Redirected, error message displayed. `self.service` might be None or raise Http404 internally first.
 **Post-conditions:** None.
 
-### 14.2. Price Create View (for a specific Item)
-
-**Case id:** appName_PRICEVIEW_TC002
-**Title:** Verify Price Create View (GET) renders the price form for a specific item.
-**Description:** Ensures the view for adding a new price to an item correctly displays the PriceForm.
+**Case ID:** services_TC_V_MIX_007
+**Title:** `UserOwnsGrandparentServiceViaItemMixin` - Access granted (for Price views)
+**Description:** Verify professional owning grandparent Service (via Item) can access Price views.
 **Pre-conditions:**
-    - User is logged in and has 'add_price' permission.
-    - An Item (item_id=1) exists for which a new price will be added.
-**Dependencies:** Authentication, Authorization, PriceForm, Item model.
-**Steps:**
-    1. Log in.
-    2. Navigate to the Price Create URL, typically specifying the item (e.g., /items/1/prices/create/ or /prices/create/?item_id=1).
-**Expected result:**
-    - HTTP status 200 OK.
-    - The 'Price Create' template is rendered, containing the PriceForm.
-    - The 'Item' field in the form might be pre-selected or hidden if contextually tied to item_id=1.
-    - Other form fields (Amount, Currency, etc.) are empty or have defaults.
+    - User (P1) is logged in, `Professional`.
+    - `Service` S1 exists, `S1.professional == P1`.
+    - `Item` I1 exists, `I1.service == S1`.
+    - `Price` Prc1 exists, `Prc1.item == I1`.
+    - URL requires `service_pk` for S1 and `item_pk` for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:** (Tested implicitly, e.g. `PriceCreateView` for I1 under S1 as P1)
+1. P1 attempts to access a Price view related to I1 (which is under S1).
+**Expected Result:**
+- View accessible. `self.service` is S1, `self.item` is I1.
 **Post-conditions:** None.
 
-**Case id:** appName_PRICEVIEW_TC003
-**Title:** Verify Price Create View (POST) creates a new price for an item and redirects.
-**Description:** Ensures submitting valid data to the create price view results in a new price associated with the correct item.
+**Case ID:** services_TC_V_MIX_008
+**Title:** `UserOwnsGrandparentServiceViaItemMixin` - Access denied for non-owner
+**Description:** Verify access denied if professional does not own the grandparent Service.
 **Pre-conditions:**
-    - User is logged in and has 'add_price' permission.
-    - Item with item_id=1 exists.
-**Dependencies:** Authentication, Authorization, PriceForm, Price model, Item model, Database.
-**Steps:**
-    1. Log in.
-    2. Navigate to the Price Create URL for item_id=1.
-    3. Fill the PriceForm with valid data (Amount, Currency, Effective Date, Price Type).
-    4. Submit the form (POST).
-**Expected result:**
-    - HTTP status 302 Found (redirect).
-    - A new Price record is created in the database, associated with item_id=1.
-    - User is redirected (e.g., to the item's detail page showing prices, or the price list for that item).
-    - A success message is displayed.
-**Post-conditions:** A new price for the item exists.
-
-**Case id:** appName_PRICEVIEW_TC004
-**Title:** Verify Price Create View (POST) re-renders form with errors for invalid price data.
-**Description:** Ensures invalid POSTed data re-renders the PriceForm with errors.
-**Pre-conditions:**
-    - User is logged in and has 'add_price' permission.
-    - Item with item_id=1 exists.
-**Dependencies:** Authentication, Authorization, PriceForm, Validation logic.
-**Steps:**
-    1. Log in.
-    2. Navigate to Price Create URL for item_id=1.
-    3. Fill PriceForm with invalid data (e.g., negative amount).
-    4. Submit form (POST).
-**Expected result:**
-    - HTTP status 200 OK (or 400).
-    - PriceForm re-rendered with submitted data and validation errors.
-    - No new price created.
-**Post-conditions:** No new price created.
-
-### 14.3. Price Update View
-
-**Case id:** appName_PRICEVIEW_TC005
-**Title:** Verify Price Update View (GET) renders form with existing price data.
-**Description:** Ensures edit view for a price loads PriceForm with current data.
-**Pre-conditions:**
-    - User is logged in and has 'change_price' permission.
-    - A Price entry (price_id=10) associated with an Item (e.g., item_id=1) exists.
-**Dependencies:** Authentication, Authorization, PriceForm, Price model.
-**Steps:**
-    1. Log in.
-    2. Navigate to Price Update URL (e.g., /prices/10/edit/ or /items/1/prices/10/edit/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - 'Price Update' template rendered, with PriceForm.
-    - Form fields pre-filled with data from price_id=10.
+    - User (P1) is logged in, `Professional`.
+    - `Service` S2 by another professional (P2). `Item` I2 under S2.
+    - URL for Price view under I2, S2.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:** (Tested implicitly)
+1. P1 attempts to access Price view related to I2.
+**Expected Result:**
+- Redirected, error message.
 **Post-conditions:** None.
 
-**Case id:** appName_PRICEVIEW_TC006
-**Title:** Verify Price Update View (POST) updates price with valid data and redirects.
-**Description:** Ensures valid POST data updates the price and redirects.
-**Pre-conditions:**
-    - User is logged in and has 'change_price' permission.
-    - Price entry price_id=10 exists.
-**Dependencies:** Authentication, Authorization, PriceForm, Price model.
-**Steps:**
-    1. Log in.
-    2. Navigate to Price Update URL for price_id=10.
-    3. Modify data in PriceForm (e.g., change amount).
-    4. Submit form (POST).
-**Expected result:**
-    - HTTP status 302 Found.
-    - Price record (price_id=10) updated.
-    - Redirected (e.g., to item's detail page or price list for the item).
-    - Success message displayed.
-**Post-conditions:** Price data updated.
+---
 
-### 14.4. Price Delete View
+### Service Views
 
-**Case id:** appName_PRICEVIEW_TC007
-**Title:** Verify Price Delete View (GET) shows confirmation.
-**Description:** Ensures navigating to delete URL for a price shows confirmation.
-**Pre-conditions:**
-    - User is logged in and has 'delete_price' permission.
-    - Price entry price_id=10 exists.
-**Dependencies:** Authentication, Authorization, Price model.
+#### View: `ServiceCreateView` (`services:service_create`)
+
+**Case ID:** services_TC_V_SCV_001
+**Title:** Access `ServiceCreateView` - Not logged in
+**Description:** Verify unauthenticated users are redirected to login.
+**Pre-conditions:** User is not logged in.
+**Dependencies:** None.
 **Steps:**
-    1. Log in.
-    2. Navigate to Price Delete URL (e.g., /prices/10/delete/).
-**Expected result:**
-    - HTTP status 200 OK.
-    - Confirmation page/dialog displayed.
-    - "Confirm Delete" and "Cancel" options.
+1. Attempt to GET the `services:service_create` URL.
+**Expected Result:**
+- Redirected to login page (HTTP 302).
 **Post-conditions:** None.
 
-**Case id:** appName_PRICEVIEW_TC008
-**Title:** Verify Price Delete View (POST) deletes the price and redirects.
-**Description:** Ensures confirming deletion removes price and redirects.
-**Pre-conditions:**
-    - User is logged in and has 'delete_price' permission.
-    - Price entry price_id=10 exists, associated with item_id=1.
-**Dependencies:** Authentication, Authorization, Price model.
+**Case ID:** services_TC_V_SCV_002
+**Title:** Access `ServiceCreateView` - Logged in, not professional
+**Description:** Verify logged-in non-professional users are redirected (by `ProfessionalRequiredMixin`).
+**Pre-conditions:** User is logged in but does not have a `Professional` profile.
+**Dependencies:** None.
 **Steps:**
-    1. Log in.
-    2. Navigate to /prices/10/delete/.
-    3. Click "Confirm Delete" (issues POST).
-**Expected result:**
-    - HTTP status 302 Found.
-    - Price (price_id=10) deleted.
-    - Redirected (e.g., to item detail page for item_id=1).
-    - Success message displayed.
-**Post-conditions:** Price removed.
+1. Attempt to GET the `services:service_create` URL.
+**Expected Result:**
+- Redirected (e.g., to `users:profile_choice`).
+- Error message displayed.
+**Post-conditions:** None.
 
-**Case id:** appName_PRICEVIEW_TC009
-**Title:** Verify Price Delete View access denied for user without 'delete_price' permission.
-**Description:** Ensures users without correct permission cannot access delete view (GET or POST).
-**Pre-conditions:**
-    - User is logged in but LACKS 'delete_price' permission.
-    - Price entry price_id=10 exists.
-**Dependencies:** Authentication, Authorization.
+**Case ID:** services_TC_V_SCV_003
+**Title:** `ServiceCreateView` GET request - Logged in, professional
+**Description:** Verify a logged-in professional user can access the form page.
+**Pre-conditions:** User is logged in and has a `Professional` profile.
+**Dependencies:** None.
 **Steps:**
-    1. Log in.
-    2. Attempt to navigate to /prices/10/delete/ (GET).
-    3. (If GET is accessible) Attempt to issue POST request to /prices/10/delete/.
-**Expected result:**
-    - HTTP status 403 Forbidden for GET and/or POST.
-    - "Permission Denied" page.
-**Post-conditions:** Price not deleted.
+1. GET the `services:service_create` URL.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/service_form.html` is rendered.
+- Context contains an unbound `ServiceForm`.
+- Context `page_title` is "Create New Service".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SCV_004
+**Title:** `ServiceCreateView` POST request - Valid data
+**Description:** Verify creating a new service with valid data.
+**Pre-conditions:** User (P1) is logged in, has a `Professional` profile.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. POST valid data (e.g., `title`, `description`, `is_active`) to `services:service_create`.
+**Expected Result:**
+- A new `Service` object is created in the database, associated with P1.
+- User is redirected to `services:service_list` (HTTP 302).
+- A success message is displayed (e.g., "Service created successfully.").
+**Post-conditions:** New `Service` record exists.
+
+**Case ID:** services_TC_V_SCV_005
+**Title:** `ServiceCreateView` POST request - Invalid data (e.g., missing title)
+**Description:** Verify form re-renders with errors for invalid data.
+**Pre-conditions:** User is logged in, has a `Professional` profile.
+**Dependencies:** None.
+**Steps:**
+1. POST invalid data (e.g., `title`="", `description`="...") to `services:service_create`.
+**Expected Result:**
+- HTTP 200 OK (form re-rendered).
+- Template `services/service_form.html` is rendered.
+- The form in context contains errors (e.g., error for `title` field).
+- No new `Service` object is created.
+**Post-conditions:** No new `Service` record.
+
+#### View: `ServiceListView` (`services:service_list`)
+
+**Case ID:** services_TC_V_SLV_001
+**Title:** Access `ServiceListView` - Not logged in
+**Description:** Verify unauthenticated users are redirected to login.
+**Pre-conditions:** User is not logged in.
+**Dependencies:** None.
+**Steps:**
+1. Attempt to GET the `services:service_list` URL.
+**Expected Result:**
+- Redirected to login page (HTTP 302).
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SLV_002
+**Title:** `ServiceListView` GET request - Logged in, professional
+**Description:** Verify professional sees only their services.
+**Pre-conditions:**
+    - User (P1) is logged in, has `Professional` profile.
+    - P1 has created services S1, S2.
+    - Another professional (P2) has created service S3.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 GETs the `services:service_list` URL.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/service_list.html` is rendered.
+- Context `services` contains S1, S2, ordered by `-created_at`.
+- Context `services` does NOT contain S3.
+- Context `professional` is P1's profile.
+- Context `page_title` is "My Services".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SLV_003
+**Title:** `ServiceListView` GET request - Logged in, no professional profile
+**Description:** Verify user with no professional profile sees an empty list or appropriate message.
+**Pre-conditions:** User is logged in but does not have a `Professional` profile.
+**Dependencies:** `Service` model.
+**Steps:**
+1. GET the `services:service_list` URL.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/service_list.html` is rendered.
+- Context `services` is empty (`Service.objects.none()`).
+- Context `professional` is None.
+- An appropriate message might be shown in the template (e.g., "You have not created any services yet.").
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SLV_004
+**Title:** `ServiceListView` - No services created by professional
+**Description:** Verify page renders correctly when professional has no services.
+**Pre-conditions:** User (P1) is logged in, has `Professional` profile, but has not created any services.
+**Dependencies:** `users.Professional` model.
+**Steps:**
+1. P1 GETs the `services:service_list` URL.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/service_list.html` is rendered.
+- Context `services` is empty.
+- Template shows a message like "You have not created any services yet." and a link to create one.
+**Post-conditions:** None.
+
+#### View: `ServiceDetailView` (`services:service_detail`, pk=service.pk)
+
+**Case ID:** services_TC_V_SDV_001
+**Title:** Access `ServiceDetailView` - Not logged in
+**Description:** Verify unauthenticated users are redirected to login.
+**Pre-conditions:** A `Service` (s1) exists. User is not logged in.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt to GET `services:service_detail` for s1.
+**Expected Result:**
+- Redirected to login page (HTTP 302).
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SDV_002
+**Title:** `ServiceDetailView` GET - Owner viewing their service
+**Description:** Professional views detail of their own service (active or inactive).
+**Pre-conditions:**
+    - User (P1) is logged in, `Professional` profile.
+    - Service S1 exists, `S1.professional == P1`. S1 can be active or inactive.
+**Dependencies:** `users.Professional`, `Service` model.
+**Steps:**
+1. P1 GETs `services:service_detail` for S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/service_detail.html` is rendered.
+- Context `service` is S1.
+- Context `page_title` is S1.title.
+- Context `user_owns_service` is True.
+- Associated items and prices are displayed (if any).
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SDV_003
+**Title:** `ServiceDetailView` GET - Non-owner viewing (current: denied)
+**Description:** Verify non-owner professional cannot view another professional's service details (based on current `get_queryset` logic).
+**Pre-conditions:**
+    - User (P1) is logged in, `Professional` profile.
+    - Service S2 exists, `S2.professional` is another professional (P2).
+**Dependencies:** `users.Professional`, `Service` model.
+**Steps:**
+1. P1 GETs `services:service_detail` for S2.
+**Expected Result:**
+- HTTP 404 Not Found (as `qs.none()` then `get_object()` will fail).
+**Post-conditions:** None.
+**Note:** If view logic changes to allow public viewing of active services, this test needs update.
+
+**Case ID:** services_TC_V_SDV_004
+**Title:** `ServiceDetailView` GET - User with no professional profile (current: denied)
+**Description:** Verify user without a professional profile cannot view service details (based on current `get_queryset` logic).
+**Pre-conditions:**
+    - User is logged in, but no `Professional` profile.
+    - Service S1 exists.
+**Dependencies:** `Service` model.
+**Steps:**
+1. User GETs `services:service_detail` for S1.
+**Expected Result:**
+- HTTP 404 Not Found.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SDV_005
+**Title:** `ServiceDetailView` - Service not found
+**Description:** Verify HTTP 404 if service with given PK does not exist.
+**Pre-conditions:** User is logged in and is a professional.
+**Dependencies:** None.
+**Steps:**
+1. GET `services:service_detail` with a non-existent PK.
+**Expected Result:**
+- HTTP 404 Not Found.
+**Post-conditions:** None.
+
+#### View: `ServiceUpdateView` (`services:service_update`, pk=service.pk)
+
+**Case ID:** services_TC_V_SUV_001
+**Title:** Access `ServiceUpdateView` - Not logged in
+**Description:** Verify unauthenticated users are redirected to login.
+**Pre-conditions:** Service S1 exists. User not logged in.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt GET on `services:service_update` for S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SUV_002
+**Title:** Access `ServiceUpdateView` - Logged in, not professional
+**Description:** Redirected by `ProfessionalRequiredMixin`.
+**Pre-conditions:** Service S1 exists. User logged in, no professional profile.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt GET on `services:service_update` for S1.
+**Expected Result:**
+- Redirected (e.g. to `users:profile_choice`), error message.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SUV_003
+**Title:** Access `ServiceUpdateView` - Logged in, professional, but not owner
+**Description:** Redirected by `ProfessionalOwnsObjectMixin`.
+**Pre-conditions:**
+    - User (P1) logged in, `Professional`.
+    - Service S2 by another professional (P2) exists.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 attempts GET on `services:service_update` for S2.
+**Expected Result:**
+- Redirected (e.g. to `services:service_list`), error message.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SUV_004
+**Title:** `ServiceUpdateView` GET request - Owner
+**Description:** Owner accesses the update form for their service.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 GETs `services:service_update` for S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/service_form.html` rendered.
+- Form is bound with S1's data.
+- Context `page_title` is "Edit Service: {S1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SUV_005
+**Title:** `ServiceUpdateView` POST request - Valid data by owner
+**Description:** Owner updates their service with valid data.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 POSTs valid updated data (e.g., new title, description) to `services:service_update` for S1.
+**Expected Result:**
+- S1 is updated in the database.
+- Redirect to `services:service_detail` for S1 (HTTP 302).
+- Success message displayed (e.g., "Service updated successfully.").
+**Post-conditions:** S1 record is modified.
+
+**Case ID:** services_TC_V_SUV_006
+**Title:** `ServiceUpdateView` POST request - Invalid data by owner
+**Description:** Owner submits invalid data, form re-renders with errors.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 POSTs invalid data (e.g., title="") to `services:service_update` for S1.
+**Expected Result:**
+- HTTP 200 OK (form re-rendered).
+- Template `services/service_form.html` rendered.
+- Form in context contains errors.
+- S1 is NOT updated in the database.
+**Post-conditions:** S1 record is unchanged.
+
+#### View: `ServiceDeleteView` (`services:service_delete`, pk=service.pk)
+
+**Case ID:** services_TC_V_SDV_D_001
+**Title:** Access `ServiceDeleteView` - Not logged in
+**Description:** Verify unauthenticated users are redirected.
+**Pre-conditions:** Service S1 exists. User not logged in.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt GET on `services:service_delete` for S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SDV_D_002
+**Title:** Access `ServiceDeleteView` - Logged in, not professional
+**Description:** Redirected by `ProfessionalRequiredMixin`.
+**Pre-conditions:** Service S1 exists. User logged in, no professional profile.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt GET on `services:service_delete` for S1.
+**Expected Result:**
+- Redirected, error message.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SDV_D_003
+**Title:** Access `ServiceDeleteView` - Logged in, professional, but not owner
+**Description:** Redirected by `ProfessionalOwnsObjectMixin`.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S2 by P2 exists.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 attempts GET on `services:service_delete` for S2.
+**Expected Result:**
+- Redirected, error message.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SDV_D_004
+**Title:** `ServiceDeleteView` GET request - Owner
+**Description:** Owner accesses the delete confirmation page.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 GETs `services:service_delete` for S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/service_confirm_delete.html` rendered.
+- Context `service` is S1.
+- Context `page_title` is "Delete Service: {S1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_SDV_D_005
+**Title:** `ServiceDeleteView` POST request - Owner confirms deletion
+**Description:** Owner deletes their service.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 POSTs to `services:service_delete` for S1 (confirming deletion).
+**Expected Result:**
+- S1 is deleted from the database (and its associated Items/Prices due to CASCADE).
+- Redirect to `services:service_list` (HTTP 302).
+- Success message displayed (e.g., "Service '{S1.title}' deleted successfully.").
+**Post-conditions:** S1 record (and related children) no longer exists.
+
+**Case ID:** services_TC_V_SDV_D_006
+**Title:** `ServiceDeleteView` - Service not found
+**Description:** Verify HTTP 404 if attempting to delete non-existent service.
+**Pre-conditions:** User logged in, professional.
+**Dependencies:** None.
+**Steps:**
+1. GET or POST to `services:service_delete` with a non-existent PK.
+**Expected Result:**
+- HTTP 404 Not Found.
+**Post-conditions:** None.
+
+---
+
+### Item Views
+
+#### View: `ItemCreateView` (`services:item_create`, service_pk=service.pk)
+
+**Case ID:** services_TC_V_ICV_001
+**Title:** Access `ItemCreateView` - Not logged in
+**Description:** Verify unauthenticated users are redirected.
+**Pre-conditions:** Service S1 exists. User not logged in.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt GET on `services:item_create` for S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_ICV_002
+**Title:** Access `ItemCreateView` - Logged in, not professional
+**Description:** Redirected by `ProfessionalRequiredMixin`.
+**Pre-conditions:** Service S1 exists. User logged in, no professional profile.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt GET on `services:item_create` for S1.
+**Expected Result:**
+- Redirected (e.g. to `users:profile_choice`), error message.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_ICV_003
+**Title:** Access `ItemCreateView` - Logged in, professional, but not owner of parent Service
+**Description:** Redirected by `UserOwnsParentServiceMixin`.
+**Pre-conditions:**
+    - User (P1) logged in, `Professional`.
+    - Service S2 by another professional (P2) exists.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 attempts GET on `services:item_create` for S2.
+**Expected Result:**
+- Redirected (e.g. to `services:service_list`), error message.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_ICV_004
+**Title:** `ItemCreateView` GET request - Owner of parent Service
+**Description:** Professional accesses item creation form for their service.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 GETs `services:item_create` for S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/item_form.html` rendered.
+- Context contains an unbound `ItemForm`.
+- Context `service` is S1.
+- Context `page_title` is "Add Item to {S1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_ICV_005
+**Title:** `ItemCreateView` POST request - Valid data by parent Service owner
+**Description:** Owner creates a new item for their service with valid data.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 POSTs valid data (e.g., `title`, `description`, optional `image`) to `services:item_create` for S1.
+**Expected Result:**
+- A new `Item` object is created, associated with S1.
+- Redirect to `services:service_detail` for S1 (HTTP 302).
+- Success message displayed (e.g., "Item '{item.title}' created for service '{S1.title}'.").
+**Post-conditions:** New `Item` record exists.
+
+**Case ID:** services_TC_V_ICV_006
+**Title:** `ItemCreateView` POST request - Invalid data by parent Service owner
+**Description:** Form re-renders with errors for invalid data.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 exists, `S1.professional == P1`.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 POSTs invalid data (e.g., title="") to `services:item_create` for S1.
+**Expected Result:**
+- HTTP 200 OK (form re-rendered).
+- Template `services/item_form.html` rendered.
+- Form in context contains errors.
+- Context `service` is S1.
+- No new `Item` object is created.
+**Post-conditions:** No new `Item` record.
+
+**Case ID:** services_TC_V_ICV_007
+**Title:** `ItemCreateView` GET - Parent service not found
+**Description:** Verify HTTP 404 if `service_pk` in URL does not exist.
+**Pre-conditions:** User logged in, professional.
+**Dependencies:** None.
+**Steps:**
+1. GET `services:item_create` with a non-existent `service_pk`.
+**Expected Result:**
+- HTTP 404 Not Found (due to `get_object_or_404` in `UserOwnsParentServiceMixin`).
+**Post-conditions:** None.
+
+#### View: `ItemListView` (`services:item_list`, service_pk=service.pk)
+*(Note: This view might be integrated into `ServiceDetailView` in practice. If standalone, these tests apply.)*
+
+**Case ID:** services_TC_V_ILV_001
+**Title:** Access `ItemListView` - Not logged in
+**Description:** Verify unauthenticated users are redirected.
+**Pre-conditions:** Service S1 exists. User not logged in.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Attempt GET on `services:item_list` for S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_ILV_002
+**Title:** `ItemListView` GET - Owner of parent service
+**Description:** Professional views list of items for their own service.
+**Pre-conditions:**
+    - User (P1) is logged in, `Professional`.
+    - Service S1 exists, `S1.professional == P1`.
+    - Items I1, I2 exist, associated with S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 GETs `services:item_list` for S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/item_list.html` is rendered.
+- Context `items` contains I1, I2 (ordered by `-created_at`).
+- Context `service` is S1.
+- Context `page_title` is "Items for {S1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_ILV_003
+**Title:** `ItemListView` GET - Non-owner of parent service
+**Description:** Redirected by `UserOwnsParentServiceMixin`.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S2 by P2 exists.
+**Dependencies:** `users.Professional`, `Service` models.
+**Steps:**
+1. P1 attempts GET on `services:item_list` for S2.
+**Expected Result:**
+- Redirected, error message.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_ILV_004
+**Title:** `ItemListView` - Service has no items
+**Description:** Page renders correctly if parent service has no items.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (owned by P1) exists but has no items.
+**Dependencies:** `users.Professional`, `Service` model.
+**Steps:**
+1. P1 GETs `services:item_list` for S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Context `items` is empty.
+- Template shows a "no items" message.
+**Post-conditions:** None.
+
+#### View: `ItemDetailView` (`services:item_detail`, service_pk=service.pk, pk=item.pk)
+
+**Case ID:** services_TC_V_IDV_001
+**Title:** Access `ItemDetailView` - Not logged in
+**Description:** Verify unauthenticated users are redirected.
+**Pre-conditions:** Service S1, Item I1 (in S1) exist. User not logged in.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Attempt GET on `services:item_detail` for I1 under S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IDV_002
+**Title:** `ItemDetailView` GET - Owner of parent service
+**Description:** Professional views detail of an item within their own service.
+**Pre-conditions:**
+    - User (P1) is logged in, `Professional`.
+    - Service S1 exists, `S1.professional == P1`.
+    - Item I1 exists, `I1.service == S1`.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 GETs `services:item_detail` for I1 under S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/item_detail.html` rendered.
+- Context `item` is I1.
+- Context `service` is S1.
+- Context `page_title` is "Item: {I1.title}".
+- Context `user_owns_service` is True.
+- Associated prices for I1 are displayed.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IDV_003
+**Title:** `ItemDetailView` GET - Non-owner of parent service
+**Description:** Redirected by `UserOwnsParentServiceMixin`.
+**Pre-conditions:**
+    - User (P1) logged in, `Professional`.
+    - Service S2 by P2 exists. Item I2 in S2.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 attempts GET on `services:item_detail` for I2 under S2.
+**Expected Result:**
+- HTTP 404 (or redirect with error if mixin handles it differently before `get_queryset`). `UserOwnsParentServiceMixin`'s `dispatch` will make `self.service` None or raise Http404, then `get_queryset` will fail to find the item.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IDV_004
+**Title:** `ItemDetailView` GET - Item not found in specified service
+**Description:** HTTP 404 if item PK exists but not under service_pk.
+**Pre-conditions:**
+    - User (P1) logged in, `Professional`. Owns Service S1.
+    - Item I1 exists in S1. Item I2 exists in Service S2 (owned by P2).
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 attempts GET `services:item_detail` with `service_pk=S1.pk` and `pk=I2.pk`.
+**Expected Result:**
+- HTTP 404 Not Found (because `get_queryset` filters by `service=self.service`).
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IDV_005
+**Title:** `ItemDetailView` GET - Item PK does not exist at all
+**Description:** HTTP 404 if item PK is invalid.
+**Pre-conditions:** User (P1) logged in, `Professional`. Owns Service S1.
+**Dependencies:** `users.Professional`, `Service` model.
+**Steps:**
+1. P1 attempts GET `services:item_detail` for S1 with a non-existent item PK.
+**Expected Result:**
+- HTTP 404 Not Found.
+**Post-conditions:** None.
+
+#### View: `ItemUpdateView` (`services:item_update`, service_pk=service.pk, pk=item.pk)
+
+**Case ID:** services_TC_V_IUV_001
+**Title:** Access `ItemUpdateView` - Not logged in
+**Description:** Redirect to login.
+**Pre-conditions:** Service S1, Item I1 exist. User not logged in.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Attempt GET on `services:item_update` for I1 under S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IUV_002
+**Title:** Access `ItemUpdateView` - Non-owner of parent Service
+**Description:** Redirected by `UserOwnsParentServiceMixin`.
+**Pre-conditions:** User (P1) logged in, Professional. Service S2 by P2, Item I2 in S2.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 attempts GET on `services:item_update` for I2 under S2.
+**Expected Result:**
+- Redirected/HTTP 404.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IUV_003
+**Title:** `ItemUpdateView` GET request - Owner of parent Service
+**Description:** Owner accesses item update form.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 GETs `services:item_update` for I1 under S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/item_form.html` rendered.
+- Form bound with I1's data.
+- Context `service` is S1.
+- Context `page_title` is "Edit Item: {I1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IUV_004
+**Title:** `ItemUpdateView` POST - Valid data by owner
+**Description:** Owner updates item with valid data.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 POSTs valid updated data (e.g., new title, description) to `services:item_update` for I1 under S1.
+**Expected Result:**
+- I1 is updated.
+- Redirect to `services:item_detail` for I1 under S1.
+- Success message displayed.
+**Post-conditions:** I1 record modified.
+
+**Case ID:** services_TC_V_IUV_005
+**Title:** `ItemUpdateView` POST - Invalid data by owner
+**Description:** Form re-renders with errors.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 POSTs invalid data (e.g., title="") to `services:item_update` for I1 under S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Form in context has errors.
+- I1 not updated.
+**Post-conditions:** I1 unchanged.
+
+#### View: `ItemDeleteView` (`services:item_delete`, service_pk=service.pk, pk=item.pk)
+
+**Case ID:** services_TC_V_IDV_D_001
+**Title:** Access `ItemDeleteView` - Not logged in
+**Description:** Redirect to login.
+**Pre-conditions:** Service S1, Item I1 exist. User not logged in.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Attempt GET on `services:item_delete` for I1 under S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IDV_D_002
+**Title:** Access `ItemDeleteView` - Non-owner of parent Service
+**Description:** Redirected by `UserOwnsParentServiceMixin`.
+**Pre-conditions:** User (P1) logged in, Professional. Service S2 by P2, Item I2 in S2.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 attempts GET on `services:item_delete` for I2 under S2.
+**Expected Result:**
+- Redirected/HTTP 404.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IDV_D_003
+**Title:** `ItemDeleteView` GET request - Owner
+**Description:** Owner accesses delete confirmation page for item.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 GETs `services:item_delete` for I1 under S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/item_confirm_delete.html` rendered.
+- Context `item` is I1, `service` is S1.
+- Context `page_title` is "Delete Item: {I1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_IDV_D_004
+**Title:** `ItemDeleteView` POST request - Owner confirms deletion
+**Description:** Owner deletes their item.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 POSTs to `services:item_delete` for I1 under S1.
+**Expected Result:**
+- I1 is deleted (and its associated Prices due to CASCADE).
+- Redirect to `services:service_detail` for S1.
+- Success message displayed.
+**Post-conditions:** I1 record (and related Prices) no longer exists.
+
+---
+
+### Price Views
+
+#### View: `PriceCreateView` (`services:price_create`, service_pk=service.pk, item_pk=item.pk)
+
+**Case ID:** services_TC_V_PCV_001
+**Title:** Access `PriceCreateView` - Not logged in
+**Description:** Redirect.
+**Pre-conditions:** Service S1, Item I1 in S1 exist. User not logged in.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Attempt GET on `services:price_create` for I1 under S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PCV_002
+**Title:** Access `PriceCreateView` - Non-owner of grandparent Service
+**Description:** Redirected by `UserOwnsGrandparentServiceViaItemMixin`.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S2 by P2, Item I2 in S2.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 attempts GET on `services:price_create` for I2 under S2.
+**Expected Result:**
+- Redirected/HTTP 404.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PCV_003
+**Title:** `PriceCreateView` GET request - Owner of grandparent Service
+**Description:** Owner accesses price creation form for their item.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 GETs `services:price_create` for I1 under S1.
+**Expected Result:**
+- HTTP 200 OK.
+- Template `services/price_form.html` rendered.
+- Unbound `PriceForm` in context.
+- Context `service` is S1, `item` is I1.
+- Context `page_title` is "Add Price to {I1.title} ({S1.title})".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PCV_004
+**Title:** `PriceCreateView` POST - Valid data by owner
+**Description:** Owner creates new price for their item with valid data.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 POSTs valid price data to `services:price_create` for I1 under S1.
+**Expected Result:**
+- New `Price` object created, associated with I1.
+- Redirect to `services:item_detail` for I1 under S1.
+- Success message displayed.
+**Post-conditions:** New `Price` record exists.
+
+**Case ID:** services_TC_V_PCV_005
+**Title:** `PriceCreateView` POST - Invalid data by owner
+**Description:** Form re-renders with errors.
+**Pre-conditions:** User (P1) logged in, `Professional`. Service S1 (by P1), Item I1 in S1.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 POSTs invalid price data (e.g., amount="") to `services:price_create` for I1 under S1.
+**Expected Result:**
+- HTTP 200 OK. Form in context has errors.
+- No new `Price` created.
+**Post-conditions:** No new `Price` record.
+
+**Case ID:** services_TC_V_PCV_006
+**Title:** `PriceCreateView` GET - Parent Item or Service not found
+**Description:** HTTP 404 if `service_pk` or `item_pk` in URL is invalid/mismatched.
+**Pre-conditions:** User logged in, professional.
+**Dependencies:** None.
+**Steps:**
+1. GET `services:price_create` with a non-existent `service_pk` or `item_pk`.
+**Expected Result:**
+- HTTP 404 Not Found (due to `get_object_or_404` in `UserOwnsGrandparentServiceViaItemMixin`).
+**Post-conditions:** None.
+
+#### View: `PriceListView` (`services:price_list`, service_pk=service.pk, item_pk=item.pk)
+*(Note: This view might be integrated into `ItemDetailView`. If standalone, these tests apply.)*
+
+**Case ID:** services_TC_V_PLV_001
+**Title:** Access `PriceListView` - Not logged in
+**Description:** Redirect.
+**Pre-conditions:** Service S1, Item I1 exist. User not logged in.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Attempt GET `services:price_list` for I1 under S1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PLV_002
+**Title:** `PriceListView` GET - Owner of grandparent service
+**Description:** Professional views list of prices for an item in their service.
+**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1. Prices Prc1, Prc2 for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 GETs `services:price_list` for I1 under S1.
+**Expected Result:**
+- HTTP 200 OK. Template `services/price_list.html` rendered.
+- Context `prices` contains Prc1, Prc2 (ordered by `-created_at`).
+- Context `service` is S1, `item` is I1.
+- Context `page_title` is "Prices for {I1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PLV_003
+**Title:** `PriceListView` GET - Non-owner of grandparent service
+**Description:** Redirected.
+**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2.
+**Dependencies:** `users.Professional`, `Service`, `Item` models.
+**Steps:**
+1. P1 attempts GET `services:price_list` for I2 under S2.
+**Expected Result:**
+- Redirected/HTTP 404.
+**Post-conditions:** None.
+
+#### View: `PriceDetailView` (`services:price_detail`, service_pk=service.pk, item_pk=item.pk, pk=price.pk)
+
+**Case ID:** services_TC_V_PDV_001
+**Title:** Access `PriceDetailView` - Not logged in
+**Description:** Redirect.
+**Pre-conditions:** S1, I1 in S1, Price Prc1 for I1 exist. User not logged in.
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Attempt GET `services:price_detail` for Prc1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PDV_002
+**Title:** `PriceDetailView` GET - Owner of grandparent service
+**Description:** Owner views price details.
+**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 GETs `services:price_detail` for Prc1 under I1, S1.
+**Expected Result:**
+- HTTP 200 OK. Template `services/price_detail.html` rendered.
+- Context `price` is Prc1, `item` is I1, `service` is S1.
+- Context `page_title` is "Price Details for {I1.title}".
+- Context `user_owns_service` is True.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PDV_003
+**Title:** `PriceDetailView` GET - Non-owner of grandparent service
+**Description:** Redirected/HTTP 404.
+**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2, Prc2 for I2.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 attempts GET `services:price_detail` for Prc2.
+**Expected Result:**
+- Redirected/HTTP 404.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PDV_004
+**Title:** `PriceDetailView` GET - Price not found for specified item/service
+**Description:** HTTP 404 if price PK exists but not under specified item_pk/service_pk.
+**Pre-conditions:** User (P1) logged in, `Professional`. Owns S1, I1. Price PrcX exists for another item/service.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 attempts GET `services:price_detail` with `service_pk=S1.pk`, `item_pk=I1.pk`, but `pk=PrcX.pk`.
+**Expected Result:**
+- HTTP 404.
+**Post-conditions:** None.
+
+#### View: `PriceUpdateView` (`services:price_update`, service_pk=service.pk, item_pk=item.pk, pk=price.pk)
+
+**Case ID:** services_TC_V_PUV_001
+**Title:** Access `PriceUpdateView` - Not logged in
+**Description:** Redirect.
+**Pre-conditions:** S1, I1, Prc1 exist. User not logged in.
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Attempt GET `services:price_update` for Prc1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PUV_002
+**Title:** Access `PriceUpdateView` - Non-owner of grandparent service
+**Description:** Redirected/HTTP 404.
+**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2, Prc2 for I2.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 attempts GET `services:price_update` for Prc2.
+**Expected Result:**
+- Redirected/HTTP 404.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PUV_003
+**Title:** `PriceUpdateView` GET - Owner
+**Description:** Owner accesses price update form.
+**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 GETs `services:price_update` for Prc1.
+**Expected Result:**
+- HTTP 200 OK. Template `services/price_form.html` rendered.
+- Form bound with Prc1's data.
+- Context `service` is S1, `item` is I1.
+- Context `page_title` is "Edit Price for {I1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PUV_004
+**Title:** `PriceUpdateView` POST - Valid data by owner
+**Description:** Owner updates price with valid data.
+**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 POSTs valid updated price data to `services:price_update` for Prc1.
+**Expected Result:**
+- Prc1 is updated.
+- Redirect to `services:price_detail` for Prc1.
+- Success message.
+**Post-conditions:** Prc1 record modified.
+
+**Case ID:** services_TC_V_PUV_005
+**Title:** `PriceUpdateView` POST - Invalid data by owner
+**Description:** Form re-renders with errors.
+**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 POSTs invalid data (e.g. amount="text") to `services:price_update` for Prc1.
+**Expected Result:**
+- HTTP 200 OK. Form has errors.
+- Prc1 not updated.
+**Post-conditions:** Prc1 unchanged.
+
+#### View: `PriceDeleteView` (`services:price_delete`, service_pk=service.pk, item_pk=item.pk, pk=price.pk)
+
+**Case ID:** services_TC_V_PDV_D_001
+**Title:** Access `PriceDeleteView` - Not logged in
+**Description:** Redirect.
+**Pre-conditions:** S1, I1, Prc1 exist. User not logged in.
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Attempt GET `services:price_delete` for Prc1.
+**Expected Result:**
+- Redirect to login.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PDV_D_002
+**Title:** Access `PriceDeleteView` - Non-owner
+**Description:** Redirected/HTTP 404.
+**Pre-conditions:** User (P1) logged in, `Professional`. S2 by P2, I2 in S2, Prc2 for I2.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 attempts GET `services:price_delete` for Prc2.
+**Expected Result:**
+- Redirected/HTTP 404.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PDV_D_003
+**Title:** `PriceDeleteView` GET - Owner
+**Description:** Owner accesses delete confirmation page for price.
+**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 GETs `services:price_delete` for Prc1.
+**Expected Result:**
+- HTTP 200 OK. Template `services/price_confirm_delete.html` rendered.
+- Context `price` is Prc1, `item` is I1, `service` is S1.
+- Context `page_title` is "Delete Price for {I1.title}".
+**Post-conditions:** None.
+
+**Case ID:** services_TC_V_PDV_D_004
+**Title:** `PriceDeleteView` POST - Owner confirms deletion
+**Description:** Owner deletes their price.
+**Pre-conditions:** User (P1) logged in, `Professional`. S1 (by P1), I1 in S1, Prc1 for I1.
+**Dependencies:** `users.Professional`, `Service`, `Item`, `Price` models.
+**Steps:**
+1. P1 POSTs to `services:price_delete` for Prc1.
+**Expected Result:**
+- Prc1 is deleted.
+- Redirect to `services:item_detail` for I1 under S1.
+- Success message.
+**Post-conditions:** Prc1 record no longer exists.
+
+## Test Cases for Templates (`services/templates/services/`)
+
+**General Template Testing Notes:**
+-   These test cases often rely on the correct context being passed from the view.
+-   Verification would typically involve rendering the template with a mock context and inspecting the resulting HTML (e.g., using Django's test client and tools like BeautifulSoup or PyQuery).
+-   Focus is on what the template *should* display given certain context variables.
+
+---
+
+### Template: `service_list.html`
+
+**Context Variables Expected:** `services` (QuerySet of Service), `messages` (Django messages), `user` (request.user), `professional` (Professional profile or None).
+
+**Case ID:** services_TC_T_SL_001
+**Title:** Render `service_list.html` - With services
+**Description:** Verify the template correctly displays a list of services.
+**Pre-conditions:** `services` context variable contains multiple `Service` objects. User is authenticated and is a professional.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Render `service_list.html` with a list of services in context.
+**Expected Result:**
+- Page title "My Services" is present.
+- "My Services" header (H2) is present.
+- "Add New Service" button linking to `services:service_create` is present.
+- For each service in `services`:
+    - Service `title` is displayed.
+    - Service `created_at` date is displayed.
+    - Truncated `description` is displayed.
+    - "View Details" button linking to `services:service_detail` for the service.
+    - "Edit" button linking to `services:service_update` for the service.
+    - "Delete" button linking to `services:service_delete` for the service.
+    - Status (Active/Inactive) is displayed.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SL_002
+**Title:** Render `service_list.html` - No services
+**Description:** Verify the template displays a "no services yet" message.
+**Pre-conditions:** `services` context variable is empty or None. User is authenticated and is a professional.
+**Dependencies:** None.
+**Steps:**
+1. Render `service_list.html` with an empty `services` list.
+**Expected Result:**
+- "Add New Service" button is present.
+- An alert message "You have not created any services yet." is displayed.
+- A link within the alert prompts to "Add your first service!" pointing to `services:service_create`.
+- No service items are listed.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SL_003
+**Title:** Render `service_list.html` - With messages
+**Description:** Verify Django messages are displayed if present.
+**Pre-conditions:** `messages` framework has messages (e.g., success message after creation).
+**Dependencies:** None.
+**Steps:**
+1. Render `service_list.html` with messages in context.
+**Expected Result:**
+- Messages are displayed correctly with appropriate alert classes (e.g., `alert-success`).
+**Post-conditions:** None.
+
+---
+
+### Template: `service_form.html`
+
+**Context Variables Expected:** `form` (ServiceForm instance), `object` (Service instance, if editing), `page_title` (string).
+
+**Case ID:** services_TC_T_SFM_001
+**Title:** Render `service_form.html` - Create new service
+**Description:** Verify template for creating a new service.
+**Pre-conditions:** `form` is an unbound `ServiceForm`. `object` is None. `page_title` = "Create New Service".
+**Dependencies:** `ServiceForm`.
+**Steps:**
+1. Render `service_form.html` with the specified context.
+**Expected Result:**
+- Page title block contains "Create New Service".
+- H2 header is "Create Service".
+- Form tag with `method="post"` and `enctype="multipart/form-data"` is present.
+- CSRF token is present.
+- Form fields for `title`, `description`, `is_active` are rendered via `{{ form.as_p }}`.
+- Submit button text is "Create Service".
+- Cancel button links to `services:service_list`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SFM_002
+**Title:** Render `service_form.html` - Edit existing service
+**Description:** Verify template for editing an existing service.
+**Pre-conditions:** `form` is a `ServiceForm` bound to `object`. `object` is a `Service` instance (e.g., with title "My Old Service"). `page_title` = "Edit Service: My Old Service".
+**Dependencies:** `ServiceForm`, `Service` model.
+**Steps:**
+1. Render `service_form.html` with the context for an existing service.
+**Expected Result:**
+- Page title block contains "Edit Service: My Old Service".
+- H2 header is "Edit Service".
+- Form fields are pre-populated with `object`'s data.
+- Submit button text is "Save Changes".
+- Cancel button links to `services:service_detail` for the `object`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SFM_003
+**Title:** Render `service_form.html` - With form errors
+**Description:** Verify form errors are displayed.
+**Pre-conditions:** `form` is a bound `ServiceForm` with errors (e.g., title missing).
+**Dependencies:** `ServiceForm`.
+**Steps:**
+1. Render `service_form.html` with a form containing errors.
+**Expected Result:**
+- General form errors (non-field errors) are displayed if any.
+- Field-specific errors are displayed near the respective fields (handled by `{{ form.as_p }}`).
+**Post-conditions:** None.
+
+---
+
+### Template: `service_detail.html`
+
+**Context Variables Expected:** `service` (Service object), `user_owns_service` (boolean), `messages`.
+
+**Case ID:** services_TC_T_SDTL_001
+**Title:** Render `service_detail.html` - Owner viewing
+**Description:** Verify template display when service owner views the page.
+**Pre-conditions:**
+    - `service` is a `Service` instance.
+    - `user_owns_service` is True.
+    - `service.items.all` might return some items.
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Render `service_detail.html` with `user_owns_service` = True.
+**Expected Result:**
+- Page title block is `service.title`.
+- H2 header is `service.title`.
+- "Edit Service" button linking to `services:service_update` is present.
+- "Delete Service" button linking to `services:service_delete` is present.
+- Service `description`, `status` (Active/Inactive), `created_at`, `updated_at` are displayed.
+- "Items for this Service" section header is present.
+- "Add New Item" button linking to `services:item_create` for this service is present.
+- If `service.items.all` has items:
+    - Each item's `title`, truncated `description`, and image (if any) are displayed.
+    - "View Item", "Edit Item", "Delete Item" buttons for each item are present.
+    - For each item, its prices are listed (amount, currency, frequency, status).
+    - "Details" and "Edit Price" links for each price are present.
+    - "Add Price" button for each item is present.
+- If `service.items.all` is empty:
+    - "No items have been added..." message with "Add the first item!" link is present.
+- "Back to Services List" button links to `services:service_list`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SDTL_002
+**Title:** Render `service_detail.html` - Non-owner viewing (if applicable)
+**Description:** Verify template display for non-owners (assuming view logic allows non-owners to see some details).
+**Pre-conditions:** `service` is a `Service` instance. `user_owns_service` is False.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Render `service_detail.html` with `user_owns_service` = False.
+**Expected Result:**
+- "Edit Service", "Delete Service", "Add New Item", "Edit Item", "Delete Item", "Edit Price", "Add Price" buttons/links are NOT present.
+- Basic service information (title, description, status, items, prices) is visible if allowed by view.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SDTL_003
+**Title:** Render `service_detail.html` - Service with no items
+**Description:** Verify "no items" message when service has no items, for owner.
+**Pre-conditions:** `service.items.all` is empty. `user_owns_service` is True.
+**Dependencies:** `Service` model.
+**Steps:**
+1. Render `service_detail.html`.
+**Expected Result:**
+- "No items have been added to this service yet." message is displayed.
+- "Add the first item!" link (inside the alert) points to `services:item_create`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SDTL_004
+**Title:** Render `service_detail.html` - Item with no prices
+**Description:** Verify "no prices set" message for an item without prices, for owner.
+**Pre-conditions:** `service` has an item, but that `item.prices.all` is empty. `user_owns_service` is True.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Render `service_detail.html`.
+**Expected Result:**
+- For the item without prices, "No prices set for this item yet." message is displayed.
+- "Add Price" button for that item is still present.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_SDTL_005
+**Title:** Render `service_detail.html` - With messages
+**Description:** Verify Django messages are displayed.
+**Pre-conditions:** `messages` framework has messages.
+**Dependencies:** None.
+**Steps:**
+1. Render `service_detail.html` with messages.
+**Expected Result:**
+- Messages are displayed correctly.
+**Post-conditions:** None.
+
+---
+
+### Template: `service_confirm_delete.html`
+
+**Context Variables Expected:** `service` (Service object).
+
+**Case ID:** services_TC_T_SCD_001
+**Title:** Render `service_confirm_delete.html`
+**Description:** Verify the delete confirmation page for a service.
+**Pre-conditions:** `service` is a `Service` instance (e.g., title "Old Service").
+**Dependencies:** `Service` model.
+**Steps:**
+1. Render `service_confirm_delete.html` with the service context.
+**Expected Result:**
+- Page title block contains "Confirm Delete: Old Service".
+- H2 header is "Confirm Deletion".
+- Confirmation message "Are you sure you want to delete the service "<strong>Old Service</strong>"?" is displayed.
+- Warning "All associated items and prices will also be deleted." is present.
+- Form with `method="post"` and CSRF token is present.
+- Submit button text is "Yes, Delete".
+- Cancel button links to `services:service_detail` for the service.
+**Post-conditions:** None.
+
+---
+
+### Template: `item_detail.html`
+
+**Context Variables Expected:** `item` (Item object), `service` (parent Service object), `user_owns_service` (boolean), `messages`.
+
+**Case ID:** services_TC_T_IDTL_001
+**Title:** Render `item_detail.html` - Owner viewing
+**Description:** Verify template display when item's service owner views the page.
+**Pre-conditions:**
+    - `service` is a `Service` instance (e.g., title "Parent Service").
+    - `item` is an `Item` instance belonging to `service` (e.g., title "Cool Item").
+    - `user_owns_service` is True.
+    - `item.prices.all` might return some prices.
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Render `item_detail.html` with `user_owns_service` = True.
+**Expected Result:**
+- Page title block is "Item: Cool Item".
+- Breadcrumbs: "My Services" (to service_list) -> "Parent Service" (to service_detail) -> "Cool Item" (active).
+- H3 header is `item.title`.
+- If `user_owns_service` is True:
+    - "Edit Item" button linking to `services:item_update` for this item and service.
+    - "Delete Item" button linking to `services:item_delete` for this item and service.
+- Item `description`, `image` (if any), `created_at`, `updated_at` are displayed.
+- "Prices for this Item" section header is present.
+- If `user_owns_service` is True, "Add New Price" button linking to `services:price_create` for this item and service.
+- If `item.prices.all` has prices:
+    - Each price's `amount`, `currency`, `frequency`, `description`, and status (Active/Inactive) are displayed.
+    - If `user_owns_service` is True: "Details", "Edit", "Delete" links/buttons for each price, linking to respective price views.
+- If `item.prices.all` is empty:
+    - "No prices have been set..." message. If `user_owns_service` is True, includes "Add the first price!" link.
+- "Back to Parent Service" button linking to `services:service_detail` for the parent `service`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_IDTL_002
+**Title:** Render `item_detail.html` - Non-owner viewing (if applicable)
+**Description:** Verify template display for non-owners (assuming view logic allows non-owners to see some details).
+**Pre-conditions:** `item` and `service` context variables are set. `user_owns_service` is False.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Render `item_detail.html` with `user_owns_service` = False.
+**Expected Result:**
+- "Edit Item", "Delete Item", "Add New Price", and individual price action buttons/links are NOT present.
+- Basic item information (title, description, image, prices) is visible if allowed by view.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_IDTL_003
+**Title:** Render `item_detail.html` - Item with no prices
+**Description:** Verify "no prices" message for an item without prices, for owner.
+**Pre-conditions:** `item.prices.all` is empty. `user_owns_service` is True.
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Render `item_detail.html`.
+**Expected Result:**
+- "No prices have been set for this item yet." message is displayed.
+- If `user_owns_service` is True, "Add the first price!" link pointing to `services:price_create` is present.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_IDTL_004
+**Title:** Render `item_detail.html` - With messages
+**Description:** Verify Django messages are displayed.
+**Pre-conditions:** `messages` framework has messages.
+**Dependencies:** None.
+**Steps:**
+1. Render `item_detail.html` with messages.
+**Expected Result:**
+- Messages are displayed correctly.
+**Post-conditions:** None.
+
+---
+
+### Template: `item_form.html`
+
+**Context Variables Expected:** `form` (ItemForm instance), `service` (parent Service object), `object` (Item instance, if editing), `page_title` (string, though block is overridden).
+
+**Case ID:** services_TC_T_IFM_001
+**Title:** Render `item_form.html` - Add new item
+**Description:** Verify template for adding a new item to a service.
+**Pre-conditions:**
+    - `form` is an unbound `ItemForm`.
+    - `service` is a `Service` instance (e.g., title "Parent Service").
+    - `object` is None.
+**Dependencies:** `ItemForm`, `Service` model.
+**Steps:**
+1. Render `item_form.html` with the specified context.
+**Expected Result:**
+- Page title block: "Add Item to Parent Service".
+- H2 header: "Add New Item to Parent Service".
+- Form tag with `method="post"` and `enctype="multipart/form-data"`. CSRF token.
+- Form fields for `title`, `description`, `image` rendered via `{{ form.as_p }}`.
+- Submit button text: "Add Item".
+- Cancel button links to `services:service_detail` for the parent `service`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_IFM_002
+**Title:** Render `item_form.html` - Edit existing item
+**Description:** Verify template for editing an existing item.
+**Pre-conditions:**
+    - `service` is a `Service` instance (e.g., title "Parent Service").
+    - `object` is an `Item` instance belonging to `service` (e.g., title "My Old Item").
+    - `form` is an `ItemForm` bound to `object`.
+**Dependencies:** `ItemForm`, `Service`, `Item` models.
+**Steps:**
+1. Render `item_form.html` with context for an existing item.
+**Expected Result:**
+- Page title block: "Edit Item: My Old Item".
+- H2 header: "Edit Item for Parent Service".
+- Form fields pre-populated with `object`'s data.
+- Submit button text: "Save Changes".
+- Cancel button links to `services:item_detail` for this `object` and `service`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_IFM_003
+**Title:** Render `item_form.html` - With form errors
+**Description:** Verify form errors are displayed.
+**Pre-conditions:** `form` is a bound `ItemForm` with errors. `service` context is provided.
+**Dependencies:** `ItemForm`, `Service` model.
+**Steps:**
+1. Render `item_form.html` with a form containing errors.
+**Expected Result:**
+- Field-specific errors are displayed near respective fields.
+**Post-conditions:** None.
+
+---
+
+### Template: `item_confirm_delete.html`
+
+**Context Variables Expected:** `item` (Item object), `service` (parent Service object).
+
+**Case ID:** services_TC_T_ICD_001
+**Title:** Render `item_confirm_delete.html`
+**Description:** Verify the delete confirmation page for an item.
+**Pre-conditions:**
+    - `service` is a `Service` instance (e.g., title "Parent Service").
+    - `item` is an `Item` instance belonging to `service` (e.g., title "Item to Delete").
+**Dependencies:** `Service`, `Item` models.
+**Steps:**
+1. Render `item_confirm_delete.html` with the item and service context.
+**Expected Result:**
+- Page title block: "Confirm Delete: Item to Delete".
+- Breadcrumbs: "My Services" -> "Parent Service" -> "Item to Delete" -> "Confirm Delete" (active).
+- H2 header: "Confirm Deletion".
+- Confirmation message: "Are you sure you want to delete the item "<strong>Item to Delete</strong>" from the service "<strong>Parent Service</strong>"?"
+- Warning: "This action cannot be undone. All associated prices for this item will also be deleted."
+- Form with `method="post"` and CSRF token.
+- Submit button text: "Yes, Delete Item".
+- Cancel button links to `services:item_detail` for this `item` and `service`.
+**Post-conditions:** None.
+
+---
+
+### Template: `price_detail.html`
+
+**Context Variables Expected:** `price` (Price object), `item` (parent Item object), `service` (grandparent Service object), `user_owns_service` (boolean), `messages`.
+
+**Case ID:** services_TC_T_PDTL_001
+**Title:** Render `price_detail.html` - Owner viewing
+**Description:** Verify template display when owner views price details.
+**Pre-conditions:**
+    - `service` is a `Service` instance (e.g., title "Grandparent Service").
+    - `item` is an `Item` instance in `service` (e.g., title "Parent Item").
+    - `price` is a `Price` instance for `item` (e.g., 100 USD Monthly).
+    - `user_owns_service` is True.
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Render `price_detail.html` with `user_owns_service` = True.
+**Expected Result:**
+- Page title block: "Price Details for Parent Item".
+- Breadcrumbs: "My Services" -> "Grandparent Service" -> "Parent Item" -> "Price Details" (active).
+- H3 header: "Price Details".
+- If `user_owns_service` is True:
+    - "Edit Price" button linking to `services:price_update` for this price, item, and service.
+    - "Delete Price" button linking to `services:price_delete` for this price, item, and service.
+- Price details displayed:
+    - Link to parent `item`'s detail page.
+    - `amount` and `currency`.
+    - `frequency` (display name).
+    - `description`.
+    - Status (Active/Inactive).
+    - `created_at`, `updated_at`.
+- "Back to Parent Item" button linking to `services:item_detail` for the parent `item` and `service`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_PDTL_002
+**Title:** Render `price_detail.html` - Non-owner viewing (if applicable)
+**Description:** Verify display for non-owners.
+**Pre-conditions:** `price`, `item`, `service` context set. `user_owns_service` is False.
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Render `price_detail.html` with `user_owns_service` = False.
+**Expected Result:**
+- "Edit Price", "Delete Price" buttons are NOT present.
+- Basic price information is visible if allowed by view.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_PDTL_003
+**Title:** Render `price_detail.html` - With messages
+**Description:** Verify Django messages are displayed.
+**Pre-conditions:** `messages` framework has messages.
+**Dependencies:** None.
+**Steps:**
+1. Render `price_detail.html` with messages.
+**Expected Result:**
+- Messages are displayed correctly.
+**Post-conditions:** None.
+
+---
+
+### Template: `price_form.html`
+
+**Context Variables Expected:** `form` (PriceForm), `item` (parent Item), `service` (grandparent Service), `object` (Price instance, if editing).
+
+**Case ID:** services_TC_T_PFM_001
+**Title:** Render `price_form.html` - Add new price
+**Description:** Verify template for adding a new price to an item.
+**Pre-conditions:**
+    - `form` is an unbound `PriceForm`.
+    - `service` is a `Service` instance (e.g., title "Grandparent Service").
+    - `item` is an `Item` instance in `service` (e.g., title "Parent Item").
+    - `object` is None.
+**Dependencies:** `PriceForm`, `Item`, `Service` models.
+**Steps:**
+1. Render `price_form.html` with the specified context.
+**Expected Result:**
+- Page title block: "Add Price to Parent Item".
+- Breadcrumbs: "My Services" -> "Grandparent Service" -> "Parent Item" -> "Add Price" (active).
+- H2 header: "Add New Price to Parent Item".
+- Form tag with `method="post"`. CSRF token.
+- Form fields for `amount`, `currency`, `frequency`, etc., rendered via `{{ form.as_p }}`.
+- Submit button text: "Add Price".
+- Cancel button links to `services:item_detail` for the parent `item` and `service`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_PFM_002
+**Title:** Render `price_form.html` - Edit existing price
+**Description:** Verify template for editing an existing price.
+**Pre-conditions:**
+    - `service`, `item` are set.
+    - `object` is a `Price` instance for `item`.
+    - `form` is a `PriceForm` bound to `object`.
+**Dependencies:** `PriceForm`, `Item`, `Service`, `Price` models.
+**Steps:**
+1. Render `price_form.html` with context for an existing price.
+**Expected Result:**
+- Page title block: "Edit Price for Parent Item".
+- Breadcrumbs: "My Services" -> ... -> "Parent Item" -> "Edit Price" (active).
+- H2 header: "Edit Price for Parent Item".
+- Form fields pre-populated with `object`'s data.
+- Submit button text: "Save Changes".
+- Cancel button links to `services:price_detail` for this `object`, `item`, and `service`.
+**Post-conditions:** None.
+
+**Case ID:** services_TC_T_PFM_003
+**Title:** Render `price_form.html` - With form errors
+**Description:** Verify form errors are displayed.
+**Pre-conditions:** `form` is a bound `PriceForm` with errors. `item`, `service` context provided.
+**Dependencies:** `PriceForm`, `Item`, `Service` models.
+**Steps:**
+1. Render `price_form.html` with a form containing errors.
+**Expected Result:**
+- Field-specific errors are displayed.
+**Post-conditions:** None.
+
+---
+
+### Template: `price_confirm_delete.html`
+
+**Context Variables Expected:** `price` (Price object), `item` (parent Item), `service` (grandparent Service).
+
+**Case ID:** services_TC_T_PCD_001
+**Title:** Render `price_confirm_delete.html`
+**Description:** Verify the delete confirmation page for a price.
+**Pre-conditions:**
+    - `service` (e.g., title "Grandparent Service").
+    - `item` (e.g., title "Parent Item").
+    - `price` (e.g., 100 USD Monthly).
+**Dependencies:** `Service`, `Item`, `Price` models.
+**Steps:**
+1. Render `price_confirm_delete.html` with context.
+**Expected Result:**
+- Page title block: "Confirm Delete Price".
+- Breadcrumbs: "My Services" -> "Grandparent Service" -> "Parent Item" -> "Confirm Delete Price" (active).
+- H2 header: "Confirm Deletion".
+- Confirmation message: "Are you sure you want to delete this price?"
+- Price details displayed: `{{ price.amount }} {{ price.currency }} ({{ price.get_frequency_display }}) for item "{{ item.title }}"`.
+- Warning: "This action cannot be undone."
+- Form with `method="post"` and CSRF token.
+- Submit button text: "Yes, Delete Price".
+- Cancel button links to `services:price_detail` for this `price`, `item`, and `service`.
+**Post-conditions:** None.
+
+---
+
+### Template: `not_a_professional.html`
+
+**Context Variables Expected:** None specific beyond base template context.
+
+**Case ID:** services_TC_T_NAP_001
+**Title:** Render `not_a_professional.html`
+**Description:** Verify the content of the "not a professional" access denial page.
+**Pre-conditions:** This template is rendered when a user tries to access a professional-only area without credentials.
+**Dependencies:** None.
+**Steps:**
+1. Render `not_a_professional.html`.
+**Expected Result:**
+- Page title block: "Not Authorized".
+- H2 header: "Access Denied".
+- Message: "You are not registered as a professional or do not have the necessary permissions to view this page."
+- Link to "Return to Homepage" (pointing to `home` URL name).
+**Post-conditions:** None.
