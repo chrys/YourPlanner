@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from core.models import TimeStampedModel
+from django.core.exceptions import ValidationError
 
 # No separate User model here - we link to settings.AUTH_USER_MODEL
 # If you needed custom fields ON the User model itself (not profile),
@@ -36,6 +37,12 @@ class Professional(TimeStampedModel):
         null=True,
         blank=True,
         help_text="Average rating from customers (1.00-5.00)"
+    )
+    labels = models.ManyToManyField(
+        'configuration.ConfigurationLabel',
+        blank=True,
+        related_name='professionals',
+        limit_choices_to={'category__name': 'PROFESSIONAL', 'is_active': True}
     )
     # created_at and updated_at are inherited from TimeStampedModel
 
@@ -82,6 +89,12 @@ class Customer(TimeStampedModel):
         blank=True,
         null=True,
         help_text="Marketing communication preferences"
+    )
+    labels = models.ManyToManyField(
+        'configuration.ConfigurationLabel',
+        blank=True,
+        related_name='customers',
+        limit_choices_to={'category__name': 'CUSTOMER', 'is_active': True}
     )
     # created_at and updated_at are inherited from TimeStampedModel
 

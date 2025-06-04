@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Configuration Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Configuration Dashboard</h1>
+    
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Configuration Categories</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Welcome to the configuration dashboard. Here you can manage labels for different parts of the system.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for category, labels in labels_by_category.items %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ category }}</h5>
+                    <a href="{% url 'configuration:label_create_for_category' category=category.name %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus"></i> Add Label
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p>{{ category.description }}</p>
+                    
+                    {% if labels %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for label in labels %}
+                                <tr>
+                                    <td>{{ label.name }}</td>
+                                    <td>{{ label.description|default:"--" }}</td>
+                                    <td>
+                                        {% if label.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'configuration:label_update' pk=label.pk %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <a href="{% url 'configuration:label_delete' pk=label.pk %}" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        No labels found for this category. 
+                        <a href="{% url 'configuration:label_create_for_category' category=category.name %}" class="alert-link">
+                            Add your first label
+                        </a>.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

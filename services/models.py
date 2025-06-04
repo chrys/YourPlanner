@@ -46,6 +46,12 @@ class Service(TimeStampedModel):
     is_active = models.BooleanField(default=True, help_text="Is this service currently offered?")
     featured = models.BooleanField(default=False, help_text="Feature this service in listings?")
     slug = models.SlugField(max_length=255, blank=True)
+    labels = models.ManyToManyField(
+        'configuration.ConfigurationLabel',
+        blank=True,
+        related_name='services',
+        limit_choices_to={'category__name': 'SERVICE', 'is_active': True}
+    )
     # created_at and updated_at are inherited from TimeStampedModel
     
     # Add custom managers
@@ -128,6 +134,12 @@ class Item(TimeStampedModel):
         help_text="Position of this item in the service display"
     )
     slug = models.SlugField(max_length=255, blank=True)
+    labels = models.ManyToManyField(
+        'configuration.ConfigurationLabel',
+        blank=True,
+        related_name='items',
+        limit_choices_to={'category__name': 'SERVICE', 'is_active': True}
+    )
     # created_at and updated_at are inherited from TimeStampedModel
     
     # Add custom managers
