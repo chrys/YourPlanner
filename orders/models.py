@@ -45,6 +45,12 @@ class Order(TimeStampedModel):
     )
     currency = models.CharField(max_length=3, default='EUR', blank=True) # Should match item currencies
     notes = models.TextField(blank=True, null=True, help_text="Additional notes about this order")
+    labels = models.ManyToManyField(
+        'labels.Label',
+        blank=True,
+        related_name='orders',
+        help_text="Optional labels to categorize this order"
+    )
     # created_at and updated_at are inherited from TimeStampedModel
 
     def __str__(self):
@@ -144,6 +150,12 @@ class OrderItem(TimeStampedModel):
     position = models.PositiveIntegerField(
         default=0,
         help_text="Position of this item in the order display"
+    )
+    labels = models.ManyToManyField(
+        'labels.Label',
+        blank=True,
+        related_name='order_items',
+        help_text="Optional labels to categorize this order item"
     )
     # created_at is inherited from TimeStampedModel
     # No updated_at needed typically for line items once created?

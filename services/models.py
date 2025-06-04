@@ -46,6 +46,12 @@ class Service(TimeStampedModel):
     is_active = models.BooleanField(default=True, help_text="Is this service currently offered?")
     featured = models.BooleanField(default=False, help_text="Feature this service in listings?")
     slug = models.SlugField(max_length=255, blank=True)
+    labels = models.ManyToManyField(
+        'labels.Label',
+        blank=True,
+        related_name='services',
+        help_text="Optional labels to categorize this service"
+    )
     # created_at and updated_at are inherited from TimeStampedModel
     
     # Add custom managers
@@ -128,6 +134,12 @@ class Item(TimeStampedModel):
         help_text="Position of this item in the service display"
     )
     slug = models.SlugField(max_length=255, blank=True)
+    labels = models.ManyToManyField(
+        'labels.Label',
+        blank=True,
+        related_name='items',
+        help_text="Optional labels to categorize this item"
+    )
     # created_at and updated_at are inherited from TimeStampedModel
     
     # Add custom managers
@@ -217,6 +229,12 @@ class Price(TimeStampedModel):
         decimal_places=2, 
         default=Decimal('0.00'),
         help_text="Discount percentage applied to this price"
+    )
+    labels = models.ManyToManyField(
+        'labels.Label',
+        blank=True,
+        related_name='prices',
+        help_text="Optional labels to categorize this price"
     )
     # created_at and updated_at are inherited from TimeStampedModel
     

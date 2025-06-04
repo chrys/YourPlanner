@@ -2,11 +2,19 @@ from django import forms
 from .models import Order, OrderItem
 from services.models import Price # Corrected import for Price model
 from django.conf import settings
+from labels.models import Label
 
 class OrderForm(forms.ModelForm):
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        help_text="Optional labels to categorize this order"
+    )
+    
     class Meta:
         model = Order
-        fields = [] # Minimal, as customer and status are set in the view
+        fields = ['labels'] # Added labels field
 
 class OrderStatusUpdateForm(forms.ModelForm):
     class Meta:
@@ -37,11 +45,16 @@ class OrderItemForm(forms.ModelForm):
     # Price will be dynamically set up in __init__
     price = forms.ModelChoiceField(queryset=Price.objects.none(), widget=forms.Select(attrs={'class': 'form-select'}))
     quantity = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}), initial=1)
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        help_text="Optional labels to categorize this order item"
+    )
 
     class Meta:
         model = OrderItem
-        fields = ['price', 'quantity']
-
+        fields = ['price', 'quantity', 'labels']
 
     def __init__(self, *args, **kwargs):
         order_instance = kwargs.pop('order_instance', None)
