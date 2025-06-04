@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Professional
+from .models import Professional, Customer
+from labels.models import Label
 
 class RegistrationForm(forms.ModelForm):
     ROLE_CHOICES = (
@@ -13,7 +14,12 @@ class RegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     role = forms.ChoiceField(choices=ROLE_CHOICES, required=True)
     title = forms.CharField(max_length=200, required=False)  # Only for professionals
-
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        help_text="Optional labels to categorize this user"
+    )
 
     class Meta:
         model = User
