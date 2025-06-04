@@ -10,7 +10,7 @@ class ServiceCategory(TimeStampedModel):
     Categories for organizing services.
     """
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True, help_text="Optional description of this category")
     slug = models.SlugField(max_length=100, unique=True)
     
     def __str__(self):
@@ -56,6 +56,8 @@ class Service(TimeStampedModel):
         return f"{self.title} (by {self.professional})"
     
     def save(self, *args, **kwargs):
+        if not hasattr(self, 'professional') or self.professional is None:
+            raise ValidationError("Service must have a professional.")
         if not self.slug:
             self.slug = slugify(f"{self.title}-{self.professional.pk}")
         super().save(*args, **kwargs)
@@ -135,6 +137,8 @@ class Item(TimeStampedModel):
         return f"{self.title} (in Service: {self.service.title})"
     
     def save(self, *args, **kwargs):
+        if not hasattr(self, 'service') or self.service is None:
+            raise ValidationError("Item must have a service.")
         if not self.slug:
             self.slug = slugify(f"{self.title}-{self.service.pk}")
         super().save(*args, **kwargs)

@@ -175,7 +175,7 @@ class ServiceModelTests(TestCase):
         )
         
         # This should raise an IntegrityError because professional cannot be null
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             service.save()
     
     def test_create_service_without_title(self):
@@ -429,7 +429,7 @@ class ItemModelTests(TestCase):
         )
         
         # This should raise an IntegrityError because service cannot be null
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             item.save()
     
     def test_create_item_without_title(self):
