@@ -1,11 +1,19 @@
 from django.db import models
 from core.models import TimeStampedModel
 
+LABEL_TYPES = (
+    ('general', 'General'),
+    ('priority', 'Priority'),
+    ('status', 'Status'),
+    ('custom', 'Custom'),
+)
+
 class Label(TimeStampedModel):
     """
     Represents a label that can be applied to various entities in the system.
     """
     name = models.CharField(max_length=100, unique=True)
+    type = models.CharField(max_length=20, choices=LABEL_TYPES, default='general')
     description = models.TextField(blank=True, null=True, help_text="Optional description of this label")
     color = models.CharField(max_length=7, default="#CCCCCC", help_text="Hex color code for the label")
     

@@ -1,0 +1,50 @@
+{% extends "configuration/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block configuration_content %}
+<h3>Manage Labels for: <span class="text-primary">{{ section_type|capfirst }}</span></h3>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <h4>{% if form.instance.pk %}Edit Label{% else %}Add New Label{% endif %}</h4>
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button type="submit" class="btn btn-success mt-2">
+                {% if form.instance.pk %}Save Changes{% else %}Add Label{% endif %}
+            </button>
+            {% if form.instance.pk %}
+            <a href="{% url 'configuration:manage_labels' section_type=section_type %}" class="btn btn-secondary mt-2">Cancel Edit</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="col-md-8">
+        <h4>Existing <span class="text-primary">{{ section_type|capfirst }}</span> Labels</h4>
+        {% if labels %}
+            <ul class="list-group">
+                {% for label in labels %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span style="color: {{ label.color }}; font-weight: bold;">■</span> {{ label.name }}
+                            {% if label.description %}<small class="text-muted ms-2">- {{ label.description }}</small>{% endif %}
+                        </div>
+                        <div>
+                            <a href="{% url 'configuration:edit_label' label_id=label.id %}" class="btn btn-sm btn-primary">Edit</a>
+                            <a href="{% url 'configuration:delete_label' label_id=label.id %}" class="btn btn-sm btn-danger ms-1">Delete</a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No labels found for this section yet. Use the form on the left to add some.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'configuration:index' %}" class="btn btn-outline-secondary">Back to Configuration Sections</a>
+</div>
+
+<p class="mt-3"><small>Note: The "Edit" and "Delete" functionalities and their specific URLs ('configuration:edit_label', 'configuration:delete_label') are placeholders and will be implemented later.</small></p>
+{% endblock configuration_content %}

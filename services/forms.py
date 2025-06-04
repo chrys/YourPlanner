@@ -4,9 +4,9 @@ from labels.models import Label
 
 class ServiceForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.all(),
+        queryset=Label.objects.filter(type='service'), # MODIFIED
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        widget=forms.CheckboxSelectMultiple, # MODIFIED
         help_text="Optional labels to categorize this service"
     )
     
@@ -17,14 +17,15 @@ class ServiceForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            # Note: widget for labels is now part of the field definition above
         }
 
 class ItemForm(forms.ModelForm):
     image = forms.ImageField(widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'}), help_text="Upload an image for the item (optional).", required=False)
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.all(),
+        queryset=Label.objects.filter(type='service'), # MODIFIED
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        widget=forms.CheckboxSelectMultiple, # MODIFIED
         help_text="Optional labels to categorize this item"
     )
     
@@ -34,6 +35,7 @@ class ItemForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            # Note: widget for labels is now part of the field definition above
         }
 
 class PriceForm(forms.ModelForm):

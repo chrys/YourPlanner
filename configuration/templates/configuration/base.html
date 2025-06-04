@@ -1,0 +1,12 @@
+{% extends "core/base.html" %}
+
+{% block title %}Configuration - {{ block.super }}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>System Configuration</h2>
+    <hr>
+    {% block configuration_content %}
+    {% endblock configuration_content %}
+</div>
+{% endblock content %}
