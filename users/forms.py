@@ -44,3 +44,48 @@ class ProfessionalChoiceForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['professional'].label_from_instance = lambda obj: obj.title or obj.user.get_full_name() or obj.user.username
+
+class ProfessionalForm(forms.ModelForm):
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.filter(type='professional'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select labels relevant to this professional profile."
+    )
+
+    class Meta:
+        model = Professional
+        fields = [
+            'title', 'specialization', 'bio', 'profile_image',
+            'contact_hours', 'rating', 'labels'
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'specialization': forms.TextInput(attrs={'class': 'form-control'}),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'profile_image': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
+            'contact_hours': forms.TextInput(attrs={'class': 'form-control'}),
+            'rating': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+class CustomerForm(forms.ModelForm):
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.filter(type='customer'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select labels relevant to this customer profile."
+    )
+
+    class Meta:
+        model = Customer
+        fields = [
+            'company_name', 'shipping_address', 'billing_address',
+            'preferred_currency', 'marketing_preferences', 'labels'
+        ]
+        widgets = {
+            'company_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'shipping_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'billing_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'preferred_currency': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 3}), # Using TextInput
+            'marketing_preferences': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
