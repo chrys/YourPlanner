@@ -304,7 +304,7 @@ class OrderStatusUpdateView(LoginRequiredMixin, AdminAccessMixin, UpdateView): #
         return kwargs
 
     def form_valid(self, form):
-        messages.success(self.request, f"Order #{self.object.pk_formatted} status updated to {self.object.get_status_display()}.")
+        messages.success(self.request, f"Order #{self.object.pk} status updated to {self.object.get_status_display()}.")
         # Potentially add logic here: send notifications, update stock, etc.
         return super().form_valid(form)
 
@@ -313,7 +313,7 @@ class OrderStatusUpdateView(LoginRequiredMixin, AdminAccessMixin, UpdateView): #
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = f"Update Status for Order #{self.object.pk_formatted}"
+        context['page_title'] = f"Update Status for Order #{self.object.pk}"
         return context
 
 
@@ -336,7 +336,7 @@ class OrderCancelView(LoginRequiredMixin, CustomerOwnsOrderMixin, UpdateView):
 
         self.object.status = Order.StatusChoices.CANCELLED
         self.object.save()
-        messages.success(self.request, f"Order #{self.object.pk_formatted} has been cancelled.")
+        messages.success(self.request, f"Order #{self.object.pk} has been cancelled.")
         # TODO: Add logic here if needed: e.g., inform professional, revert stock.
         return super().form_valid(form)
 
@@ -350,7 +350,7 @@ class OrderCancelView(LoginRequiredMixin, CustomerOwnsOrderMixin, UpdateView):
         if not is_cancellable:
              messages.warning(self.request, "This order is no longer in a state where it can be cancelled.")
         context['is_cancellable'] = is_cancellable
-        context['page_title'] = f"Cancel Order #{self.object.pk_formatted}"
+        context['page_title'] = f"Cancel Order #{self.object.pk}"
         return context
 
 
@@ -446,7 +446,7 @@ class OrderItemUpdateView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Upda
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['order'] = self.order
-        context['page_title'] = f"Update Item in Order #{self.order.pk_formatted}"
+        context['page_title'] = f"Update Item in Order #{self.order.pk}"
         return context
 
 
@@ -488,7 +488,7 @@ class OrderItemDeleteView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Dele
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['order'] = self.order # self.order set by mixin
-        context['page_title'] = f"Remove Item from Order #{self.order.pk_formatted}"
+        context['page_title'] = f"Remove Item from Order #{self.order.pk}"
         return context
 
 # --- Other CBVs (select_items, basket) ---

@@ -128,8 +128,9 @@ class UserRegistrationTests(TestCase):
         
         # Verify error message is displayed
         # Note: The error is displayed via messages framework, not form errors
-        self.assertContains(response, "This email is already registered")
-        
+        expected_message = f"Email address {escape(data['email'])} already exists, please <a href=\"{escape(reverse('login'))}\">login instead</a>"
+        self.assertContains(response, expected_message)
+
         # Verify no new user was created
         self.assertEqual(User.objects.count(), initial_user_count)
     
@@ -159,7 +160,7 @@ class UserRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         
         # Verify error message for title field
-        self.assertFormError(response, 'form', 'title', 'Title is required for professionals.')
+        self.assertFormError(response.context['form'], 'title', 'Title is required for professionals.')
         
         # Verify no new user or professional was created
         self.assertEqual(User.objects.count(), initial_user_count)
@@ -189,7 +190,7 @@ class UserRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         
         # Verify error message for email field
-        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(response.context['form'], 'email', 'This field is required.')
         
         # Verify no new user was created
         self.assertEqual(User.objects.count(), initial_user_count)
