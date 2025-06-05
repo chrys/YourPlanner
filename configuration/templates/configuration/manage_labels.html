@@ -14,7 +14,7 @@
                 {% if form.instance.pk %}Save Changes{% else %}Add Label{% endif %}
             </button>
             {% if form.instance.pk %}
-            <a href="{% url 'configuration:manage_labels' section_type=section_type %}" class="btn btn-secondary mt-2">Cancel Edit</a>
+            <a href="{% url 'configuration:manage_labels' label_type=section_type %}" class="btn btn-secondary mt-2">Cancel Edit</a>
             {% endif %}
         </form>
     </div>
