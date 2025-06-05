@@ -3,7 +3,7 @@
 {% block title %}My Services{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4" id="service-list-app">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>My Services</h2>
         <a href="{% url 'services:service_create' %}" class="btn btn-primary">Add New Service</a>
@@ -18,30 +18,80 @@
         {% endfor %}
     {% endif %}
 
-    {% if services %}
-        <div class="list-group">
+    <!-- Pass Django services data to JS -->
+    <script>
+        window.initialServices = [
             {% for service in services %}
-                <div class="list-group-item list-group-item-action flex-column align-items-start mb-2">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ service.title }}</h5>
-                        <small class="text-muted">{{ service.created_at|date:"Y-m-d H:i" }}</small>
-                    </div>
-                    <p class="mb-1">{{ service.description|truncatewords:30 }}</p>
-                    <div class="mt-2">
-                        <a href="{% url 'services:service_detail' pk=service.pk %}" class="btn btn-sm btn-info me-1">View Details</a>
-                        <a href="{% url 'services:service_update' pk=service.pk %}" class="btn btn-sm btn-warning me-1">Edit</a>
-                        <a href="{% url 'services:service_delete' pk=service.pk %}" class="btn btn-sm btn-danger">Delete</a>
-                    </div>
-                    <div class="mt-1">
-                        <small>Status: {% if service.is_active %}Active{% else %}Inactive{% endif %}</small>
-                    </div>
-                </div>
+            {
+                id: {{ service.pk }},
+                title: "{{ service.title|escapejs }}",
+                description: "{{ service.description|escapejs }}",
+                created_at: "{{ service.created_at|date:'Y-m-d H:i' }}",
+                is_active: {% if service.is_active %}true{% else %}false{% endif %},
+                detail_url: "{% url 'services:service_detail' pk=service.pk %}",
+                update_url: "{% url 'services:service_update' pk=service.pk %}",
+                delete_url: "{% url 'services:service_delete' pk=service.pk %}"
+            }{% if not forloop.last %},{% endif %}
             {% endfor %}
-        </div>
-    {% else %}
+        ];
+    </script>
+
+    <div v-if="services.length">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Created At</th>
+                    <th>Status</th>
+                    <th style="width: 220px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="service in services" :key="service.id">
+                    <td align="center">[[ service.title ]]</td>
+                    <td align="center">[[ truncateWords(service.description, 30) ]]</td>
+                    <td align="center">[[ service.created_at ]]</td>
+                    <td>
+                        <span class="badge" :class="service.is_active ? 'bg-success' : 'bg-secondary'">
+                            [[ service.is_active ? 'Active' : 'Inactive' ]]
+                        </span>
+                    </td>
+                    <td>
+                        <a :href="service.detail_url" class="btn btn-sm btn-info me-1">View Details| </a>
+                        <a :href="service.update_url" class="btn btn-sm btn-warning me-1">Edit| </a>
+                        <a :href="service.delete_url" class="btn btn-sm btn-danger">Delete</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div v-else>
         <div class="alert alert-info" role="alert">
             You have not created any services yet. <a href="{% url 'services:service_create' %}" class="alert-link">Add your first service!</a>
         </div>
-    {% endif %}
+    </div>
 </div>
+
+<!-- Vue.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue;
+
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            services: window.initialServices || []
+        }
+    },
+    methods: {
+        truncateWords(value, count) {
+            if (!value) return '';
+            const words = value.split(' ');
+            return words.slice(0, count).join(' ') + (words.length > count ? '...' : '');
+        }
+    }
+}).mount('#service-list-app');
+</script>
 {% endblock %}

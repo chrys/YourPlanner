@@ -9,7 +9,7 @@ app_name = 'services'
 
 urlpatterns = [
     # Service URLs
-    path('services/', ServiceListView.as_view(), name='service_list'), # Was professional-account
+    path('services/', ServiceListView.as_view(), name='service_list'),
     path('service/create/', ServiceCreateView.as_view(), name='service_create'),
     path('service/<int:pk>/', ServiceDetailView.as_view(), name='service_detail'),
     path('service/<int:pk>/update/', ServiceUpdateView.as_view(), name='service_update'),
