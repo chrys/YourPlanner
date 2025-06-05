@@ -10,4 +10,4 @@ class ConfigurationAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     ordering = ('name',)
 
-admin.site.register(Label, ConfigurationAdmin)
+#admin.site.register(Label, ConfigurationAdmin)

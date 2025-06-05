@@ -35,7 +35,8 @@ INSTALLED_APPS = [
     'services.apps.ServicesConfig',
     'orders.apps.OrdersConfig',
     'core.apps.CoreConfig',
-    'labels.apps.LabelsConfig',  # Add the labels app
+    'labels.apps.LabelsConfig',
+    'configuration.apps.ConfigurationConfig',  
     'crispy_forms',
     'crispy_bootstrap5',
     'django.contrib.admin',
