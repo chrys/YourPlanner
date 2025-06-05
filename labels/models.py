@@ -6,6 +6,12 @@ LABEL_TYPES = (
     ('priority', 'Priority'),
     ('status', 'Status'),
     ('custom', 'Custom'),
+    ('professional', 'Professional Tag'),
+    ('customer', 'Customer Tag'),
+    ('service', 'Service Tag'),
+    ('item', 'Item Tag'),
+    ('price', 'Price Tag'),
+    ('order', 'Order Tag'),
 )
 
 class Label(TimeStampedModel):
@@ -24,4 +30,3 @@ class Label(TimeStampedModel):
         verbose_name = "Label"
         verbose_name_plural = "Labels"
         ordering = ['name']
-
