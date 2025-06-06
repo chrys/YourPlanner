@@ -74,6 +74,14 @@ class Professional(TimeStampedModel):
 
 class Customer(TimeStampedModel):
     """ Represents a Customer user profile linked to a User account. """
+    
+    # Add RoleChoices class for customer roles
+    class RoleChoices(models.TextChoices):
+        STANDARD = 'STANDARD', 'Standard'
+        PREMIUM = 'PREMIUM', 'Premium'
+        VIP = 'VIP', 'VIP'
+        ENTERPRISE = 'ENTERPRISE', 'Enterprise'
+    
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -89,6 +97,13 @@ class Customer(TimeStampedModel):
         blank=True,
         null=True,
         help_text="Marketing communication preferences"
+    )
+    # New role field - not accessible by customers
+    role = models.CharField(
+        max_length=20,
+        choices=RoleChoices.choices,
+        default=RoleChoices.STANDARD,
+        help_text="Customer role - determines access levels and features"
     )
     labels = models.ManyToManyField(
         'labels.Label',
@@ -123,6 +138,41 @@ class Customer(TimeStampedModel):
         )['total'] or 0
         
         return total
+
+    def has_role(self, role_name):
+        """
+        Check if the customer has a specific role.
+        
+        Args:
+            role_name (str): The role name to check (e.g., 'PREMIUM', 'VIP')
+            
+        Returns:
+            bool: True if the customer has the specified role, False otherwise
+        """
+        return self.role == role_name
+    
+    def has_minimum_role(self, role_name):
+        """
+        Check if the customer has at least the specified role level.
+        Roles are ordered: STANDARD < PREMIUM < VIP < ENTERPRISE
+        
+        Args:
+            role_name (str): The minimum role level to check
+            
+        Returns:
+            bool: True if the customer has at least the specified role level, False otherwise
+        """
+        role_levels = {
+            self.RoleChoices.STANDARD: 0,
+            self.RoleChoices.PREMIUM: 1,
+            self.RoleChoices.VIP: 2,
+            self.RoleChoices.ENTERPRISE: 3
+        }
+        
+        customer_level = role_levels.get(self.role, 0)
+        required_level = role_levels.get(role_name, 0)
+        
+        return customer_level >= required_level
 
     class Meta:
         verbose_name = "Customer"
