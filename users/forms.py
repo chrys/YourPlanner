@@ -89,3 +89,16 @@ class CustomerForm(forms.ModelForm):
             'preferred_currency': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 3}), # Using TextInput
             'marketing_preferences': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+class CustomerLabelForm(forms.ModelForm):
+    """Form for updating customer labels."""
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.filter(type='customer'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select labels for this customer."
+    )
+    
+    class Meta:
+        model = Customer
+        fields = ['labels']

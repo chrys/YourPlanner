@@ -1,0 +1,134 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Customer Details</h1>
+        <a href="{% url 'users:customer_management' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Customers
+        </a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <h5>{{ customer.user.get_full_name|default:customer.user.username }}</h5>
+                    <p><strong>Email:</strong> {{ customer.user.email }}</p>
+                    <p><strong>Company:</strong> {{ customer.company_name|default:"Not specified" }}</p>
+                    <p><strong>Preferred Currency:</strong> {{ customer.preferred_currency }}</p>
+                    
+                    <h6 class="mt-4">Labels</h6>
+                    <div class="mb-2">
+                        {% for label in customer.labels.all %}
+                            <span class="badge mb-1" style="background-color: {{ label.color }};">
+                                {{ label.name }}
+                            </span>
+                        {% empty %}
+                            <small class="text-muted">No labels assigned</small>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'users:customer_labels' customer.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-tags"></i> Manage Labels
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Current Basket</h5>
+                </div>
+                <div class="card-body">
+                    {% if basket %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <p><strong>Order #{{ basket.pk }}</strong> - Created: {{ basket.created_at|date:"M d, Y" }}</p>
+                                <p><strong>Status:</strong> {{ basket.get_status_display }}</p>
+                                <p><strong>Total:</strong> {{ basket.total_amount }} {{ basket.currency }}</p>
+                            </div>
+                            <a href="{% url 'users:customer_basket' basket.pk %}" class="btn btn-primary">
+                                <i class="fas fa-shopping-basket"></i> View & Edit Basket
+                            </a>
+                        </div>
+                        
+                        <h6>Items ({{ basket.items.count }})</h6>
+                        <ul class="list-group">
+                            {% for item in basket.items.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ item.quantity }}x {{ item.price.item.title }}
+                                    <span>{{ item.price_amount_at_order }} {{ item.price_currency_at_order }}</span>
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item">No items in basket</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>This customer doesn't have an active basket.</p>
+                            <a href="{% url 'orders:order_create' %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus"></i> Create New Order
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order History</h5>
+                </div>
+                <div class="card-body">
+                    {% if orders %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Total</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                        <tr>
+                                            <td>{{ order.pk }}</td>
+                                            <td>{{ order.order_date|date:"M d, Y" }}</td>
+                                            <td>{{ order.get_status_display }}</td>
+                                            <td>{{ order.total_amount }} {{ order.currency }}</td>
+                                            <td>
+                                                <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                                {% if order.status == 'PENDING' %}
+                                                    <a href="{% url 'users:customer_basket' order.pk %}" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>This customer doesn't have any orders yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

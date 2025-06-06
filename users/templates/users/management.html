@@ -19,6 +19,9 @@
                 <li class="list-group-item">
                     <a href="{% url 'services:service_list' %}">{% trans "Manage My Services" %}</a>
                 </li>
+                <li class="list-group-item">
+                    <a href="{% url 'users:customer_management' %}">{% trans "Customer Management" %}</a>
+                </li>
                 {% endif %}
                 <li class="list-group-item">
                     <a href="{% url 'users:profile' %}">{% trans "View My Profile" %}</a>
@@ -36,7 +39,7 @@
                 </a>
                 <div v-if="showHelpMessage" class="alert alert-info mt-2" role="alert">
                     {% blocktrans %}
-                    From this page, professionals can manage their services. All users can view their profile and change their password.
+                    From this page, professionals can manage their services and customers. All users can view their profile and change their password.
                     {% endblocktrans %}
                 </div>
             </div>
@@ -46,7 +49,6 @@
         </div>
     </div>
 </div>
-{# Removed orphaned </main> tag #}
 <script>
 const { createApp, ref } = Vue; // Using ref for Vue 3 Composition API style
 createApp({

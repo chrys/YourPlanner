@@ -5,6 +5,12 @@ from .views import (
     UserProfileView,
     ChangeProfessionalView
 )
+from .views_professional import (
+    CustomerManagementView,
+    CustomerDetailView,
+    CustomerBasketView,
+    CustomerLabelUpdateView
+)
 
 app_name = 'users' # Added for namespacing
 
@@ -14,6 +20,12 @@ urlpatterns = [
     path('management/', UserManagementView.as_view(), name='user_management'),
     path('profile/', UserProfileView.as_view(), name='profile'), # Changed path from accounts/profile/ to just profile/
     path('change-professional/', ChangeProfessionalView.as_view(), name='change_professional'),
+    
+    # Professional customer management views
+    path('customers/', CustomerManagementView.as_view(), name='customer_management'),
+    path('customers/<int:customer_id>/', CustomerDetailView.as_view(), name='customer_detail'),
+    path('customers/<int:customer_id>/labels/', CustomerLabelUpdateView.as_view(), name='customer_labels'),
+    path('customers/basket/<int:order_id>/', CustomerBasketView.as_view(), name='customer_basket'),
 
     # Django's built-in auth URLs (login, logout, password management)
     # These are typically not namespaced under 'users', so they are kept separate.
