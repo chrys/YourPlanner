@@ -6,7 +6,6 @@
 <div class="container mt-4" id="service-list-app">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>My Services</h2>
-        <a href="{% url 'services:service_create' %}" class="btn btn-primary">Add New Service</a>
     </div>
 
     {% if messages %}
@@ -28,6 +27,15 @@
                 description: "{{ service.description|escapejs }}",
                 created_at: "{{ service.created_at|date:'Y-m-d H:i' }}",
                 is_active: {% if service.is_active %}true{% else %}false{% endif %},
+                labels: [
+                    {% for label in service.labels.all %}
+                    {
+                        id: {{ label.pk }},
+                        name: "{{ label.name|escapejs }}",
+                        color: "{{ label.color|escapejs }}"
+                    }{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ],
                 detail_url: "{% url 'services:service_detail' pk=service.pk %}",
                 update_url: "{% url 'services:service_update' pk=service.pk %}",
                 delete_url: "{% url 'services:service_delete' pk=service.pk %}"
@@ -37,11 +45,12 @@
     </script>
 
     <div v-if="services.length">
-        <table class="table table-striped table-hover align-middle">
+        <table class="table table-striped table-hover table-bordered align-middle">
             <thead class="table-dark">
                 <tr>
                     <th>Title</th>
                     <th>Description</th>
+                    <th>Labels</th>
                     <th>Created At</th>
                     <th>Status</th>
                     <th style="width: 220px;">Actions</th>
@@ -51,6 +60,15 @@
                 <tr v-for="service in services" :key="service.id">
                     <td align="center">[[ service.title ]]</td>
                     <td align="center">[[ truncateWords(service.description, 30) ]]</td>
+                    <td align="center">
+                        <span v-if="service.labels.length">
+                            <span v-for="label in service.labels" :key="label.id" class="badge me-1"
+                                  :style="{ backgroundColor: label.color, color: '#fff' }">
+                                [[ label.name ]]
+                            </span>
+                        </span>
+                        <span v-else class="text-muted">No labels</span>
+                    </td>
                     <td align="center">[[ service.created_at ]]</td>
                     <td>
                         <span class="badge" :class="service.is_active ? 'bg-success' : 'bg-secondary'">
@@ -65,10 +83,16 @@
                 </tr>
             </tbody>
         </table>
+        <div class="d-flex justify-content-end">
+            <a href="{% url 'services:service_create' %}" class="btn btn-danger mt-2">Add New Service</a>
+        </div>
     </div>
     <div v-else>
         <div class="alert alert-info" role="alert">
             You have not created any services yet. <a href="{% url 'services:service_create' %}" class="alert-link">Add your first service!</a>
+        </div>
+        <div class="d-flex justify-content-end">
+            <a href="{% url 'services:service_create' %}" class="btn btn-danger mt-2">Add New Service</a>
         </div>
     </div>
 </div>

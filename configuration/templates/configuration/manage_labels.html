@@ -30,14 +30,17 @@
                             {% if label.description %}<small class="text-muted ms-2">- {{ label.description }}</small>{% endif %}
                         </div>
                         <div>
-                            <a href="{% url 'configuration:edit_label' label_id=label.id %}" class="btn btn-sm btn-primary">Edit</a>
-                            <a href="{% url 'configuration:delete_label' label_id=label.id %}" class="btn btn-sm btn-danger ms-1">Delete</a>
+                            <a href="{% url 'configuration:edit_label' label_id=label.id %}" class="btn btn-sm btn-primary">Edit</a><br>
+                            <p><form action="{% url 'configuration:delete_label' label_id=label.id %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger ms-1" onclick="return confirm('Are you sure you want to delete this label?');">Delete</button>
+                            </form></p>
                         </div>
                     </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p>No labels found for this section yet. Use the form on the left to add some.</p>
+            <p>No labels found for this section yet. Use the form above to add some.</p>
         {% endif %}
     </div>
 </div>

@@ -40,36 +40,45 @@
         {% endif %}
     </div>
 
-    <script>
-        window.initialItems = [
-            {% for item in service.items.all %}
-            {
-                id: {{ item.pk }},
-                title: "{{ item.title|escapejs }}",
-                description: "{{ item.description|escapejs }}",
-                image: "{% if item.image %}{{ item.image.url }}{% else %}{% endif %}",
-                prices: [
-                    {% for price in item.prices.all %}
-                    {
-                        id: {{ price.pk }},
-                        amount: "{{ price.amount }}",
-                        currency: "{{ price.currency }}",
-                        frequency: "{{ price.get_frequency_display }}",
-                        is_active: {% if price.is_active %}true{% else %}false{% endif %},
-                        detail_url: "{% url 'services:price_detail' service_pk=service.pk item_pk=item.pk pk=price.pk %}",
-                        update_url: "{% url 'services:price_update' service_pk=service.pk item_pk=item.pk pk=price.pk %}"
-                    }{% if not forloop.last %},{% endif %}
-                    {% endfor %}
-                ],
-                detail_url: "{% url 'services:item_detail' service_pk=service.pk pk=item.pk %}",
-                update_url: "{% url 'services:item_update' service_pk=service.pk pk=item.pk %}",
-                delete_url: "{% url 'services:item_delete' service_pk=service.pk pk=item.pk %}"
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ];
-        window.userOwnsService = {{ user_owns_service|yesno:"true,false" }};
-        window.servicePk = {{ service.pk }};
-    </script>
+   <script>
+    window.initialItems = [
+        {% for item in service.items.all %}
+        {
+            id: {{ item.pk }},
+            title: "{{ item.title|escapejs }}",
+            description: "{{ item.description|escapejs }}",
+            image: "{% if item.image %}{{ item.image.url }}{% else %}{% endif %}",
+            prices: [
+                {% for price in item.prices.all %}
+                {
+                    id: {{ price.pk }},
+                    amount: "{{ price.amount }}",
+                    currency: "{{ price.currency }}",
+                    frequency: "{{ price.get_frequency_display }}",
+                    is_active: {% if price.is_active %}true{% else %}false{% endif %},
+                    detail_url: "{% url 'services:price_detail' service_pk=service.pk item_pk=item.pk pk=price.pk %}",
+                    update_url: "{% url 'services:price_update' service_pk=service.pk item_pk=item.pk pk=price.pk %}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            labels: [
+                {% for label in item.labels.all %}
+                {
+                    id: {{ label.pk }},
+                    name: "{{ label.name|escapejs }}",
+                    color: "{{ label.color|escapejs }}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            detail_url: "{% url 'services:item_detail' service_pk=service.pk pk=item.pk %}",
+            update_url: "{% url 'services:item_update' service_pk=service.pk pk=item.pk %}",
+            delete_url: "{% url 'services:item_delete' service_pk=service.pk pk=item.pk %}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    window.userOwnsService = {{ user_owns_service|yesno:"true,false" }};
+    window.servicePk = {{ service.pk }};
+</script>
 
     <div v-if="items.length">
         <table class="table table-striped table-hover align-middle">
@@ -79,6 +88,7 @@
                     <th>Description</th>
                     <th>Image</th>
                     <th>Prices</th>
+                    <th>Labels</th> <!-- Added here -->
                     <th style="width: 220px;">Actions</th>
                 </tr>
             </thead>
@@ -103,6 +113,15 @@
                         </ul>
                         <span v-if="!item.prices.length" class="text-muted">No prices set</span><br>
                         <a v-if="userOwnsService" :href="`/services/service/${servicePk}/item/${item.id}/price/create/`" class="btn btn-sm btn-success mt-1">Add Price</a>
+                    </td>
+                    <td align="center">
+                        <span v-if="item.labels && item.labels.length">
+                            <span v-for="label in item.labels" :key="label.id" class="badge me-1"
+                                  :style="{ backgroundColor: label.color, color: '#fff' }">
+                                [[ label.name ]]
+                            </span>
+                        </span>
+                        <span v-else class="text-muted">No labels</span>
                     </td>
                     <td>
                         <a :href="item.detail_url" class="btn btn-sm btn-info me-1">View|</a>

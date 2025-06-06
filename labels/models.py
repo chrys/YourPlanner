@@ -2,10 +2,6 @@ from django.db import models
 from core.models import TimeStampedModel
 
 LABEL_TYPES = (
-    ('general', 'General'),
-    ('priority', 'Priority'),
-    ('status', 'Status'),
-    ('custom', 'Custom'),
     ('professional', 'Professional Tag'),
     ('customer', 'Customer Tag'),
     ('service', 'Service Tag'),

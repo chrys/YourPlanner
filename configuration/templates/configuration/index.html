@@ -8,23 +8,18 @@
     {% for type_value, type_display in label_types %}
     <a href="{% url 'configuration:manage_labels' label_type=type_value %}" class="list-group-item list-group-item-action">
         <h5 class="mb-1">{{ type_display }} Labels</h5>
-        <p class="mb-1">Manage labels specific to '{{ type_display }}' entities.</p>
-        <small>Click to manage '{{ type_value }}' type labels.</small>
+        <!-- <p class="mb-1">Manage labels specific to '{{ type_display }}' entities.</p>
+        <small>Click to manage '{{ type_value }}' type labels.</small> -->
     </a>
     {% empty %}
     <p>No label types available for configuration.</p>
     {% endfor %}
 
-    {# Add back the custom link if it was intentionally separate #}
+    <!-- {# Add back the custom link if it was intentionally separate #}
     <a href="{% url 'configuration:manage_labels' label_type='custom' %}" class="list-group-item list-group-item-action">
         <h5 class="mb-1">Custom Labels</h5>
         <p class="mb-1">Manage any other custom labels that don't fit predefined categories.</p>
         <small>Click to manage 'custom' type labels.</small>
-    </a>
-</div>
-
-<div class="mt-4">
-    <h4>Note:</h4>
-    <p>The "Website Labels" section is a conceptual example; specific models for website-wide labels may need to be defined if they don't already exist. For now, 'website' is not an active label type unless added to LABEL_TYPES in models.</p>
+    </a> -->
 </div>
 {% endblock configuration_content %}
