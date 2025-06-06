@@ -81,7 +81,7 @@ class CustomerForm(forms.ModelForm):
         fields = [
             'company_name', 'shipping_address', 'billing_address',
             'preferred_currency', 'marketing_preferences', 'labels'
-        ]
+        ]  # Intentionally excluding 'role' field to make it inaccessible to customers
         widgets = {
             'company_name': forms.TextInput(attrs={'class': 'form-control'}),
             'shipping_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
