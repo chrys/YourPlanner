@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.db.models.deletion import ProtectedError
 
-from .models import Rule, RuleCondition, RuleAction, RuleTrigger
+from ..models import Rule, RuleCondition, RuleAction, RuleTrigger
 from labels.models import Label, LABEL_TYPES
 
 class RuleEngineTestCase(TestCase):
