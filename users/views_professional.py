@@ -5,11 +5,14 @@ from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
-
+from django.views.generic import TemplateView
 from .models import Professional, Customer, ProfessionalCustomerLink
 from orders.models import Order, OrderItem
 from labels.models import Label
 from .forms import CustomerLabelForm
+
+
+
 
 class ProfessionalRequiredMixin(UserPassesTestMixin):
     """Ensures the logged-in user has a professional profile."""
@@ -79,35 +82,35 @@ class CustomerDetailView(LoginRequiredMixin, ProfessionalRequiredMixin, DetailVi
         return context
 
 
-class CustomerBasketView(LoginRequiredMixin, ProfessionalRequiredMixin, DetailView):
-    """View for professionals to see and edit a customer's basket."""
-    model = Order
+
+
+class CustomerBasketView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'users/customer_basket.html'
-    context_object_name = 'order'
-    pk_url_kwarg = 'order_id'
-    
-    def get_queryset(self):
-        professional = self.request.user.professional_profile
-        # Only allow viewing baskets of customers linked to this professional
+
+    def test_func(self):
+        # Only allow professionals who manage this order to view
+        order_id = self.kwargs.get('order_id')
+        user = self.request.user
+        if not hasattr(user, 'professional_profile'):
+            return False
+        # Check if this professional is linked to the order
         return Order.objects.filter(
-            customer__professional_links__professional=professional,
-            customer__professional_links__status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-        ).prefetch_related(
-            Prefetch(
-                'items',
-                queryset=OrderItem.objects.select_related(
-                    'price__item__service',
-                    'price__item',
-                    'price'
-                ).order_by('price__item__service__title', 'price__item__title')
-            )
-        )
-    
+            pk=order_id,
+            items__price__item__service__professional=user.professional_profile
+        ).exists()
+
+    def handle_no_permission(self):
+        from django.contrib import messages
+        messages.error(self.request, "You do not have permission to view this basket.")
+        return redirect('users:customer_management')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = f"Customer Basket: {self.object.customer.user.get_full_name() or self.object.customer.user.username}"
+        order_id = self.kwargs.get('order_id')
+        order = Order.objects.get(pk=order_id)
+        context['order'] = order
+        context['page_title'] = "Customer Basket"
         return context
-
 
 class CustomerLabelUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, UpdateView):
     """View for professionals to update a customer's labels."""

@@ -18,7 +18,7 @@
                         <thead>
                             <tr>
                                 <th>Name</th>
-                                <th>Company</th>
+                                <!-- <th>Company</th> -->
                                 <th>Relationship Since</th>
                                 <th>Labels</th>
                                 <th>Actions</th>
@@ -28,7 +28,7 @@
                             {% for link in customer_links %}
                                 <tr>
                                     <td>{{ link.customer.user.get_full_name|default:link.customer.user.username }}</td>
-                                    <td>{{ link.customer.company_name|default:"-" }}</td>
+                                    <!-- <td>{{ link.customer.company_name|default:"-" }}</td> -->
                                     <td>{{ link.relationship_start_date|date:"M d, Y" }}</td>
                                     <td>
                                         {% for label in link.customer.labels.all %}
@@ -41,7 +41,7 @@
                                     </td>
                                     <td>
                                         <a href="{% url 'users:customer_detail' link.customer.pk %}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-eye"></i> View
+                                            <i class="fas fa-eye"></i> View Details
                                         </a>
                                     </td>
                                 </tr>

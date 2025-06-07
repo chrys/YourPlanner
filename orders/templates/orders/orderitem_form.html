@@ -21,7 +21,7 @@
         {{ form|crispy }}
         <button type="submit" class="btn btn-primary">
             {% if object %} {# 'object' is the orderitem instance during updates #}
-                {% trans "Update Quantity" %}
+                {% trans "Update Item" %}
             {% else %}
                 {% trans "Add Item to Order" %}
             {% endif %}

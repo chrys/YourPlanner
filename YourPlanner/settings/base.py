@@ -36,8 +36,6 @@ INSTALLED_APPS = [
     'orders.apps.OrdersConfig',
     'core.apps.CoreConfig',
     'labels.apps.LabelsConfig',
-    'configuration.apps.ConfigurationConfig',
-    'template_app.apps.TemplatesConfig',  
     'crispy_forms',
     'crispy_bootstrap5',
     'django.contrib.admin',
@@ -232,11 +230,6 @@ LOGGING = {
             'propagate': False,
         },
         'labels': {  # Add the labels app logger
-        'template_app': {  # Add the templates app logger
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,

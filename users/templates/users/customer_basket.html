@@ -57,11 +57,11 @@
                                     <td>{{ item.price_amount_at_order }} {{ item.price_currency_at_order }}</td>
                                     <td>{{ item.final_price }} {{ item.price_currency_at_order }}</td>
                                     <td>
-                                        <a href="{% url 'orders:update_item' order.pk item.pk %}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-edit"></i>
+                                        <a href="{% url 'orders:orderitem_update' order_pk=item.order.pk item_pk=item.pk %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i> Edit
                                         </a>
-                                        <a href="{% url 'orders:delete_item' order.pk item.pk %}" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash"></i>
+                                        <a href="{% url 'orders:orderitem_delete' order_pk=item.order.pk item_pk=item.pk %}" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> Delete
                                         </a>
                                     </td>
                                 </tr>
@@ -87,25 +87,7 @@
         </div>
     </div>
     
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Order Actions</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn btn-success w-100 mb-2">
-                        <i class="fas fa-plus"></i> Add/Edit Items
-                    </a>
-                </div>
-                <div class="col-md-6">
-                    <a href="{% url 'orders:update_status' order.pk %}" class="btn btn-warning w-100 mb-2">
-                        <i class="fas fa-sync"></i> Update Status
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
 {% endblock %}
 

@@ -10,7 +10,7 @@ from django.db import transaction
 import json # Moved json import to the top
 
 from .models import Order, OrderItem
-from users.models import Customer, Professional # Assuming Professional is from users.models
+from users.models import Customer, Professional, ProfessionalCustomerLink 
 from services.models import Service, Item, Price # For select_items and OrderItemForm population
 from .forms import OrderForm, OrderStatusUpdateForm, OrderItemForm
 
@@ -152,6 +152,7 @@ class UserCanModifyOrderItemsMixin(UserPassesTestMixin):
     Allowed if:
     1. User is customer owning the order AND order is PENDING.
     2. User is an admin (staff).
+    3. User is a Professional linked to the order's Customer.
     Loads self.order. Assumes 'pk' or 'order_pk' is in self.kwargs.
     """
     order_pk_url_kwarg = 'pk'
@@ -169,6 +170,19 @@ class UserCanModifyOrderItemsMixin(UserPassesTestMixin):
 
         if hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile:
             if self.order.customer == self.request.user.customer_profile and self.order.status == Order.StatusChoices.PENDING:
+                return True
+            
+         # Condition for a Professional linked to the order's customer and order is PENDING
+        if hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile:
+            professional = self.request.user.professional_profile
+            # Check if an active link exists between this professional and the order's customer
+            is_linked_and_active = ProfessionalCustomerLink.objects.filter(
+                professional=professional,
+                customer=self.order.customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            ).exists()
+
+            if is_linked_and_active and self.order.status == Order.StatusChoices.PENDING:
                 return True
 
         return False
@@ -441,12 +455,16 @@ class OrderItemUpdateView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Upda
         return response
 
     def get_success_url(self):
-        return reverse_lazy('orders:order_detail', kwargs={'pk': self.order.pk})
+        #return reverse_lazy('orders:order_detail', kwargs={'pk': self.order.pk})
+        return reverse_lazy('users:customer_basket', kwargs={'order_id': self.order.pk})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['order'] = self.order
-        context['page_title'] = f"Update Item in Order #{self.order.pk}"
+        if self.object: # self.object is the OrderItem instance
+            context['page_title'] = f"Update Item: {self.object.price.item.title} in Order #{self.order.pk}"
+        else:
+            context['page_title'] = f"Update Item in Order #{self.order.pk_formatted}"
         return context
 
 

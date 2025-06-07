@@ -93,6 +93,15 @@ class Order(TimeStampedModel):
             models.Index(fields=['order_date']),
             models.Index(fields=['customer', 'status']),
         ]
+    @property
+    def currency_display_symbol(self):
+        symbols = {
+            'EUR': '€',
+            'USD': '$',
+            'GBP': '£',
+        }
+        return symbols.get(self.currency, self.currency)    
+    
 
 class OrderItem(TimeStampedModel):
     """ Represents a specific item included within an Order. """

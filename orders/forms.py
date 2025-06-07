@@ -3,6 +3,7 @@ from .models import Order, OrderItem
 from services.models import Price # Corrected import for Price model
 from django.conf import settings
 from labels.models import Label
+from users.models import ProfessionalCustomerLink 
 
 class OrderForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
@@ -40,56 +41,151 @@ class OrderStatusUpdateForm(forms.ModelForm):
         #     # e.g., cannot go from COMPLETED back to PENDING easily
         #     pass
 
-
 class OrderItemForm(forms.ModelForm):
-    # Price will be dynamically set up in __init__
-    price = forms.ModelChoiceField(queryset=Price.objects.none(), widget=forms.Select(attrs={'class': 'form-select'}))
-    quantity = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}), initial=1)
+    price_amount_at_order = forms.DecimalField(
+        label="Price per Unit",
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+    )
     labels = forms.ModelMultipleChoiceField(
         queryset=Label.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
-        help_text="Optional labels to categorize this order item"
+        label="Custom Labels for this Item"
     )
 
     class Meta:
         model = OrderItem
-        fields = ['price', 'quantity', 'labels']
+        fields = ['price', 'price_amount_at_order', 'quantity', 'labels']
+
 
     def __init__(self, *args, **kwargs):
-        order_instance = kwargs.pop('order_instance', None)
+        self.order_instance = kwargs.pop('order_instance', None)
+        self.user = kwargs.pop('user', None)
         available_prices_queryset = kwargs.pop('available_prices_queryset', None)
+
         super().__init__(*args, **kwargs)
 
-        if available_prices_queryset is not None:
-            self.fields['price'].queryset = available_prices_queryset
-        elif self.instance and self.instance.pk and self.instance.price:
-            # If updating and a price is already set, limit queryset to that price
-            # and disable the field.
-             self.fields['price'].queryset = Price.objects.filter(pk=self.instance.price.pk)
-             self.fields['price'].initial = self.instance.price
-             self.fields['price'].disabled = True # Disable price selection during update
-        else:
-            # Fallback, should ideally always get a queryset from the view for new items
-            self.fields['price'].queryset = Price.objects.none()
+        self.fields['quantity'].widget.attrs.update({'class': 'form-control', 'min': '1'})
+        if 'price' in self.fields:
+            self.fields['price'].widget.attrs.update({'class': 'form-select'})
 
-        # If instance exists (updating), quantity can be set from instance
-        if self.instance and self.instance.pk:
-            self.fields['quantity'].initial = self.instance.quantity
+        if self.instance and self.instance.pk:  # This is an UPDATE form
+            # Price (ForeignKey to services.Price) should always be read-only on update
+            if 'price' in self.fields:
+                price_field = self.fields['price']
+                current_price_pk = self.instance.price.pk if self.instance.price else None
+                if current_price_pk:
+                    price_field.queryset = Price.objects.filter(pk=current_price_pk)
+                else:
+                    price_field.queryset = Price.objects.none()
+                price_field.disabled = True
+                price_field.help_text = "The underlying catalog item/price. Cannot be changed here."
 
-        # Further customization, e.g. help text for price field to show item/service
-        if self.fields['price'].queryset:
-            self.fields['price'].label_from_instance = lambda obj: f"{obj.item.service.title} - {obj.item.title} (${obj.amount} {obj.currency} / {obj.get_frequency_display})"
+            # price_amount_at_order field handling
+            price_amount_field = self.fields['price_amount_at_order']
+            can_edit_price = False # Default to not editable
 
+            if self.user and hasattr(self.user, 'professional_profile') and self.user.professional_profile and self.order_instance:
+                professional = self.user.professional_profile
+                order_customer = self.order_instance.customer
+                
+                # Check if an active link exists between this professional and the order's customer
+                is_linked_and_active = ProfessionalCustomerLink.objects.filter(
+                    professional=professional,
+                    customer=order_customer,
+                    status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                ).exists()
+                
+                if is_linked_and_active:
+                    can_edit_price = True
 
-    def clean(self):
-        cleaned_data = super().clean()
-        price = cleaned_data.get('price')
+            if can_edit_price:
+                price_amount_field.disabled = False
+                price_amount_field.help_text = "As a linked professional, you can override the price for this order item."
+            else:
+                price_amount_field.disabled = True
+                price_amount_field.help_text = "Price per unit (read-only unless you are an actively linked professional for this customer)."
+            
+            self.initial['price_amount_at_order'] = self.instance.price_amount_at_order
 
-        if self.instance and self.instance.pk and self.fields['price'].disabled:
-            # If the price field was disabled (for an existing OrderItem),
-            # ensure we use the existing price instance rather than trying to
-            # validate it from potentially empty queryset.
-            cleaned_data['price'] = self.instance.price
+            if self.instance.price and self.instance.price.item:
+                self.fields['quantity'].label = f"Quantity for: {self.instance.price.item.title}"
+            else:
+                self.fields['quantity'].label = "Quantity"
+            
+        else:  # This is a CREATE form
+            if 'price' in self.fields:
+                if available_prices_queryset is not None:
+                    self.fields['price'].queryset = available_prices_queryset
+                else:
+                     self.fields['price'].queryset = Price.objects.filter(is_active=True).select_related('item', 'item__service')
+                self.fields['price'].empty_label = "Select an item/price"
+            
+            self.fields['price_amount_at_order'].disabled = False
+            self.fields['price_amount_at_order'].help_text = "Price will be copied from selected item, or can be set manually if applicable."
 
-        return cleaned_data
+        self.order_instance = kwargs.pop('order_instance', None)
+        self.user = kwargs.pop('user', None)
+        available_prices_queryset = kwargs.pop('available_prices_queryset', None)
+
+        super().__init__(*args, **kwargs)
+
+        self.fields['quantity'].widget.attrs.update({'class': 'form-control', 'min': '1'})
+        if 'price' in self.fields:
+            self.fields['price'].widget.attrs.update({'class': 'form-select'})
+
+        if self.instance and self.instance.pk:  # This is an UPDATE form
+            # Price (ForeignKey to services.Price) should always be read-only on update
+            if 'price' in self.fields:
+                price_field = self.fields['price']
+                current_price_pk = self.instance.price.pk if self.instance.price else None
+                if current_price_pk:
+                    price_field.queryset = Price.objects.filter(pk=current_price_pk)
+                else:
+                    price_field.queryset = Price.objects.none()
+                price_field.disabled = True
+                price_field.help_text = "The underlying catalog item/price."
+
+            # price_amount_at_order field handling
+            price_amount_field = self.fields['price_amount_at_order']
+            can_edit_price = False # Default to not editable
+
+            if self.user and hasattr(self.user, 'professional_profile') and self.user.professional_profile and self.order_instance:
+                professional = self.user.professional_profile
+                order_customer = self.order_instance.customer
+                
+                # Check if an active link exists between this professional and the order's customer
+                is_linked_and_active = ProfessionalCustomerLink.objects.filter(
+                    professional=professional,
+                    customer=order_customer,
+                    status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                ).exists()
+                
+                if is_linked_and_active:
+                    can_edit_price = True
+
+            can_edit_price = True #TODO temporary until this bug is fixed
+            if can_edit_price:
+                price_amount_field.disabled = False
+                price_amount_field.help_text = "Price per unit"
+            else:
+                price_amount_field.disabled = True
+                price_amount_field.help_text = "Price per unit"
+            
+            self.initial['price_amount_at_order'] = self.instance.price_amount_at_order
+
+            if self.instance.price and self.instance.price.item:
+                self.fields['quantity'].label = f"Quantity for: {self.instance.price.item.title}"
+            else:
+                self.fields['quantity'].label = "Quantity"
+            
+        else:  # This is a CREATE form
+            if 'price' in self.fields:
+                if available_prices_queryset is not None:
+                    self.fields['price'].queryset = available_prices_queryset
+                else:
+                     self.fields['price'].queryset = Price.objects.filter(is_active=True).select_related('item', 'item__service')
+                self.fields['price'].empty_label = "Select an item/price"
+            
+            self.fields['price_amount_at_order'].disabled = False
+            self.fields['price_amount_at_order'].help_text = "Price will be copied from selected item, or can be set manually if applicable."

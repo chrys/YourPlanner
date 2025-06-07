@@ -269,3 +269,18 @@ a:hover {
 .user-menu-link:hover {
     text-decoration: underline;
 }
+
+.navbar {
+    height: 60px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+.logo {
+    height: 48px;
+    display: block;
+    margin: 0 auto;
+}
+.menu-icon {
+    font-size: 2rem;
+    cursor: pointer;
+}
