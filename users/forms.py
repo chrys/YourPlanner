@@ -47,7 +47,7 @@ class ProfessionalChoiceForm(forms.Form):
 
 class ProfessionalForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(type='professional'),
+        queryset=Label.objects.filter(label_type='PROFESSIONAL'),
         required=False,
         widget=forms.CheckboxSelectMultiple,
         help_text="Select labels relevant to this professional profile."
@@ -70,7 +70,7 @@ class ProfessionalForm(forms.ModelForm):
 
 class CustomerForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(type='customer'),
+        queryset=Label.objects.filter(label_type='CUSTOMER'),
         required=False,
         widget=forms.CheckboxSelectMultiple,
         help_text="Select labels relevant to this customer profile."
@@ -93,7 +93,7 @@ class CustomerForm(forms.ModelForm):
 class CustomerLabelForm(forms.ModelForm):
     """Form for updating customer labels."""
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(type='customer'),
+        queryset=Label.objects.filter(label_type='CUSTOMER'),
         required=False,
         widget=forms.CheckboxSelectMultiple,
         help_text="Select labels for this customer."

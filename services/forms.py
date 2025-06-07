@@ -4,7 +4,7 @@ from labels.models import Label
 
 class ServiceForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(type='service'), # MODIFIED
+        queryset=Label.objects.filter(label_type='SERVICE'), # MODIFIED
         required=False,
         widget=forms.CheckboxSelectMultiple, # MODIFIED
         help_text="Optional labels to categorize this service"
@@ -23,7 +23,7 @@ class ServiceForm(forms.ModelForm):
 class ItemForm(forms.ModelForm):
     image = forms.ImageField(widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'}), help_text="Upload an image for the item (optional).", required=False)
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(type='service'), # MODIFIED
+        queryset=Label.objects.filter(label_type='ITEM'), # MODIFIED
         required=False,
         widget=forms.CheckboxSelectMultiple, # MODIFIED
         help_text="Optional labels to categorize this item"

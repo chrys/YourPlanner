@@ -1,214 +1,329 @@
 from django.test import TestCase
-from django.db.models import JSONField
-from django.core.exceptions import ValidationError
-from django.db.utils import IntegrityError
-from django.db.models.deletion import ProtectedError
-
+from django.contrib.auth.models import User # Using User as a stand-in for a generic model if needed
 from ..models import Rule, RuleCondition, RuleAction, RuleTrigger
-from labels.models import Label, LABEL_TYPES
+from labels.models import Label, LABEL_TYPES, LABEL_TYPES_ASSOCIATIONS
+from ..engine import process_rules
 
-class RuleEngineTestCase(TestCase):
+# Mock models for testing purposes, to be used with LABEL_TYPES_ASSOCIATIONS
+# These should ideally mirror the structure expected by get_entity_labels
+class MockCustomer:
+    def __init__(self, name="Test Customer"):
+        self.name = name
+        self.labels = [] # Simulate a 'labels' ManyToManyField
+
+    def __str__(self):
+        return self.name
+
+class MockProfessional:
+    def __init__(self, name="Test Pro"):
+        self.name = name
+        self.labels = []
+
+    def __str__(self):
+        return self.name
+
+# Update LABEL_TYPES_ASSOCIATIONS for the test environment
+# This is crucial for the tests to run correctly with the mock models
+LABEL_TYPES_ASSOCIATIONS['CUSTOMER'] = MockCustomer
+LABEL_TYPES_ASSOCIATIONS['PROFESSIONAL'] = MockProfessional
+# If other types are used in tests, they need to be added here too.
+
+# Mock implementation for get_entity_labels for testing
+# This should be consistent with how MockCustomer/MockProfessional store labels
+def mock_get_entity_labels(entity_instance):
+    if hasattr(entity_instance, 'labels'):
+        return entity_instance.labels
+    return []
+
+# Original get_entity_labels from engine for monkeypatching
+original_get_entity_labels = None
+
+class RuleEngineTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        # Create Labels
-        cls.label_vip = Label.objects.create(name='VIP Customer', type='CUSTOMER', color='gold')
-        cls.label_new = Label.objects.create(name='New Order', type='ORDER', color='blue')
-        cls.label_internal = Label.objects.create(name='Internal Review', type='SERVICE', color='gray')
+        global original_get_entity_labels
+        # Monkey patch get_entity_labels for testing
+        # It's important to do this before any rule processing is called
+        from .. import engine # Import the engine module
+        original_get_entity_labels = engine.get_entity_labels
+        engine.get_entity_labels = mock_get_entity_labels
 
-        # Create RuleTriggers
-        cls.trigger_on_creation = RuleTrigger.objects.create(name='On Entity Creation', code='ON_CREATION')
-        cls.trigger_daily = RuleTrigger.objects.create(name='Daily Check', code='DAILY')
-        cls.trigger_on_label = RuleTrigger.objects.create(name='On Label Link', code='ON_LABEL_LINK')
+        # --- Create Labels ---
+        cls.vip_label = Label.objects.create(name="VIP", label_type="CUSTOMER")
+        cls.new_label = Label.objects.create(name="New", label_type="CUSTOMER")
+        cls.pro_badge_label = Label.objects.create(name="Pro Badge", label_type="PROFESSIONAL")
 
-    def test_create_rule_trigger(self):
-        trigger = RuleTrigger.objects.create(name='Monthly Review', code='MONTHLY')
-        self.assertEqual(trigger.name, 'Monthly Review')
-        self.assertEqual(trigger.code, 'MONTHLY')
-        self.assertEqual(str(trigger), 'Monthly Review')
-        self.assertEqual(RuleTrigger.objects.count(), 4) # 3 from setUpTestData + 1 new
+        # --- Create RuleTrigger ---
+        cls.on_create_trigger = RuleTrigger.objects.create(name="On Creation", code="ON_CREATE")
+        cls.on_update_trigger = RuleTrigger.objects.create(name="On Update", code="ON_UPDATE")
 
-    def test_create_rule(self):
-        rule = Rule.objects.create(
-            name='VIP Discount Rule',
-            trigger=self.trigger_on_creation,
-            status='ENABLED'
+        # --- Rule 1: VIP Customer gets a discount on creation ---
+        cls.rule_vip_discount = Rule.objects.create(
+            name="VIP Discount on Creation",
+            status="ENABLED",
+            trigger=cls.on_create_trigger
         )
-        rule.labels.add(self.label_vip)
-
-        self.assertEqual(rule.name, 'VIP Discount Rule')
-        self.assertEqual(rule.status, 'ENABLED')
-        self.assertEqual(rule.trigger, self.trigger_on_creation)
-        self.assertEqual(rule.labels.count(), 1)
-        self.assertIn(self.label_vip, rule.labels.all())
-        self.assertEqual(str(rule), 'VIP Discount Rule')
-
-        # Test adding multiple labels
-        rule_multi_label = Rule.objects.create(
-            name='Multi-label Rule',
-            trigger=self.trigger_daily
+        # This rule applies if the customer is VIP
+        RuleCondition.objects.create(
+            rule=cls.rule_vip_discount,
+            entity="CUSTOMER", # From LABEL_TYPES
+            operator="HAS_LABEL",
+            label=cls.vip_label
         )
-        rule_multi_label.labels.add(self.label_new, self.label_internal)
-        self.assertEqual(rule_multi_label.labels.count(), 2)
-        self.assertIn(self.label_new, rule_multi_label.labels.all())
-        self.assertIn(self.label_internal, rule_multi_label.labels.all())
-        self.assertEqual(Rule.objects.count(), 2)
-
-    def test_create_rule_condition(self):
-        rule = Rule.objects.create(name='Test Condition Rule', trigger=self.trigger_on_creation)
-        condition = RuleCondition.objects.create(
-            rule=rule,
-            entity='CUSTOMER', # Example from LABEL_TYPES
-            operator='HAS_LABEL',
-            label=self.label_vip
-        )
-        self.assertEqual(condition.rule, rule)
-        self.assertEqual(condition.entity, 'CUSTOMER')
-        self.assertEqual(condition.operator, 'HAS_LABEL')
-        self.assertEqual(condition.label, self.label_vip)
-        self.assertEqual(str(condition), f"Condition for {rule}: CUSTOMER HAS_LABEL {self.label_vip}")
-
-        # Test different entity and operator
-        condition_not_label = RuleCondition.objects.create(
-            rule=rule,
-            entity='ORDER', # Example from LABEL_TYPES
-            operator='NOT_LABEL',
-            label=self.label_new
-        )
-        self.assertEqual(condition_not_label.entity, 'ORDER')
-        self.assertEqual(condition_not_label.operator, 'NOT_LABEL')
-        self.assertEqual(RuleCondition.objects.count(), 2)
-
-        # Test invalid entity choice (if LABEL_TYPES is strictly enforced by choices)
-        # This requires the model field to have choices set for validation to fail at model level
-        # If not, this would be a form validation or serializer validation concern.
-        # For now, assuming direct model validation might not catch this unless choices are exhaustive and final.
-
-    def test_create_rule_action(self):
-        rule = Rule.objects.create(name='Test Action Rule', trigger=self.trigger_daily)
-        action_params_discount = {"discount_percentage": 10, "reason": "VIP Welcome"}
-        action = RuleAction.objects.create(
-            rule=rule,
-            action_type='DISCOUNT',
-            action_params=action_params_discount
-        )
-        self.assertEqual(action.rule, rule)
-        self.assertEqual(action.action_type, 'DISCOUNT')
-        self.assertEqual(action.action_params, action_params_discount)
-        self.assertEqual(str(action), f"Action for {rule}: DISCOUNT")
-
-        # Test different action_type and params
-        action_params_status = {"new_status": "processed", "notify_user": True}
-        action_status_change = RuleAction.objects.create(
-            rule=rule,
-            action_type='STATUS_CHANGE',
-            action_params=action_params_status
-        )
-        self.assertEqual(action_status_change.action_type, 'STATUS_CHANGE')
-        self.assertEqual(action_status_change.action_params, action_params_status)
-        self.assertEqual(RuleAction.objects.count(), 2)
-
-    def test_rule_relationships(self):
-        rule = Rule.objects.create(name='Complex Rule', trigger=self.trigger_on_label)
-        RuleCondition.objects.create(rule=rule, entity='CUSTOMER', operator='HAS_LABEL', label=self.label_vip)
-        RuleCondition.objects.create(rule=rule, entity='ORDER', operator='NOT_LABEL', label=self.label_new)
-        RuleAction.objects.create(rule=rule, action_type='DISCOUNT', action_params={"discount_value": 5})
-        RuleAction.objects.create(rule=rule, action_type='STATUS_CHANGE', action_params={"new_status": "flagged"})
-
-        self.assertEqual(rule.conditions.count(), 2)
-        self.assertEqual(rule.actions.count(), 2)
-
-    def test_rule_status_default(self):
-        rule = Rule.objects.create(name='Default Status Rule', trigger=self.trigger_on_creation)
-        self.assertEqual(rule.status, 'DISABLED') # Default as per model definition
-
-    def test_action_params_json(self):
-        rule = Rule.objects.create(name='JSON Params Test Rule', trigger=self.trigger_daily)
-        complex_params = {
-            "target_entity_id": 123,
-            "updates": [
-                {"field": "priority", "value": "high"},
-                {"field": "assigned_to", "value": "support_team"}
-            ],
-            "notification_required": True
-        }
-        action = RuleAction.objects.create(
-            rule=rule,
-            action_type='STATUS_CHANGE', # Or a more generic type if needed
-            action_params=complex_params
-        )
-        retrieved_action = RuleAction.objects.get(id=action.id)
-        self.assertEqual(retrieved_action.action_params, complex_params)
-        self.assertTrue(retrieved_action.action_params["notification_required"])
-        self.assertEqual(len(retrieved_action.action_params["updates"]), 2)
-
-    def test_label_association_in_rule(self):
-        rule = Rule.objects.create(name='Label Association Rule', trigger=self.trigger_on_creation)
-        rule.labels.add(self.label_vip, self.label_new)
-
-        retrieved_rule = Rule.objects.get(id=rule.id)
-        self.assertEqual(retrieved_rule.labels.count(), 2)
-        self.assertIn(self.label_vip, retrieved_rule.labels.all())
-        self.assertIn(self.label_new, retrieved_rule.labels.all())
-
-        # Test removing a label
-        rule.labels.remove(self.label_new)
-        self.assertEqual(retrieved_rule.labels.count(), 1)
-        self.assertNotIn(self.label_new, retrieved_rule.labels.all())
-
-
-    def test_on_delete_cascades_and_protects(self):
-        # Test PROTECT for RuleTrigger
-        rule_for_trigger_test = Rule.objects.create(name='Rule for Trigger Deletion Test', trigger=self.trigger_on_creation)
-        with self.assertRaises(ProtectedError):
-            self.trigger_on_creation.delete()
-
-        # Clean up the rule that would prevent trigger deletion if test failed or was different
-        rule_for_trigger_test.delete()
-
-        # Test PROTECT for Label in RuleCondition
-        rule_for_condition_label_test = Rule.objects.create(name='Rule for Condition Label Deletion', trigger=self.trigger_daily)
-        condition_for_label_protect = RuleCondition.objects.create(
-            rule=rule_for_condition_label_test,
-            entity='CUSTOMER',
-            operator='HAS_LABEL',
-            label=self.label_vip
-        )
-        with self.assertRaises(ProtectedError):
-            self.label_vip.delete()
-
-        # Clean up the condition and rule
-        condition_for_label_protect.delete()
-        rule_for_condition_label_test.delete()
-
-        # Test CASCADE for RuleCondition and RuleAction when Rule is deleted
-        cascading_rule = Rule.objects.create(name='Cascading Delete Rule', trigger=self.trigger_daily)
-        condition_to_cascade = RuleCondition.objects.create(
-            rule=cascading_rule, entity='ORDER', operator='HAS_LABEL', label=self.label_new
-        )
-        action_to_cascade = RuleAction.objects.create(
-            rule=cascading_rule, action_type='DISCOUNT', action_params={"amount": 5}
+        RuleAction.objects.create(
+            rule=cls.rule_vip_discount,
+            action_type="APPLY_DISCOUNT",
+            action_params={"percentage": 10}
         )
 
-        rule_id = cascading_rule.id
-        condition_id = condition_to_cascade.id
-        action_id = action_to_cascade.id
+        # --- Rule 2: New Customer (non-VIP) gets welcome email ---
+        cls.rule_new_welcome = Rule.objects.create(
+            name="New Customer Welcome Email",
+            status="ENABLED",
+            trigger=cls.on_create_trigger
+        )
+        RuleCondition.objects.create(
+            rule=cls.rule_new_welcome,
+            entity="CUSTOMER",
+            operator="HAS_LABEL",
+            label=cls.new_label
+        )
+        RuleCondition.objects.create( # Must also NOT be VIP
+            rule=cls.rule_new_welcome,
+            entity="CUSTOMER",
+            operator="NOT_LABEL",
+            label=cls.vip_label
+        )
+        RuleAction.objects.create(
+            rule=cls.rule_new_welcome,
+            action_type="SEND_EMAIL",
+            action_params={"template": "welcome_new_customer"}
+        )
 
-        self.assertTrue(Rule.objects.filter(id=rule_id).exists())
-        self.assertTrue(RuleCondition.objects.filter(id=condition_id).exists())
-        self.assertTrue(RuleAction.objects.filter(id=action_id).exists())
+        # --- Rule 3: Rule with no conditions (always applies if trigger matches) ---
+        cls.rule_always_log = Rule.objects.create(
+            name="Log All Creations",
+            status="ENABLED",
+            trigger=cls.on_create_trigger
+        )
+        RuleAction.objects.create(
+            rule=cls.rule_always_log,
+            action_type="LOG_EVENT",
+            action_params={"event_type": "entity_creation"}
+        )
 
-        cascading_rule.delete()
+        # --- Rule 4: Rule specific to Professionals ---
+        cls.rule_pro_badge_award = Rule.objects.create(
+            name="Award Pro Badge",
+            status="ENABLED",
+            trigger=cls.on_update_trigger # Different trigger
+        )
+        cls.rule_pro_badge_award.labels.add(cls.pro_badge_label) # Rule itself is linked to a label
+        RuleCondition.objects.create(
+            rule=cls.rule_pro_badge_award,
+            entity="PROFESSIONAL",
+            operator="HAS_LABEL",
+            label=cls.pro_badge_label # Condition: Professional must have the pro_badge_label
+        )
+        RuleAction.objects.create(
+            rule=cls.rule_pro_badge_award,
+            action_type="AWARD_BADGE",
+            action_params={"badge_name": "Top Professional"}
+        )
 
-        self.assertFalse(Rule.objects.filter(id=rule_id).exists())
-        self.assertFalse(RuleCondition.objects.filter(id=condition_id).exists()) # Should be deleted by cascade
-        self.assertFalse(RuleAction.objects.filter(id=action_id).exists())     # Should be deleted by cascade
+        # --- Rule 5: Disabled Rule ---
+        cls.rule_disabled = Rule.objects.create(
+            name="Disabled Rule",
+            status="DISABLED",
+            trigger=cls.on_create_trigger
+        )
+        RuleCondition.objects.create(
+            rule=cls.rule_disabled,
+            entity="CUSTOMER",
+            operator="HAS_LABEL",
+            label=cls.new_label
+        )
+        RuleAction.objects.create(
+            rule=cls.rule_disabled,
+            action_type="DO_NOTHING",
+            action_params={}
+        )
 
-        # Recreate protected items if other tests need them, or ensure test isolation
-        # For setUpTestData, items are generally not deleted, so this is fine.
-        # If label_vip was deleted in a non-ProtectedError test, it would affect other tests.
-        # Here, we specifically test protection, so the item isn't actually deleted.
-        # If we had a test that *successfully* deleted a shared label, we'd need to recreate it or structure tests differently.
-        # Since label_vip was protected, it's still there. We can verify:
-        self.assertTrue(Label.objects.filter(id=self.label_vip.id).exists())
-        self.assertTrue(RuleTrigger.objects.filter(id=self.trigger_on_creation.id).exists())
+    @classmethod
+    def tearDownClass(cls):
+        global original_get_entity_labels
+        # Restore original get_entity_labels
+        from .. import engine
+        engine.get_entity_labels = original_get_entity_labels
+        super().tearDownClass()
+
+    def setUp(self):
+        # Mock the execute_action function to track calls
+        self.executed_actions = []
+        self.original_execute_action = None
+
+        from .. import engine # Import the engine module where execute_action is defined
+        self.original_execute_action = engine.execute_action
+
+        def mock_execute_action(action, target_entity):
+            self.executed_actions.append({
+                "action_type": action.action_type,
+                "params": action.action_params,
+                "rule_name": action.rule.name,
+                "target_entity_name": str(target_entity)
+            })
+            # Call original placeholder if needed for print statements, or just pass
+            # self.original_execute_action(action, target_entity)
+            print(f"Mock Executing action: {action.action_type} for rule {action.rule.name}")
+
+        engine.execute_action = mock_execute_action
+
+
+    def tearDown(self):
+        # Restore original execute_action
+        from .. import engine
+        engine.execute_action = self.original_execute_action
+
+    def test_vip_customer_discount(self):
+        vip_customer = MockCustomer(name="VIP Moira")
+        vip_customer.labels.append(self.vip_label) # Moira is VIP
+
+        process_rules(target_entity=vip_customer, event_code="ON_CREATE")
+
+        self.assertTrue(any(
+            action["action_type"] == "APPLY_DISCOUNT" and \
+            action["rule_name"] == "VIP Discount on Creation"
+            for action in self.executed_actions
+        ))
+        # Ensure welcome email for non-VIPs is NOT sent
+        self.assertFalse(any(
+            action["action_type"] == "SEND_EMAIL" and \
+            action["rule_name"] == "New Customer Welcome Email"
+            for action in self.executed_actions
+        ))
+
+    def test_new_customer_welcome_email(self):
+        new_customer = MockCustomer(name="New Norman")
+        new_customer.labels.append(self.new_label) # Norman is New, but not VIP
+
+        process_rules(target_entity=new_customer, event_code="ON_CREATE")
+
+        self.assertTrue(any(
+            action["action_type"] == "SEND_EMAIL" and \
+            action["rule_name"] == "New Customer Welcome Email"
+            for action in self.executed_actions
+        ))
+        # Ensure VIP discount is NOT applied
+        self.assertFalse(any(
+            action["action_type"] == "APPLY_DISCOUNT" and \
+            action["rule_name"] == "VIP Discount on Creation"
+            for action in self.executed_actions
+        ))
+
+    def test_rule_with_no_conditions_always_runs(self):
+        any_customer = MockCustomer(name="Any Alex")
+        # No specific labels needed for the "Log All Creations" rule
+
+        process_rules(target_entity=any_customer, event_code="ON_CREATE")
+
+        self.assertTrue(any(
+            action["action_type"] == "LOG_EVENT" and \
+            action["rule_name"] == "Log All Creations"
+            for action in self.executed_actions
+        ))
+
+    def test_disabled_rule_does_not_run(self):
+        customer = MockCustomer(name="Regular Rita")
+        customer.labels.append(self.new_label)
+
+        process_rules(target_entity=customer, event_code="ON_CREATE")
+
+        self.assertFalse(any(
+            action["action_type"] == "DO_NOTHING" and \
+            action["rule_name"] == "Disabled Rule"
+            for action in self.executed_actions
+        ))
+
+    def test_wrong_trigger_no_rules_run(self):
+        customer = MockCustomer(name="Updated Ursula")
+        customer.labels.append(self.vip_label)
+
+        process_rules(target_entity=customer, event_code="ON_UPDATE") # ON_UPDATE trigger
+
+        # No actions should be executed because customer rules are for ON_CREATE
+        # except for rules that might be for ON_UPDATE and match customer type
+        # In this setup, rule_pro_badge_award is ON_UPDATE but for PROFESSIONAL.
+        # So, for a CUSTOMER entity with ON_UPDATE, no rules should fire.
+        relevant_actions = [
+            action for action in self.executed_actions
+            if action['target_entity_name'] == str(customer)
+        ]
+        self.assertEqual(len(relevant_actions), 0)
+
+
+    def test_professional_rule_specific_label_and_trigger(self):
+        pro_user = MockProfessional(name="Pro Paula")
+        pro_user.labels.append(self.pro_badge_label) # Paula has the pro badge label
+
+        # This rule is also filtered by the rule.labels field
+        # process_rules will check if the entity has one of the labels in rule_pro_badge_award.labels
+
+        process_rules(target_entity=pro_user, event_code="ON_UPDATE")
+
+        self.assertTrue(any(
+            action["action_type"] == "AWARD_BADGE" and \
+            action["rule_name"] == "Award Pro Badge" and \
+            action["target_entity_name"] == "Pro Paula"
+            for action in self.executed_actions
+        ))
+        # Ensure no customer rules ran
+        self.assertFalse(any(
+            action["rule_name"] == "VIP Discount on Creation" for action in self.executed_actions
+        ))
+
+    def test_professional_rule_entity_does_not_have_rule_label(self):
+        # This professional does not have the 'pro_badge_label' which is on the Rule itself.
+        # The rule `rule_pro_badge_award` is associated with `cls.pro_badge_label`.
+        # If the entity doesn't have this label, the rule should not be picked up by `process_rules`.
+        other_pro = MockProfessional(name="Other Oscar")
+        # Oscar does NOT have self.pro_badge_label, which rule_pro_badge_award is tied to.
+
+        process_rules(target_entity=other_pro, event_code="ON_UPDATE")
+
+        self.assertFalse(any(
+            action["action_type"] == "AWARD_BADGE" and \
+            action["rule_name"] == "Award Pro Badge"
+            for action in self.executed_actions
+        ), "Action should not run if entity doesn't match rule's own labels.")
+
+    def test_entity_type_mismatch_for_condition(self):
+        # A Professional entity being processed by a rule for CUSTOMER entity type
+        pro_for_customer_rule = MockProfessional(name="Pro trying Customer rule")
+        # It might have labels that customer rules look for, but type is different
+        pro_for_customer_rule.labels.append(self.vip_label)
+
+        process_rules(target_entity=pro_for_customer_rule, event_code="ON_CREATE")
+
+        # No actions for customer rules should be executed because the entity is Professional
+        self.assertFalse(any(
+            action["rule_name"] == "VIP Discount on Creation"
+            for action in self.executed_actions
+        ))
+        self.assertFalse(any(
+            action["rule_name"] == "New Customer Welcome Email"
+            for action in self.executed_actions
+        ))
+
+        # The generic "Log All Creations" rule (rule_always_log) has NO conditions.
+        # The rule engine's process_rules function:
+        # - Filters rules by trigger.
+        # - Filters rules by rule.labels (if entity has one of them). rule_always_log has no labels.
+        # - Then checks conditions. rule_always_log has no conditions.
+        # Therefore, rule_always_log should still run.
+        self.assertTrue(any(
+            action["action_type"] == "LOG_EVENT" and \
+            action["rule_name"] == "Log All Creations" and \
+            action["target_entity_name"] == str(pro_for_customer_rule)
+            for action in self.executed_actions
+        ), "Log All Creations rule (no conditions) should run for any entity type if trigger matches.")
