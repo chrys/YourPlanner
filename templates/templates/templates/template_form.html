@@ -1,0 +1,179 @@
+{% extends "core/base.html" %}
+{% load i18n static crispy_forms_tags %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Update Template" %} - {{ object.title }}
+    {% else %}
+        {% trans "Create New Template" %}
+    {% endif %}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>
+        {% if object %}
+            {% trans "Update Template" %}: {{ object.title }}
+        {% else %}
+            {% trans "Create New Template" %}
+        {% endif %}
+    </h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="card mb-3">
+            <div class="card-header">{% trans "Template Details" %}</div>
+            <div class="card-body">
+                {{ form.title|as_crispy_field }}
+                {{ form.description|as_crispy_field }}
+                {{ form.services|as_crispy_field }}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">{% trans "Template Images" %}</div>
+            <div class="card-body">
+                {{ image_formset.management_form }}
+                <div id="image-forms-container">
+                    {% for image_form in image_formset %}
+                        <div class="image-form mb-3 p-3 border rounded">
+                            <h5>{% trans "Image" %} {{ forloop.counter }}</h5>
+                            {% if image_form.instance.pk and image_form.instance.image %}
+                                <div class="mb-2">
+                                    <img src="{{ image_form.instance.image.url }}" alt="{% trans 'Current image' %}" style="max-width: 200px; max-height: 150px; border-radius: 5px;">
+                                </div>
+                            {% endif %}
+                            {{ image_form.image|as_crispy_field }}
+                            <div class="form-check mb-2">
+                                {{ image_form.is_default }}
+                                <label class="form-check-label" for="{{ image_form.is_default.id_for_label }}">
+                                    {% trans "Set as default image" %}
+                                </label>
+                            </div>
+                            {% if image_form.instance.pk %}
+                                <div class="form-check">
+                                    {{ image_form.DELETE }}
+                                    <label class="form-check-label" for="{{ image_form.DELETE.id_for_label }}">
+                                        {% trans "Delete this image" %}
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% for error in image_form.non_field_errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                             <!-- Display field-specific errors for image_form -->
+                            {% for field in image_form %}
+                                {% for error in field.errors %}
+                                    <div class="alert alert-danger">{{ field.label }}: {{ error }}</div>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="add-image-form" class="btn btn-outline-secondary btn-sm">{% trans "Add Another Image" %}</button>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+        {% if image_formset.non_form_errors %}
+            {% for error in image_formset.non_form_errors %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary">
+            {% if object %}
+                {% trans "Update Template" %}
+            {% else %}
+                {% trans "Create Template" %}
+            {% endif %}
+        </button>
+        <a href="{% if object %}{% url 'templates:template-detail' pk=object.pk %}{% else %}{% url 'templates:template-list' %}{% endif %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageFormsContainer = document.getElementById('image-forms-container');
+    const addImageFormButton = document.getElementById('add-image-form');
+    const totalFormsInput = document.querySelector('input[name="images-TOTAL_FORMS"]'); // Corrected prefix
+    const emptyFormTemplate = document.createElement('template');
+
+    // Find the empty form (usually the last one if extra > 0, or create from scratch if needed)
+    // For simplicity, let's assume the last form rendered by formset (if extra=1) is the template
+    // A more robust way is to render an empty form with a specific ID or class in the Django template
+    // and clone that. For now, we'll try to clone the last form.
+
+    // It's safer to have a template for the empty form.
+    // Let's assume the last form in the formset is the one to copy (if extra >=1)
+    // Or, if we have a hidden template:
+    // let emptyFormHtml = document.getElementById('empty-image-form-template').innerHTML;
+
+    // Simplified approach: clone the last form in the formset if available
+    // This relies on `extra=1` in the formset definition.
+    let formIdx = imageFormsContainer.children.length; // Initial number of forms
+
+    if (imageFormsContainer.children.length > 0) {
+         // Create a template from the last form to handle prefixes correctly
+        let lastForm = imageFormsContainer.children[formIdx - 1].cloneNode(true);
+        // Clear values from the cloned form
+        lastForm.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+        lastForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
+        lastForm.querySelectorAll('input[type="hidden"][id*="id_images-"][name*="-id"]').forEach(input => input.value = ''); // Clear hidden ID for new forms
+        lastForm.querySelectorAll('img').forEach(img => img.remove()); // Remove existing image preview
+        lastForm.querySelectorAll('.alert').forEach(alert => alert.remove()); // Remove error messages
+
+        emptyFormTemplate.innerHTML = lastForm.outerHTML;
+    } else {
+        // Fallback or more complex empty form generation if no initial extra form.
+        // This part would need the exact HTML structure of an image_form.
+        // For now, this will only work if `extra >= 1` in the formset.
+        console.warn("No initial extra form found to use as a template for adding more images.");
+        // You might hide the "Add Another Image" button if this is the case and `extra=0`
+        // addImageFormButton.style.display = 'none';
+    }
+
+
+    addImageFormButton.addEventListener('click', function() {
+        if (!emptyFormTemplate.innerHTML && imageFormsContainer.children.length > 0) {
+            // Dynamically create template if not already created
+            let lastForm = imageFormsContainer.children[imageFormsContainer.children.length - 1].cloneNode(true);
+            lastForm.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+            lastForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
+            lastForm.querySelectorAll('input[type="hidden"][id*="id_images-"][name*="-id"]').forEach(input => input.value = '');
+            lastForm.querySelectorAll('img').forEach(img => img.remove());
+            lastForm.querySelectorAll('.alert').forEach(alert => alert.remove());
+            emptyFormTemplate.innerHTML = lastForm.outerHTML;
+        }
+
+
+        if (emptyFormTemplate.innerHTML) {
+            let newFormHtml = emptyFormTemplate.innerHTML.replace(/images-\d+-/g, 'images-' + formIdx + '-').replace(/images-__prefix__-/g, 'images-' + formIdx + '-');
+            let newFormDiv = document.createElement('div');
+            newFormDiv.innerHTML = newFormHtml; // This will create a new div with the form inside
+
+            // The actual form content we want is the first child of the parsed HTML
+            let formElementToAdd = newFormDiv.firstChild;
+            if (formElementToAdd) {
+                 // Update heading if any
+                let heading = formElementToAdd.querySelector('h5');
+                if(heading) heading.textContent = `{% trans "Image" %} ${formIdx + 1}`;
+
+                imageFormsContainer.appendChild(formElementToAdd);
+                totalFormsInput.value = parseInt(totalFormsInput.value) + 1;
+                formIdx++;
+            } else {
+                console.error("Could not create new form from template.");
+            }
+        } else {
+            alert("{% trans 'Could not add new image form. Please ensure JavaScript is enabled and page loaded correctly.' %}");
+        }
+    });
+});
+</script>
+{% endblock content %}

@@ -1,0 +1,93 @@
+{% extends "core/base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ template.title }} - {% trans "Template Details" %}{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Main Template Info -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">{{ template.title }}</h2>
+                    {% if is_owner_or_superuser %} {# Adjusted to is_owner_or_superuser based on view context #}
+                        <a href="{% url 'templates:template-update' pk=template.pk %}" class="btn btn-outline-primary btn-sm">{% trans "Edit Template" %}</a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if template.description %}
+                        <p class="lead">{{ template.description|linebreaksbr }}</p>
+                    {% else %}
+                        <p class="text-muted">{% trans "No description provided." %}</p>
+                    {% endif %}
+
+                    <h4 class="mt-4">{% trans "Image Gallery" %}</h4>
+                    {% if default_image or other_images %}
+                        <div class="row">
+                            <!-- Default Image First -->
+                            {% if default_image %}
+                                <div class="col-md-12 mb-3">
+                                    <h5>{% trans "Default Image" %}</h5>
+                                    <img src="{{ default_image.image.url }}" class="img-fluid rounded shadow" alt="{% trans "Default image for" %} {{ template.title }}">
+                                </div>
+                            {% endif %}
+
+                            <!-- Other Images -->
+                            {% if other_images %}
+                                {% if default_image %}<h5 class="mt-3">{% trans "Additional Images" %}</h5>{% endif %}
+                                <div class="row gx-2 gy-2">
+                                {% for image in other_images %}
+                                    <div class="col-md-4 col-sm-6">
+                                        <img src="{{ image.image.url }}" class="img-fluid rounded shadow-sm" alt="{% trans "Image for" %} {{ template.title }}">
+                                    </div>
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">{% trans "No images have been uploaded for this template." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Services List -->
+            <div class="card">
+                <div class="card-header">
+                    <h4>{% trans "Included Services" %}</h4>
+                </div>
+                <div class="card-body">
+                    {% if template.services.all %}
+                        <ul class="list-group list-group-flush">
+                            {% for service in template.services.all %}
+                                <li class="list-group-item">
+                                    <strong>{{ service.name }}</strong>
+                                    {% if service.category %}
+                                        <small class="text-muted d-block">{{ service.category.name }}</small>
+                                    {% endif %}
+                                    {% if service.description %}
+                                        <p class="mb-0 small">{{ service.description|truncatewords:20 }}</p>
+                                    {% endif %}
+                                    <!-- Link to service detail page if available -->
+                                    {# <a href="{% url 'services:service-detail' pk=service.pk %}" class="stretched-link"></a> #}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">{% trans "No services are currently included in this template." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-3">
+                 <a href="{% url 'templates:template-list' %}" class="btn btn-secondary">{% trans "Back to My Templates" %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Optional: Simple Lightbox for Images (e.g., using Bootstrap Modal or a lightweight JS library) -->
+<!-- This would require additional JS and potentially more complex HTML structure for modals -->
+
+{% endblock content %}
