@@ -1,0 +1,120 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ template.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'template_app:template_list' %}">Templates</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ template.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h1>{{ template.title }}</h1>
+            <p class="text-muted">
+                Created: {{ template.created_at|date:"F j, Y" }} | 
+                Last Updated: {{ template.updated_at|date:"F j, Y" }}
+            </p>
+            
+            <div class="mb-4">
+                <h4>Description</h4>
+                <p>{{ template.description|linebreaks }}</p>
+            </div>
+
+            {% if template_images %}
+                <div class="mb-4">
+                    <h4>Images</h4>
+                    <div class="row">
+                        {% for image in template_images %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <img src="{{ image.image.url }}" class="card-img-top" alt="{{ image.alt_text }}">
+                                    <div class="card-body p-2 text-center">
+                                        {% if image.is_default %}
+                                            <span class="badge bg-primary">Default</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="mb-4">
+                <h4>Services</h4>
+                {% if template_services %}
+                    <div class="list-group">
+                        {% for template_service in template_services %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ template_service.service.title }}</h5>
+                                    <small>Position: {{ template_service.position }}</small>
+                                </div>
+                                <p class="mb-1">{{ template_service.service.description|truncatechars:100 }}</p>
+                                <small>
+                                    <a href="{% url 'services:service_detail' template_service.service.slug %}" 
+                                       class="text-decoration-none">
+                                        View Service Details
+                                    </a>
+                                </small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No services added to this template yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Template Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'template_app:template_update' template.slug %}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Template
+                        </a>
+                        <a href="{% url 'template_app:template_delete' template.slug %}" 
+                           class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Template Information</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Status
+                        {% if template.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Services
+                        <span class="badge bg-primary rounded-pill">{{ template_services|length }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Images
+                        <span class="badge bg-primary rounded-pill">{{ template_images|length }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
