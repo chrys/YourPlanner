@@ -1,0 +1,223 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if is_create %}Create Template{% else %}Edit Template{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .formset-item {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    .delete-row {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'template_app:template_list' %}">Templates</a></li>
+            {% if is_create %}
+                <li class="breadcrumb-item active" aria-current="page">Create Template</li>
+            {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'template_app:template_detail' template.slug %}">{{ template.title }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            {% endif %}
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                {% if is_create %}Create New Template{% else %}Edit Template{% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4>Template Information</h4>
+                        {{ form|crispy }}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4>Template Images</h4>
+                        <p class="text-muted">Add images for your template. Mark one as default.</p>
+                        
+                        {{ image_formset.management_form }}
+                        
+                        <div id="image-formset">
+                            {% for image_form in image_formset %}
+                                <div class="formset-item image-form">
+                                    {% if image_form.instance.pk %}
+                                        <div class="mb-3">
+                                            <img src="{{ image_form.instance.image.url }}" 
+                                                 alt="Template image" 
+                                                 class="img-thumbnail" 
+                                                 style="max-height: 150px;">
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {{ image_form|crispy }}
+                                    
+                                    {% if image_form.instance.pk %}
+                                        <div class="delete-row">
+                                            {{ image_form.DELETE|crispy }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" id="add-image">
+                            <i class="fas fa-plus"></i> Add Another Image
+                        </button>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4>Template Services</h4>
+                        <p class="text-muted">Add services to include in this template.</p>
+                        
+                        {{ service_formset.management_form }}
+                        
+                        <div id="service-formset">
+                            {% for service_form in service_formset %}
+                                <div class="formset-item service-form">
+                                    {{ service_form|crispy }}
+                                    
+                                    {% if service_form.instance.pk %}
+                                        <div class="delete-row">
+                                            {{ service_form.DELETE|crispy }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" id="add-service">
+                            <i class="fas fa-plus"></i> Add Another Service
+                        </button>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% if is_create %}{% url 'template_app:template_list' %}{% else %}{% url 'template_app:template_detail' template.slug %}{% endif %}" 
+                       class="btn btn-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        {% if is_create %}Create Template{% else %}Save Changes{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle image formset
+        const imageFormset = document.getElementById('image-formset');
+        const addImageBtn = document.getElementById('add-image');
+        const imageFormPrefix = 'images';
+        const totalImageForms = document.getElementById('id_images-TOTAL_FORMS');
+        
+        addImageBtn.addEventListener('click', function() {
+            const imageFormCount = document.querySelectorAll('.image-form').length;
+            const newImageForm = document.querySelectorAll('.image-form')[0].cloneNode(true);
+            
+            // Update form index
+            newImageForm.innerHTML = newImageForm.innerHTML.replace(
+                new RegExp(imageFormPrefix + '-0-', 'g'), 
+                imageFormPrefix + '-' + imageFormCount + '-'
+            );
+            
+            // Clear form values
+            newImageForm.querySelectorAll('input[type="text"], input[type="file"]').forEach(input => {
+                input.value = '';
+            });
+            
+            // Clear checkboxes
+            newImageForm.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Remove any existing image preview
+            const imgPreview = newImageForm.querySelector('.img-thumbnail');
+            if (imgPreview) {
+                imgPreview.parentElement.remove();
+            }
+            
+            // Remove DELETE checkbox if present
+            const deleteRow = newImageForm.querySelector('.delete-row');
+            if (deleteRow) {
+                deleteRow.remove();
+            }
+            
+            imageFormset.appendChild(newImageForm);
+            totalImageForms.value = imageFormCount + 1;
+        });
+        
+        // Handle service formset
+        const serviceFormset = document.getElementById('service-formset');
+        const addServiceBtn = document.getElementById('add-service');
+        const serviceFormPrefix = 'services';
+        const totalServiceForms = document.getElementById('id_services-TOTAL_FORMS');
+        
+        addServiceBtn.addEventListener('click', function() {
+            const serviceFormCount = document.querySelectorAll('.service-form').length;
+            const newServiceForm = document.querySelectorAll('.service-form')[0].cloneNode(true);
+            
+            // Update form index
+            newServiceForm.innerHTML = newServiceForm.innerHTML.replace(
+                new RegExp(serviceFormPrefix + '-0-', 'g'), 
+                serviceFormPrefix + '-' + serviceFormCount + '-'
+            );
+            
+            // Clear form values
+            newServiceForm.querySelectorAll('select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            
+            newServiceForm.querySelectorAll('input[type="number"]').forEach(input => {
+                input.value = '0';
+            });
+            
+            // Remove DELETE checkbox if present
+            const deleteRow = newServiceForm.querySelector('.delete-row');
+            if (deleteRow) {
+                deleteRow.remove();
+            }
+            
+            serviceFormset.appendChild(newServiceForm);
+            totalServiceForms.value = serviceFormCount + 1;
+        });
+    });
+</script>
+{% endblock %}
+
