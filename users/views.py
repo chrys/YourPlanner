@@ -5,14 +5,19 @@ from django.utils.safestring import mark_safe
 # from django.core.exceptions import ValidationError # Not used
 from django.db import transaction
 from django.contrib.auth import login
-from django.utils.html import escape #
+from django.utils.html import escape
 from django.urls import reverse, reverse_lazy
-from django.http import HttpResponseRedirect
-from django.views.generic import CreateView, View, TemplateView, FormView
+from django.http import HttpResponseRedirect, Http404
+from django.views.generic import CreateView, View, TemplateView, FormView, ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404 # Though DetailView handles its own 404
+from django.templatetags.static import static # For placeholder image URL
+import json # For serializing data for Vue
 
 from .models import Professional, Customer, ProfessionalCustomerLink
-# from orders.models import Order, OrderItem # Not used in these views directly
+from templates.models import Template, TemplateImage # For CustomerTemplateListView
+from orders.models import Order, OrderItem
+from services.models import Price # Needed for finding active price for an item
 # from django import forms # Not used directly in views.py if forms are in forms.py
 from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm
 from labels.models import Label
@@ -231,6 +236,299 @@ class ChangeProfessionalView(LoginRequiredMixin, CustomerRequiredMixin, FormView
 
         return HttpResponseRedirect(self.get_success_url())
 
+
+
+class CustomerTemplateListView(LoginRequiredMixin, CustomerRequiredMixin, ListView):
+    model = Template
+    template_name = 'users/customer_template_list.html'
+    context_object_name = 'templates'
+
+    def get_queryset(self):
+        customer = self.request.user.customer_profile
+        try:
+            # Find the active professional linked to this customer
+            active_link = ProfessionalCustomerLink.objects.get(
+                customer=customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            )
+            linked_professional = active_link.professional
+            # Return templates from that professional, prefetching images for efficiency
+            return Template.objects.filter(professional=linked_professional).prefetch_related('images')
+        except ProfessionalCustomerLink.DoesNotExist:
+            # If no active link is found, the customer isn't properly set up or has no professional.
+            # Inform the user and return no templates.
+            messages.warning(self.request, "You are not currently linked with any professional. Please choose one to see their templates.")
+            return Template.objects.none()
+        except Exception as e:
+            # Handle other potential errors, e.g., database issues
+            messages.error(self.request, "An error occurred while retrieving templates.")
+            # Log the error e for admin review
+            print(f"Error in CustomerTemplateListView get_queryset: {e}")
+            return Template.objects.none()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Templates from your Professional"
+        # Add the linked professional to the context if they exist, for display purposes
+        try:
+            customer = self.request.user.customer_profile
+            active_link = ProfessionalCustomerLink.objects.get(
+                customer=customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            )
+            context['linked_professional'] = active_link.professional
+        except ProfessionalCustomerLink.DoesNotExist:
+            context['linked_professional'] = None
+
+        # Prepare data for Vue.js
+        templates_qs = context.get('templates', Template.objects.none()) # Get templates from context or empty queryset
+
+        templates_list_for_json = []
+        placeholder_image_url = static('core/images/placeholder.png') # Define placeholder once
+
+        for template_item in templates_qs:
+            default_image_url = placeholder_image_url
+            # .images is the related manager from Template to TemplateImage
+            # We prefetched 'images' in get_queryset
+            default_image = None
+            for img in template_item.images.all(): # Iterate over prefetched images
+                if img.is_default:
+                    default_image = img
+                    break
+
+            if default_image and hasattr(default_image.image, 'url'):
+                default_image_url = default_image.image.url
+
+            description_snippet = template_item.description
+            if description_snippet and len(description_snippet) > 100:
+                description_snippet = description_snippet[:97] + "..."
+            elif not description_snippet:
+                description_snippet = "" # Ensure it's a string
+
+            templates_list_for_json.append({
+                'pk': template_item.pk,
+                'title': template_item.title,
+                'description_snippet': description_snippet,
+                'default_image_url': default_image_url,
+            })
+
+        context['templates_json'] = json.dumps(templates_list_for_json)
+
+        return context
+
+
+class CustomerTemplateDetailView(LoginRequiredMixin, CustomerRequiredMixin, UserPassesTestMixin, DetailView):
+    model = Template
+    template_name = 'users/customer_template_detail.html' # To be created
+    context_object_name = 'template'
+    pk_url_kwarg = 'pk'
+
+    def get_queryset(self):
+        """
+        Initial queryset filtering: ensures the template belongs to *a* professional
+        and prefetches related data. The actual check for *this customer's*
+        professional is done in test_func.
+        """
+        # This queryset is further filtered by UserPassesTestMixin or implicitly by DetailView's get_object
+        # to ensure the object exists before test_func is called with self.get_object().
+        # We ensure the template is active or visible if such flags exist.
+        # For now, just prefetching. The professional link check is vital.
+
+        # Get the customer and their linked professional
+        try:
+            customer = self.request.user.customer_profile
+            active_link = ProfessionalCustomerLink.objects.get(
+                customer=customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            )
+            linked_professional = active_link.professional
+            # Return templates from that professional, prefetching images and services details
+            return Template.objects.filter(professional=linked_professional).prefetch_related(
+                'images',
+                'services__category', # For displaying service category
+                'services__items__prices' # For "Update Basket" logic later
+            )
+        except ProfessionalCustomerLink.DoesNotExist:
+            # If no active link, this customer should not see any templates.
+            # The CustomerRequiredMixin and LoginRequiredMixin should ideally prevent this,
+            # but as a safeguard:
+            return Template.objects.none()
+        except AttributeError: # request.user.customer_profile might not exist if mixin order is wrong or user is anon
+             return Template.objects.none()
+
+
+    def test_func(self):
+        """
+        Ensures the logged-in customer is linked to the professional who owns this template.
+        """
+        if not self.request.user.is_authenticated or not hasattr(self.request.user, 'customer_profile'):
+            return False # Should be caught by LoginRequiredMixin & CustomerRequiredMixin
+
+        template = self.get_object() # Gets the template based on pk from URL and get_queryset
+
+        try:
+            customer = self.request.user.customer_profile
+            active_link = ProfessionalCustomerLink.objects.select_related('professional').get(
+                customer=customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            )
+            linked_professional = active_link.professional
+
+            # The crucial check: Does this template belong to the customer's linked professional?
+            if template.professional == linked_professional:
+                return True
+        except ProfessionalCustomerLink.DoesNotExist:
+            # Customer is not linked to any professional.
+            messages.error(self.request, "You are not linked to a professional, so you cannot view this template.")
+            return False
+        except Exception as e:
+            # Log e for debugging
+            messages.error(self.request, "An unexpected error occurred.")
+            return False
+
+        messages.error(self.request, "You are not authorized to view this template.")
+        return False
+
+    def handle_no_permission(self):
+        # This method is called if test_func returns False
+        # Redirect to a safe page, like the template list or user management
+        # messages.error(self.request, "You do not have permission to view this template.") already set in test_func
+        # Check if there's a linked professional to decide the redirect
+        try:
+            customer = self.request.user.customer_profile
+            ProfessionalCustomerLink.objects.get(customer=customer, status=ProfessionalCustomerLink.StatusChoices.ACTIVE)
+            # If linked, they tried to access a wrong template, so template list is fine
+            return redirect('users:customer_template_list')
+        except ProfessionalCustomerLink.DoesNotExist:
+            # If not linked at all, guide them to management to choose one
+            return redirect('users:user_management')
+        except AttributeError: # E.g. AnonymousUser
+            return redirect('login')
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        template = self.object # self.object is the template instance
+
+        context['page_title'] = template.title
+
+        default_image = None
+        other_images = []
+        # Iterate over prefetched images
+        for img in template.images.all():
+            if img.is_default:
+                default_image = img
+            else:
+                other_images.append(img)
+
+        context['default_image'] = default_image
+        context['other_images'] = other_images
+
+        # For clarity in template, pass services directly if needed, though template.services.all will work
+        # context['services_in_template'] = template.services.all() # Already prefetched
+
+        # The linked professional might be useful for display
+        try:
+            customer = self.request.user.customer_profile
+            active_link = ProfessionalCustomerLink.objects.select_related('professional__user').get(
+                customer=customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            )
+            context['linked_professional'] = active_link.professional
+        except ProfessionalCustomerLink.DoesNotExist:
+            context['linked_professional'] = None
+            # This case should ideally be handled by test_func or earlier redirects
+
+        return context
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        template = self.get_object() # Get the template object, protected by UserPassesTestMixin
+        customer = request.user.customer_profile # Protected by CustomerRequiredMixin
+
+        if not template.services.exists():
+            messages.warning(request, "This template has no services to add to the basket.")
+            return redirect(request.path_info) # Redirect back to the detail page
+
+        # Determine currency for the order. Use customer's preference or professional's or a site default.
+        # For simplicity, let's assume customer.preferred_currency exists or fallback.
+        # The professional of the template is template.professional
+        order_currency = 'EUR' # Default currency
+        if hasattr(customer, 'preferred_currency') and customer.preferred_currency:
+            order_currency = customer.preferred_currency
+        elif template.professional and hasattr(template.professional, 'default_currency') and template.professional.default_currency:
+            order_currency = template.professional.default_currency
+
+        # Find or create an active order for the customer with the determined currency
+        # Ensuring one PENDING order per customer per professional (if that's the logic)
+        # For now, one PENDING order per customer.
+        order, created = Order.objects.get_or_create(
+            customer=customer,
+            status=Order.StatusChoices.PENDING,
+            # professional=template.professional, # If orders are per-professional for a customer
+            defaults={
+                'currency': order_currency,
+                'professional': template.professional # Assign the professional from the template to the order
+            }
+        )
+
+        # If an existing pending order has a different professional or currency, it might need special handling.
+        # For this implementation, we assume get_or_create handles it or we adjust the query.
+        # If the found order's professional doesn't match template.professional, this is an issue.
+        # For now, we'll ensure the professional is set correctly:
+        if order.professional != template.professional:
+            # This scenario needs a business rule:
+            # 1. Disallow (if pending order must be for same prof)
+            # 2. Create new order (means customer can have multiple pending orders)
+            # 3. Clear existing pending order and create new (simplest for now, but destructive)
+            if order.items.exists(): # If it has items, it's more complex.
+                 messages.error(request, f"You have an existing pending order with a different professional. Please finalize or clear it first.")
+                 return redirect('orders:order_detail', order_id=order.pk) # Redirect to existing order
+            else: # Empty pending order can be re-assigned
+                order.professional = template.professional
+                order.currency = order_currency # And currency
+                order.save()
+
+
+        items_added_count = 0
+        for service in template.services.all(): # These services are already prefetched
+            for item in service.items.all(): # These items are already prefetched
+                # Find the current active Price for the item.
+                current_price = item.prices.filter(is_active=True, currency=order.currency).first()
+                if not current_price: # Fallback to any active price if currency match fails
+                    current_price = item.prices.filter(is_active=True).first()
+
+                if current_price:
+                    # Check if this item from this service by this professional is already in the order
+                    # This basic check prevents exact duplicates but doesn't handle quantity updates well for templates.
+                    # For templates, typically we add as new lines or ensure it's a fresh set.
+                    # Let's assume templates add items as new lines each time.
+                    OrderItem.objects.create(
+                        order=order,
+                        professional=template.professional, # Professional providing the service/item
+                        service=service,
+                        item=item,
+                        price_at_order=current_price, # Link to the Price object
+                        quantity=1, # Default quantity for template items
+                        price_amount_at_order=current_price.amount,
+                        price_currency_at_order=current_price.currency,
+                        price_frequency_at_order=current_price.frequency,
+                        # service_title_at_order=service.title, # Denormalized fields if needed
+                        # item_title_at_order=item.title,
+                    )
+                    items_added_count += 1
+                else:
+                    # Optionally, message the user about items that couldn't be added
+                    messages.warning(request, f"Item '{item.title}' from service '{service.title}' could not be added as no active price was found.")
+
+        if items_added_count > 0:
+            order.save() # This will trigger calculate_total via the signal if set up, or call it manually
+            # order.calculate_total_and_save() # if such a method exists
+            messages.success(request, f"{items_added_count} item(s) from template '{template.title}' have been added to your basket.")
+        else:
+            messages.info(request, "No items were added to your basket. This might be due to missing prices or other issues.")
+
+        return redirect('orders:order_detail', order_id=order.pk) # Redirect to the basket/order view
 
 class DepositPaymentView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
     template_name = 'users/deposit_payment.html'

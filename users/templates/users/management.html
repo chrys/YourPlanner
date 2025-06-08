@@ -26,6 +26,11 @@
                     <a href="{% url 'users:customer_management' %}">{% trans "Customer Management" %}</a>
                 </li>
                 {% endif %}
+                {% if request.user.customer_profile %}
+                <li class="list-group-item">
+                    <a href="{% url 'users:customer_template_list' %}">{% trans "Add new services using templates" %}</a>
+                </li>
+                {% endif %}
                 <li class="list-group-item">
                     <a href="{% url 'users:profile' %}">{% trans "View My Profile" %}</a>
                 </li>
