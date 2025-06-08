@@ -19,7 +19,8 @@ from templates.models import Template, TemplateImage # For CustomerTemplateListV
 from orders.models import Order, OrderItem
 from services.models import Price # Needed for finding active price for an item
 # from django import forms # Not used directly in views.py if forms are in forms.py
-from .forms import RegistrationForm, ProfessionalChoiceForm
+from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm
+from labels.models import Label
 
 
 # --- Mixins ---
@@ -74,7 +75,10 @@ class UserRegistrationView(CreateView):
 
                 # Create corresponding profile
                 if form.cleaned_data['role'] == 'customer':
-                    Customer.objects.create(user=user)
+                    Customer.objects.create(
+                    user=user,
+                    wedding_day=form.cleaned_data.get('wedding_day')
+                )
                     print("Created customer profile")
                 else:
                     prof = Professional.objects.create(
@@ -86,7 +90,13 @@ class UserRegistrationView(CreateView):
                 # Log in user directly
                 login(self.request, user)
                 messages.success(self.request, 'Registration successful. You are now logged in.')
-                return redirect(self.success_url)
+
+                if form.cleaned_data['role'] == 'customer':
+                    # New redirect for customers
+                    return redirect(reverse_lazy('users:deposit_payment'))
+                else:
+                    # Existing redirect for professionals
+                    return redirect(self.success_url)
 
         except Exception as e:
             print(f"EXCEPTION DURING REGISTRATION: {repr(e)}")
@@ -225,6 +235,7 @@ class ChangeProfessionalView(LoginRequiredMixin, CustomerRequiredMixin, FormView
             return self.form_invalid(form)
 
         return HttpResponseRedirect(self.get_success_url())
+
 
 
 class CustomerTemplateListView(LoginRequiredMixin, CustomerRequiredMixin, ListView):
@@ -518,3 +529,30 @@ class CustomerTemplateDetailView(LoginRequiredMixin, CustomerRequiredMixin, User
             messages.info(request, "No items were added to your basket. This might be due to missing prices or other issues.")
 
         return redirect('orders:order_detail', order_id=order.pk) # Redirect to the basket/order view
+
+class DepositPaymentView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
+    template_name = 'users/deposit_payment.html'
+    form_class = DepositPaymentForm
+    success_url = reverse_lazy('users:user_management')
+
+    def form_valid(self, form):
+        customer_profile = self.request.user.customer_profile
+        try:
+            # Corrected label_type to 'CUSTOMER' as per previous migration correction
+            deposit_label = Label.objects.get(name='deposit_paid', label_type='CUSTOMER')
+            customer_profile.labels.add(deposit_label)
+            # customer_profile.save() # Not typically needed for M2M add, but as a test? No, let's not add this yet.
+            messages.success(self.request, "Thank you for confirming your deposit payment. Your account is now fully active.")
+            return super().form_valid(form)
+        except Label.DoesNotExist:
+            messages.error(self.request, "Critical error: The 'deposit_paid' label is not configured. Please contact support.")
+            return self.form_invalid(form)
+        except Exception as e:
+            # Add a message for any other exception to make it visible in tests if it leads to form_invalid
+            messages.error(self.request, f"An unexpected error occurred: {e}")
+            return self.form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Deposit Payment"
+        return context

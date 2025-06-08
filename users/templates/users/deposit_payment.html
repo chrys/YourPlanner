@@ -1,0 +1,21 @@
+{% extends "core/base.html" %}
+
+{% block title %}Deposit Payment{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Deposit Payment</h1>
+    <p>Please confirm that you have paid the deposit by checking the box below.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="deposit_paid_checkbox" name="deposit_paid_checkbox" required>
+            <label class="form-check-label" for="deposit_paid_checkbox">I have paid the deposit</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Confirm Payment</button>
+    </form>
+</div>
+{% endblock %}

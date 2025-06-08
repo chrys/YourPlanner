@@ -5,7 +5,8 @@ from .views import (
     UserProfileView,
     ChangeProfessionalView,
     CustomerTemplateListView,
-    CustomerTemplateDetailView
+    CustomerTemplateDetailView,
+    DepositPaymentView
 )
 from .views_professional import (
     CustomerManagementView,
@@ -22,6 +23,7 @@ urlpatterns = [
     path('management/', UserManagementView.as_view(), name='user_management'),
     path('profile/', UserProfileView.as_view(), name='profile'), # Changed path from accounts/profile/ to just profile/
     path('change-professional/', ChangeProfessionalView.as_view(), name='change_professional'),
+    path('deposit-payment/', DepositPaymentView.as_view(), name='deposit_payment'),
     
     # Professional customer management views
     path('customers/', CustomerManagementView.as_view(), name='customer_management'),
