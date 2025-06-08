@@ -23,7 +23,7 @@
                     <p><strong>Email:</strong> {{ customer.user.email }}</p>
                     <p><strong>Company:</strong> {{ customer.company_name|default:"Not specified" }}</p>
                     <p><strong>Preferred Currency:</strong> {{ customer.preferred_currency }}</p>
-                    
+                    <p><strong>Wedding Day:</strong> {{ customer.wedding_day|date:"Y-m-d" }}</p>
                     <h6 class="mt-4">Labels</h6>
                     <div class="mb-2">
                         {% for label in customer.labels.all %}

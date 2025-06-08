@@ -3,7 +3,8 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from users.models import Customer, Professional
 from django.utils.html import escape  # Add this import
-
+import datetime
+from django.utils import timezone
 class UserRegistrationTests(TestCase):
     """
     Test cases for user registration functionality.
@@ -27,6 +28,34 @@ class UserRegistrationTests(TestCase):
             last_name='User'
         )
         
+    def test_customer_registration_without_wedding_day(self):
+        """Test customer registration fails if wedding_day is missing."""
+        data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'testuser@example.com',
+            'password': 'password123',
+            'role': 'customer',
+            # 'wedding_day': '' # Missing
+        }
+        response = self.client.post(reverse('users:register'), data)
+        self.assertEqual(response.status_code, 200) # Should re-render form
+        self.assertFormError(response.context['form'], 'wedding_day', 'Wedding day is required for customers.')
+
+    def test_customer_registration_with_past_wedding_day(self):
+        """Test customer registration fails if wedding_day is in the past."""
+        past_wedding_day = timezone.now().date() - datetime.timedelta(days=1)
+        data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'testuser@example.com',
+            'password': 'password123',
+            'role': 'customer',
+            'wedding_day': past_wedding_day.strftime('%Y-%m-%d')
+        }
+        response = self.client.post(reverse('users:register'), data)
+        self.assertEqual(response.status_code, 200) # Should re-render form
+        self.assertFormError(response.context['form'], 'wedding_day', 'The wedding day must be in the future.')
     def test_successful_customer_registration(self):
         """
         Test Case ID: users_REG_001
@@ -35,6 +64,8 @@ class UserRegistrationTests(TestCase):
         # Initial counts for verification
         initial_user_count = User.objects.count()
         initial_customer_count = Customer.objects.count()
+        future_wedding_day = timezone.now().date() + datetime.timedelta(days=30)
+        
         
         # Registration data
         data = {
@@ -42,7 +73,8 @@ class UserRegistrationTests(TestCase):
             'last_name': 'Doe',
             'email': 'john.doe@example.com',
             'password': 'securepassword',
-            'role': 'customer'
+            'role': 'customer',
+            'wedding_day': future_wedding_day.strftime('%Y-%m-%d')
         }
         
         # Submit registration form
@@ -63,6 +95,7 @@ class UserRegistrationTests(TestCase):
         # Verify customer profile was created and linked to user
         self.assertTrue(hasattr(new_user, 'customer_profile'))
         self.assertIsNotNone(new_user.customer_profile)
+        self.assertEqual(new_user.customer_profile.wedding_day, future_wedding_day)
     
     def test_successful_professional_registration(self):
         """

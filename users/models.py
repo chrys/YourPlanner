@@ -4,6 +4,7 @@ from django.utils import timezone
 from core.models import TimeStampedModel
 from django.core.exceptions import ValidationError
 
+
 # No separate User model here - we link to settings.AUTH_USER_MODEL
 # If you needed custom fields ON the User model itself (not profile),
 # you would create a Custom User Model inheriting from AbstractUser.
@@ -98,6 +99,8 @@ class Customer(TimeStampedModel):
         null=True,
         help_text="Marketing communication preferences"
     )
+    wedding_day = models.DateField(help_text="The planned wedding day (must be in the future).")
+
     # New role field - not accessible by customers
     role = models.CharField(
         max_length=20,
@@ -120,10 +123,12 @@ class Customer(TimeStampedModel):
         """
         Validate customer data.
         """
-        # Example validation
         if self.preferred_currency and len(self.preferred_currency) != 3:
             raise ValidationError({'preferred_currency': 'Currency code must be 3 characters'})
     
+        if self.wedding_day and self.wedding_day <= timezone.now().date():
+            raise ValidationError({'wedding_day': 'The wedding day must be in the future.'})
+        
     def calculate_lifetime_value(self):
         """
         Calculate the customer's lifetime value based on their orders.

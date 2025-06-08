@@ -69,7 +69,10 @@ class UserRegistrationView(CreateView):
 
                 # Create corresponding profile
                 if form.cleaned_data['role'] == 'customer':
-                    Customer.objects.create(user=user)
+                    Customer.objects.create(
+                    user=user,
+                    wedding_day=form.cleaned_data.get('wedding_day')
+                )
                     print("Created customer profile")
                 else:
                     prof = Professional.objects.create(

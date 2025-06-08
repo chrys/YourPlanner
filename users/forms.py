@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import Professional, Customer
 from labels.models import Label
+from django.utils import timezone 
 
 class RegistrationForm(forms.ModelForm):
     ROLE_CHOICES = (
@@ -14,12 +15,17 @@ class RegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     role = forms.ChoiceField(choices=ROLE_CHOICES, required=True)
     title = forms.CharField(max_length=200, required=False)  # Only for professionals
-    labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.all(),
-        required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
-        help_text="Optional labels to categorize this user"
+    wedding_day = forms.DateField(
+        required=False,  # Will be made required conditionally in clean method
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        help_text="Required if registering as a customer."
     )
+    # labels = forms.ModelMultipleChoiceField(
+    #     queryset=Label.objects.all(),
+    #     required=False,
+    #     widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+    #     help_text="Optional labels to categorize this user"
+    # )
 
     class Meta:
         model = User
@@ -29,8 +35,17 @@ class RegistrationForm(forms.ModelForm):
         cleaned_data = super().clean()
         role = cleaned_data.get('role')
         title = cleaned_data.get('title')
+        wedding_day = cleaned_data.get('wedding_day')
+
         if role == 'professional' and not title:
             self.add_error('title', 'Title is required for professionals.')
+        
+        if role == 'customer':
+            if not wedding_day:
+                self.add_error('wedding_day', 'Wedding day is required for customers.')
+            elif wedding_day <= timezone.now().date(): # This should catch it
+                self.add_error('wedding_day', 'The wedding day must be in the future.')
+        
         return cleaned_data
     
 class ProfessionalChoiceForm(forms.Form):
