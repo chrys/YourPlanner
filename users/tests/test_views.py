@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from users.models import Customer, Professional, ProfessionalCustomerLink
 from users.forms import ProfessionalChoiceForm
+from labels.models import Label # Added import
 
 class UserViewsTests(TestCase):
     """
@@ -381,3 +382,130 @@ class UserViewsTests(TestCase):
         
         # Verify professional choice form is in context
         self.assertIsInstance(response.context['form'], ProfessionalChoiceForm)
+
+
+class DepositPaymentTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user_password = 'testpassword123'
+
+        # Create deposit_paid label
+        self.deposit_label, _ = Label.objects.get_or_create(
+            name='deposit_paid',
+            defaults={'label_type': 'CUSTOMER', 'color': '#28a745'}
+        )
+
+        # Data for customer registration redirect test
+        self.customer_reg_data = {
+            'first_name': 'Test', 'last_name': 'CustReg', 'email': 'custreg@example.com',
+            'password': self.user_password, 'role': 'customer', 'title': ''
+        }
+
+        # Customer for deposit form test
+        self.customer_user_for_deposit_test = User.objects.create_user(
+            username='testcust_deposit@example.com', email='testcust_deposit@example.com',
+            password=self.user_password, first_name='Test', last_name='CustomerDeposit'
+        )
+        self.customer_profile_for_deposit_test = Customer.objects.create(user=self.customer_user_for_deposit_test)
+
+        # Professional and another customer for label management tests
+        self.prof_user_for_label_test = User.objects.create_user(
+            username='testprof_label@example.com', email='testprof_label@example.com',
+            password=self.user_password, first_name='Test', last_name='ProfessionalLabel'
+        )
+        self.professional_profile_for_label_test = Professional.objects.create(user=self.prof_user_for_label_test, title='Dr. LabelProf')
+
+        self.managed_customer_user_for_label_test = User.objects.create_user(
+            username='managedcust_label@example.com', email='managedcust_label@example.com',
+            password=self.user_password, first_name='ManagedLabel', last_name='Customer'
+        )
+        self.managed_customer_profile_for_label_test = Customer.objects.create(user=self.managed_customer_user_for_label_test)
+
+        ProfessionalCustomerLink.objects.create(
+            professional=self.professional_profile_for_label_test,
+            customer=self.managed_customer_profile_for_label_test,
+            status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+        )
+
+    def test_customer_registration_redirects_to_deposit_payment(self):
+        """
+        Tests that a new customer registration redirects to the deposit payment page.
+        """
+        response = self.client.post(reverse('users:register'), self.customer_reg_data)
+        # Check if user was created, to ensure redirect is the actual point of test
+        self.assertTrue(User.objects.filter(email=self.customer_reg_data['email']).exists(), "User was not created.")
+        user = User.objects.get(email=self.customer_reg_data['email'])
+        self.assertTrue(hasattr(user, 'customer_profile'), "Customer profile not created.")
+        # Check response status code after user creation checks
+        self.assertEqual(response.status_code, 302, msg=f"Registration did not redirect. Errors: {response.context.get('form').errors if response.context and hasattr(response.context, 'get') else 'No form context or context not a dict'}")
+        self.assertRedirects(response, reverse('users:deposit_payment'))
+
+    def test_deposit_payment_form_adds_label(self):
+        """
+        Tests that submitting the deposit payment form adds the 'deposit_paid' label
+        to the customer and shows a success message.
+        """
+        self.client.login(username='testcust_deposit@example.com', password=self.user_password)
+
+        self.assertNotIn(self.deposit_label, self.customer_profile_for_deposit_test.labels.all())
+
+        response_post = self.client.post(reverse('users:deposit_payment'), {'deposit_paid_checkbox': 'on'})
+
+        if response_post.status_code == 200:
+            # If we got a 200, it means form_invalid was likely called.
+            # Check for the specific error message related to Label.DoesNotExist.
+            content = response_post.content.decode('utf-8')
+            is_label_missing_error = "Critical error: The 'deposit_paid' label is not configured. Please contact support." in content
+            form_errors = response_post.context.get('form').errors if response_post.context and hasattr(response_post.context.get('form'), 'errors') else "No form errors in context or form has no errors attribute."
+            self.fail(f"Form submission returned 200 instead of 302. Label missing error present: {is_label_missing_error}. Form errors: {form_errors}. Content: {content[:500]}...") # Fail with more info
+
+        self.assertEqual(response_post.status_code, 302, "Form submission did not redirect.") # Check for redirect first
+
+        # Follow the redirect manually to inspect the final page and messages
+        response_get = self.client.get(response_post.url)
+        self.assertEqual(response_get.status_code, 200)
+
+        self.customer_profile_for_deposit_test.refresh_from_db()
+        self.assertIn(self.deposit_label, self.customer_profile_for_deposit_test.labels.all())
+
+        messages = list(response_get.context['messages']) # Check messages on the final page
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Thank you for confirming your deposit payment. Your account is now fully active.")
+
+    def test_professional_can_add_deposit_label(self):
+        """
+        Tests that a professional can add the 'deposit_paid' label to a linked customer
+        via the customer_labels update view.
+        """
+        self.client.login(username='testprof_label@example.com', password=self.user_password)
+
+        self.assertNotIn(self.deposit_label, self.managed_customer_profile_for_label_test.labels.all())
+
+        response = self.client.post(
+            reverse('users:customer_labels', kwargs={'customer_id': self.managed_customer_profile_for_label_test.pk}),
+            {'labels': [self.deposit_label.pk]}
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.managed_customer_profile_for_label_test.refresh_from_db()
+        self.assertIn(self.deposit_label, self.managed_customer_profile_for_label_test.labels.all())
+
+    def test_professional_can_remove_deposit_label(self):
+        """
+        Tests that a professional can remove the 'deposit_paid' label from a linked customer.
+        """
+        self.managed_customer_profile_for_label_test.labels.add(self.deposit_label)
+        self.assertIn(self.deposit_label, self.managed_customer_profile_for_label_test.labels.all())
+
+        self.client.login(username='testprof_label@example.com', password=self.user_password)
+
+        response = self.client.post(
+            reverse('users:customer_labels', kwargs={'customer_id': self.managed_customer_profile_for_label_test.pk}),
+            {'labels': []}
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.managed_customer_profile_for_label_test.refresh_from_db()
+        self.assertNotIn(self.deposit_label, self.managed_customer_profile_for_label_test.labels.all())
