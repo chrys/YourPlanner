@@ -1,0 +1,113 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:_("Service Templates") }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">{{ page_title|default:_("Service Templates") }}</h2>
+
+    {% include "_messages.html" %}
+
+    {% if not templates and linked_professional %}
+        <div class="alert alert-info" role="alert">
+            {% trans "Your linked professional has not created any templates yet." %}
+            {% if linked_professional.title or linked_professional.user.get_full_name %}
+                ({% blocktrans with professional_name=linked_professional.title|default:linked_professional.user.get_full_name %}{{ professional_name }}{% endblocktrans %})
+            {% endif %}
+        </div>
+    {% elif not linked_professional and not templates %}
+        {# This message is primarily if the view somehow didn't catch this, or for extra clarity #}
+        <div class="alert alert-warning" role="alert">
+            {% trans "You are not currently linked with a professional, or no templates are available. Please choose or verify your professional linkage on your management page to see available templates." %}
+        </div>
+    {% else %}
+        <div id="customer-templates-app">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <div class="col" v-for="template_item in templates_data" :key="template_item.pk">
+                    <div class="card h-100 shadow-sm">
+                        <a :href="getDetailUrl(template_item.pk)">
+                            <img :src="template_item.default_image_url || '{% static 'images/placeholder-image.png' %}'" class="card-img-top" :alt="template_item.title + ' ' + '{% trans "template image" %}'" style="height: 200px; object-fit: cover;">
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <a :href="getDetailUrl(template_item.pk)" class="text-decoration-none">[[ template_item.title ]]</a>
+                            </h5>
+                            <p class="card-text flex-grow-1">[[ truncateDescription(template_item.description, 100) ]]</p>
+                            <a :href="getDetailUrl(template_item.pk)" class="btn btn-primary mt-auto">{% trans "View Details" %}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-if="templates_data.length === 0 && !initialLoadError" class="alert alert-info mt-3" role="alert">
+                {% trans "No templates found for your professional." %}
+            </div>
+             <div v-if="initialLoadError" class="alert alert-danger mt-3" role="alert">
+                {% trans "There was an error loading the templates. Please try again later." %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{# Hidden script tag for JSON data transfer from Django to Vue #}
+<script id="templates-json-data" type="application/json">{{ templates_json|safe }}</script>
+
+<script>
+const { createApp, ref, computed } = Vue;
+
+createApp({
+    delimiters: ['[[', ']]'],
+    setup() {
+        const templates_data = ref([]);
+        const initialLoadError = ref(false);
+
+        const getDetailUrl = (pk) => {
+            // Assuming your URL structure is /users/customer-templates/<pk>/
+            // This will be defined in a later step for the detail view.
+            // For now, let's use a placeholder that matches the typical Django URL structure.
+            // The actual name would be 'users:customer_template_detail'
+            return `/users/customer-templates/${pk}/`;
+        };
+
+        const truncateDescription = (description, maxLength) => {
+            if (!description) return '';
+            if (description.length <= maxLength) {
+                return description;
+            }
+            return description.substring(0, maxLength) + '...';
+        };
+
+        try {
+            const jsonDataElement = document.getElementById('templates-json-data');
+            if (jsonDataElement && jsonDataElement.textContent) {
+                const parsedData = JSON.parse(jsonDataElement.textContent);
+                if (Array.isArray(parsedData)) {
+                    templates_data.value = parsedData;
+                } else {
+                    console.warn("Parsed template data is not an array:", parsedData);
+                    // initialLoadError.value = true; // Or handle as empty if appropriate
+                }
+            } else {
+                console.warn("Template JSON data script tag not found or is empty.");
+                // initialLoadError.value = true; // Or handle as empty if appropriate
+            }
+        } catch (e) {
+            console.error("Error parsing templates JSON data:", e);
+            initialLoadError.value = true;
+        }
+
+        // If after attempting to load, templates_data is still empty and there wasn't a parse error,
+        // it means Django passed an empty list, which is handled by the v-if in the template.
+        // The initialLoadError is specifically for JSON parsing/availability issues.
+
+        return {
+            templates_data,
+            getDetailUrl,
+            truncateDescription,
+            initialLoadError
+        };
+    }
+}).mount('#customer-templates-app');
+</script>
+{% endblock %}

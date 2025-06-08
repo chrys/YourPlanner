@@ -42,6 +42,35 @@ Professionals can create new templates through a dedicated form. The following f
 5.  **Save:** Once saved, the template appears in "My Templates".
 6.  **View/Edit:** Click on any template in the list to see its detail page or to update it.
 
+### Using Templates as a Customer
+
+Customers can easily discover and utilize service templates created by Professionals to quickly assemble an order.
+
+1.  **Finding Templates:**
+    *   Customers will find an "Add new services using templates" link on their main management page or dashboard. Clicking this link navigates them to the "Customer Templates" page.
+
+2.  **Customer Templates Page:**
+    *   This page displays all available templates in a user-friendly grid layout (powered by Vue.js).
+    *   For each template, the following information is shown:
+        *   **Title:** The name of the template.
+        *   **Description:** A brief summary of the template.
+        *   **Default Image:** The primary image representing the template.
+    *   Both the **Title** and the **Default Image** serve as clickable links that take the customer to the individual Template Page for more details.
+
+3.  **Individual Template Page (Customer View):**
+    *   This page provides a comprehensive view of a single template, showing:
+        *   Full Title
+        *   Complete Description
+        *   All uploaded images for the template, typically in a gallery view.
+        *   A clear list of all services included within that template.
+    *   A prominent button or option labeled **"Update Basket"** (or similar wording like "Add to Order") is available.
+
+4.  **"Update Basket" Functionality:**
+    *   When a customer is on an individual Template Page and clicks the "Update Basket" button:
+        *   All services listed in that template are added to their current active order or basket.
+        *   Crucially, this action also adds all the constituent line items associated with each of those services, reflecting their current prices. For example, if a "Basic Website Package" service within the template includes "Domain Registration," "Basic Hosting," and "Homepage Design" as its items, all these items will be added to the basket with their respective current prices.
+        *   This ensures that the customer's basket is populated with a complete set of items as defined by the Professional in the template.
+
 ### Technical Details (For Developers)
 
 *   **Models:**
