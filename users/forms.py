@@ -117,3 +117,7 @@ class CustomerLabelForm(forms.ModelForm):
     class Meta:
         model = Customer
         fields = ['labels']
+
+
+class DepositPaymentForm(forms.Form):
+    deposit_paid_checkbox = forms.BooleanField(label="I have paid the deposit", required=True)
