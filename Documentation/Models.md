@@ -309,6 +309,37 @@ Example: `Customer: jdoe` (where `jdoe` is the string representation of the user
 
 ---
 
+### Agent
+
+Represents an Agent user profile linked to a User account. This model extends the built-in Django User model using a One-to-One relationship.
+
+**Fields:**
+
+*   `user`: OneToOneField to `settings.AUTH_USER_MODEL`
+    *   `on_delete=models.CASCADE`: If the associated User account is deleted, the Agent profile is also deleted.
+    *   `primary_key=True`: Uses the User's ID as the primary key for the Agent table.
+    *   `related_name='agent_profile'`: Allows accessing the agent profile via `user.agent_profile`.
+*   `created_at`: DateTimeField (inherited from TimeStampedModel)
+    *   `auto_now_add=True`: Automatically sets the timestamp when an agent profile is first created.
+*   `updated_at`: DateTimeField (inherited from TimeStampedModel)
+    *   `auto_now=True`: Automatically updates the timestamp whenever the agent profile is saved.
+
+**Relationships:**
+
+*   One-to-One with `settings.AUTH_USER_MODEL` (Django's built-in User model): Each Agent profile is linked to a single User account.
+
+**`__str__` Method:**
+
+Returns a string identifying the user as an agent.
+Example: `Agent: jdoe` (where `jdoe` is the string representation of the user object).
+
+**Meta:**
+
+*   `verbose_name = "Agent"`
+*   `verbose_name_plural = "Agents"`
+
+---
+
 ### ProfessionalCustomerLink
 
 Represents a link or relationship between a Professional and a Customer. This acts as a many-to-many through table.
