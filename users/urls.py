@@ -46,6 +46,10 @@ urlpatterns = [
     # path('accounts/', include('django.contrib.auth.urls')), # Original line
     # To avoid potential conflicts and keep auth URLs grouped if desired:
     # path('auth/', include('django.contrib.auth.urls')), # Option 1: Prefix Django auth
+
+    # Customer-facing template list
+    path('customer-templates/', CustomerTemplateListView.as_view(), name='customer_template_list'),
+    path('customer-templates/<int:pk>/', CustomerTemplateDetailView.as_view(), name='customer_template_detail'),
 ]
 
 # It's common to include Django's auth URLs at the project level urls.py.
@@ -57,6 +61,9 @@ urlpatterns = [
 # For this task, I will keep the include as it was, but it's a point of attention for project structure.
 # The prompt implies refactoring *users* app views, so django.contrib.auth.urls are secondary.
 
+    # Customer-facing template list
+    path('customer-templates/', CustomerTemplateListView.as_view(), name='customer_template_list'),
+    path('customer-templates/<int:pk>/', CustomerTemplateDetailView.as_view(), name='customer_template_detail'),
 
 # Re-adding django.contrib.auth.urls as they provide login, logout etc.
 # The profile view is now `users:profile`. Default login redirect might need

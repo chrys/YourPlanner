@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404 # Though DetailView handles its o
 from django.templatetags.static import static # For placeholder image URL
 import json # For serializing data for Vue
 
-from .models import Professional, Customer, ProfessionalCustomerLink
+from .models import Professional, Customer, Agent, ProfessionalCustomerLink
 from templates.models import Template, TemplateImage # For CustomerTemplateListView
 from orders.models import Order, OrderItem
 from services.models import Price # Needed for finding active price for an item
@@ -76,16 +76,19 @@ class UserRegistrationView(CreateView):
                 # Create corresponding profile
                 if form.cleaned_data['role'] == 'customer':
                     Customer.objects.create(
-                    user=user,
-                    wedding_day=form.cleaned_data.get('wedding_day')
-                )
+                        user=user,
+                        wedding_day=form.cleaned_data.get('wedding_day')
+                    )
                     print("Created customer profile")
-                else:
+                elif form.cleaned_data['role'] == 'professional': # Make this explicit
                     prof = Professional.objects.create(
                         user=user,
                         title=form.cleaned_data['title']
                     )
                     print("Created professional profile:", prof.title)
+                elif form.cleaned_data['role'] == 'agent': # New role
+                    Agent.objects.create(user=user)
+                    print("Created agent profile")
 
                 # Log in user directly
                 login(self.request, user)
@@ -95,7 +98,7 @@ class UserRegistrationView(CreateView):
                     # New redirect for customers
                     return redirect(reverse_lazy('users:deposit_payment'))
                 else:
-                    # Existing redirect for professionals
+                    # Professionals and Agents redirect to user_management
                     return redirect(self.success_url)
 
         except Exception as e:
