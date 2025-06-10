@@ -33,6 +33,9 @@ urlpatterns = [
     path('customers/<int:customer_id>/', CustomerDetailView.as_view(), name='customer_detail'),
     path('customers/<int:customer_id>/labels/', CustomerLabelUpdateView.as_view(), name='customer_labels'),
     path('customers/basket/<int:order_id>/', CustomerBasketView.as_view(), name='customer_basket'),
+    # Customer-facing template list
+    path('customer-templates/', CustomerTemplateListView.as_view(), name='customer_template_list'),
+    path('customer-templates/<int:pk>/', CustomerTemplateDetailView.as_view(), name='customer_template_detail'),
 
     # Django's built-in auth URLs (login, logout, password management)
     # These are typically not namespaced under 'users', so they are kept separate.

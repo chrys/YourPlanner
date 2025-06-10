@@ -457,94 +457,125 @@ class CustomerTemplateDetailView(LoginRequiredMixin, CustomerRequiredMixin, User
 
         return context
 
+
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        template = self.get_object() # Get the template object, protected by UserPassesTestMixin
-        customer = request.user.customer_profile # Protected by CustomerRequiredMixin
+        template = self.get_object() # Template instance
+        customer = request.user.customer_profile # Customer profile
 
         if not template.services.exists():
             messages.warning(request, "This template has no services to add to the basket.")
-            return redirect(request.path_info) # Redirect back to the detail page
+            return redirect(request.path_info)
 
-        # Determine currency for the order. Use customer's preference or professional's or a site default.
-        # For simplicity, let's assume customer.preferred_currency exists or fallback.
-        # The professional of the template is template.professional
-        order_currency = 'EUR' # Default currency
+        # Determine the currency for the order
+        order_currency = 'EUR' # Default
         if hasattr(customer, 'preferred_currency') and customer.preferred_currency:
             order_currency = customer.preferred_currency
         elif template.professional and hasattr(template.professional, 'default_currency') and template.professional.default_currency:
             order_currency = template.professional.default_currency
 
-        # Find or create an active order for the customer with the determined currency
-        # Ensuring one PENDING order per customer per professional (if that's the logic)
-        # For now, one PENDING order per customer.
-        order, created = Order.objects.get_or_create(
+        # Handle order retrieval/creation
+        pending_orders = Order.objects.filter(
             customer=customer,
-            status=Order.StatusChoices.PENDING,
-            # professional=template.professional, # If orders are per-professional for a customer
-            defaults={
-                'currency': order_currency,
-                'professional': template.professional # Assign the professional from the template to the order
-            }
-        )
+            status=Order.StatusChoices.PENDING
+        ).order_by('-updated_at') # Get the most recently updated
 
-        # If an existing pending order has a different professional or currency, it might need special handling.
-        # For this implementation, we assume get_or_create handles it or we adjust the query.
-        # If the found order's professional doesn't match template.professional, this is an issue.
-        # For now, we'll ensure the professional is set correctly:
-        if order.professional != template.professional:
-            # This scenario needs a business rule:
-            # 1. Disallow (if pending order must be for same prof)
-            # 2. Create new order (means customer can have multiple pending orders)
-            # 3. Clear existing pending order and create new (simplest for now, but destructive)
-            if order.items.exists(): # If it has items, it's more complex.
-                 messages.error(request, f"You have an existing pending order with a different professional. Please finalize or clear it first.")
-                 return redirect('orders:order_detail', order_id=order.pk) # Redirect to existing order
-            else: # Empty pending order can be re-assigned
-                order.professional = template.professional
-                order.currency = order_currency # And currency
-                order.save()
+        order = None
+        created_order_for_template = False # Flag if we created/repurposed an order specifically for this template
 
+        if pending_orders.exists():
+            if pending_orders.count() > 1:
+                messages.warning(
+                    request,
+                    "Multiple pending orders found. Using the most recently updated one. "
+                    "Please review and consolidate your pending orders."
+                )
+            order = pending_orders.first()
+        else:
+            order = Order.objects.create(
+                customer=customer,
+                status=Order.StatusChoices.PENDING,
+                currency=order_currency
+            )
+            created_order_for_template = True
 
+        # Check currency and professional context if using an existing order
+        if not created_order_for_template:
+            if order.currency != order_currency:
+                if order.items.exists():
+                    # Infer professional context from existing items
+                    existing_items_professional = None
+                    first_item_in_order = order.items.first()
+                    if first_item_in_order and hasattr(first_item_in_order, 'professional') and first_item_in_order.professional:
+                        existing_items_professional = first_item_in_order.professional
+
+                    if existing_items_professional and existing_items_professional != template.professional:
+                        messages.error(
+                            request,
+                            f"Your current pending order (in {order.currency}) has items from {existing_items_professional.title}. "
+                            f"This template is from {template.professional.title}. "
+                            f"Mixing items from different professionals in one order is not currently supported this way. "
+                            f"Please finalize or clear your current pending order, or create a new one."
+                        )
+                        return redirect('orders:order_detail', pk=order.pk)
+                    else: # Items exist, currency differs, but professional context seems compatible or undetermined
+                         messages.error(
+                            request,
+                            f"Your existing pending order (in {order.currency}) contains items. "
+                            f"Items from this template would be added in {order_currency}. "
+                            f"Please resolve the currency difference or ensure the order is empty to change its currency."
+                        )
+                         return redirect('orders:order_detail', pk=order.pk)
+                else:
+                    # Order is empty, safe to update its currency
+                    order.currency = order_currency
+                    order.save()
+                    messages.info(request, f"Updated currency of your empty pending order to {order_currency}.")
+
+        # Add items from template to the order
         items_added_count = 0
-        for service in template.services.all(): # These services are already prefetched
-            for item in service.items.all(): # These items are already prefetched
-                # Find the current active Price for the item.
-                current_price = item.prices.filter(is_active=True, currency=order.currency).first()
-                if not current_price: # Fallback to any active price if currency match fails
-                    current_price = item.prices.filter(is_active=True).first()
+        for service_from_template in template.services.all().prefetch_related('items__prices'):
+            for item_from_template in service_from_template.items.all():
+                # Prioritize price in order's currency, then any active price
+                current_price = item_from_template.prices.filter(is_active=True, currency=order.currency).first()
+                if not current_price:
+                    current_price = item_from_template.prices.filter(is_active=True).first()
 
                 if current_price:
-                    # Check if this item from this service by this professional is already in the order
-                    # This basic check prevents exact duplicates but doesn't handle quantity updates well for templates.
-                    # For templates, typically we add as new lines or ensure it's a fresh set.
-                    # Let's assume templates add items as new lines each time.
                     OrderItem.objects.create(
                         order=order,
-                        professional=template.professional, # Professional providing the service/item
-                        service=service,
-                        item=item,
-                        price_at_order=current_price, # Link to the Price object
+                        professional=template.professional, # Professional from the template
+                        service=service_from_template,
+                        item=item_from_template,
+                        price=current_price, # Assign the Price object here
                         quantity=1, # Default quantity for template items
                         price_amount_at_order=current_price.amount,
-                        price_currency_at_order=current_price.currency,
-                        price_frequency_at_order=current_price.frequency,
-                        # service_title_at_order=service.title, # Denormalized fields if needed
-                        # item_title_at_order=item.title,
+                        price_currency_at_order=current_price.currency, # Actual currency of the price used
+                        price_frequency_at_order=current_price.frequency
                     )
                     items_added_count += 1
                 else:
-                    # Optionally, message the user about items that couldn't be added
-                    messages.warning(request, f"Item '{item.title}' from service '{service.title}' could not be added as no active price was found.")
+                    messages.warning(request, f"Item '{item_from_template.title}' from service '{service_from_template.title}' could not be added as no active price was found.")
 
         if items_added_count > 0:
-            order.save() # This will trigger calculate_total via the signal if set up, or call it manually
-            # order.calculate_total_and_save() # if such a method exists
+            if hasattr(order, 'calculate_total_and_save'): # Ideal method
+                order.calculate_total_and_save()
+            elif hasattr(order, 'calculate_total'): # Common pattern
+                order.calculate_total()
+                order.save()
+            else: # Fallback, just save
+                order.save()
             messages.success(request, f"{items_added_count} item(s) from template '{template.title}' have been added to your basket.")
         else:
-            messages.info(request, "No items were added to your basket. This might be due to missing prices or other issues.")
+            # Only show this generic message if no specific warnings (like "no services" or "no active price") were added.
+            # This check might be tricky if messages were added then cleared, or if multiple messages are okay.
+            # For simplicity, we'll show it if no items were added, relying on earlier specific messages for details.
+            if not messages.get_messages(request): # A simple check
+                 messages.info(request, "No items were added to your basket. This might be due to missing prices or other issues.")
 
-        return redirect('orders:order_detail', order_id=order.pk) # Redirect to the basket/order view
+
+        return redirect('orders:order_detail', pk=order.pk) # Corrected kwarg to 'pk'
+
 
 class DepositPaymentView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
     template_name = 'users/deposit_payment.html'
