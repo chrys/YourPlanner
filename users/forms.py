@@ -8,6 +8,7 @@ class RegistrationForm(forms.ModelForm):
     ROLE_CHOICES = (
         ('customer', 'Customer'),
         ('professional', 'Professional'),
+        ('agent', 'Agent'),
     )
     first_name = forms.CharField(max_length=30, required=True)
     last_name = forms.CharField(max_length=30, required=True)
