@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     OrderCreateView, OrderListView, OrderDetailView, OrderStatusUpdateView, OrderCancelView,
     OrderItemCreateView, OrderItemUpdateView, OrderItemDeleteView,
-    SelectItemsView, BasketView 
+    SelectItemsView, BasketView, AgentOrdersApiView, AgentDeleteOrderApiView
 )
 
 app_name = 'orders'
@@ -25,4 +25,8 @@ urlpatterns = [
     # Other Order related URLs
     path('<int:order_pk>/select-items/', SelectItemsView.as_view(), name='select_items'),
     path('basket/', BasketView.as_view(), name='basket'),
+
+    # API URLs
+    path('api/agent/orders/', AgentOrdersApiView.as_view(), name='agent_orders_api'),
+    path('api/agent/order/<int:order_id>/delete/', AgentDeleteOrderApiView.as_view(), name='agent_delete_order_api'),
 ]

@@ -14,10 +14,10 @@ from django.shortcuts import get_object_or_404 # Though DetailView handles its o
 from django.templatetags.static import static # For placeholder image URL
 import json # For serializing data for Vue
 
-from .models import Professional, Customer, ProfessionalCustomerLink
+from .models import Professional, Customer, Agent, ProfessionalCustomerLink
 from templates.models import Template, TemplateImage # For CustomerTemplateListView
 from orders.models import Order, OrderItem
-from services.models import Price # Needed for finding active price for an item
+from services.models import Service, Item, Price # Added Service, Item
 # from django import forms # Not used directly in views.py if forms are in forms.py
 from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm
 from labels.models import Label
@@ -40,6 +40,19 @@ class CustomerRequiredMixin(UserPassesTestMixin):
         # For example, a profile choice or creation page if you have one.
         return redirect('users:user_management') # Or a more suitable page
 
+class AgentRequiredMixin(UserPassesTestMixin):
+    """Ensures the logged-in user has an agent profile."""
+    def test_func(self):
+        try:
+            return hasattr(self.request.user, 'agent_profile') and self.request.user.agent_profile is not None
+        except AttributeError: # For AnonymousUser
+            return False
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You need an agent profile to access this page.")
+        if not self.request.user.is_authenticated:
+            return redirect('login')
+        return redirect('users:user_management') # Or a more suitable page
 
 # --- Class-Based Views ---
 
@@ -76,16 +89,19 @@ class UserRegistrationView(CreateView):
                 # Create corresponding profile
                 if form.cleaned_data['role'] == 'customer':
                     Customer.objects.create(
-                    user=user,
-                    wedding_day=form.cleaned_data.get('wedding_day')
-                )
+                        user=user,
+                        wedding_day=form.cleaned_data.get('wedding_day')
+                    )
                     print("Created customer profile")
-                else:
+                elif form.cleaned_data['role'] == 'professional': # Make this explicit
                     prof = Professional.objects.create(
                         user=user,
                         title=form.cleaned_data['title']
                     )
                     print("Created professional profile:", prof.title)
+                elif form.cleaned_data['role'] == 'agent': # New role
+                    Agent.objects.create(user=user)
+                    print("Created agent profile")
 
                 # Log in user directly
                 login(self.request, user)
@@ -95,7 +111,7 @@ class UserRegistrationView(CreateView):
                     # New redirect for customers
                     return redirect(reverse_lazy('users:deposit_payment'))
                 else:
-                    # Existing redirect for professionals
+                    # Professionals and Agents redirect to user_management
                     return redirect(self.success_url)
 
         except Exception as e:
@@ -555,4 +571,145 @@ class DepositPaymentView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = "Deposit Payment"
+        return context
+
+
+class AgentSelectProfessionalView(LoginRequiredMixin, AgentRequiredMixin, ListView):
+    model = Professional
+    template_name = 'users/agent_select_professional.html' # New template
+    context_object_name = 'professionals'
+
+    def get_queryset(self):
+        # Return active professionals, or any other filtering needed
+        return Professional.objects.all().select_related('user') # Example: get all
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Select a Professional"
+        return context
+
+
+class AgentCreateOrderView(LoginRequiredMixin, AgentRequiredMixin, View):
+    template_name = 'users/agent_create_order.html'
+
+    def get(self, request, professional_id):
+        professional = get_object_or_404(Professional, pk=professional_id)
+        services_with_items = []
+        # Attempt to get agent's preferred currency, default to EUR
+        agent_preferred_currency = 'EUR' # Default
+        if request.user.agent_profile and hasattr(request.user.agent_profile, 'preferred_currency') and request.user.agent_profile.preferred_currency:
+            agent_preferred_currency = request.user.agent_profile.preferred_currency
+        elif hasattr(request.user.agent_profile.user, 'customer_profile') and request.user.agent_profile.user.customer_profile.preferred_currency: # Fallback to linked customer profile currency
+            agent_preferred_currency = request.user.agent_profile.user.customer_profile.preferred_currency
+
+
+        for service in Service.objects.filter(professional=professional, is_active=True).prefetch_related('items__prices'):
+            items = []
+            for item in service.items.filter(is_active=True):
+                active_price = item.prices.filter(is_active=True, currency=agent_preferred_currency).first()
+                if not active_price:
+                    active_price = item.prices.filter(is_active=True, currency='EUR').first() # Fallback to EUR
+                if not active_price:
+                    active_price = item.prices.filter(is_active=True).first() # Fallback to any active price
+
+                if active_price:
+                    items.append({'item': item, 'active_price': active_price})
+            if items:
+                services_with_items.append({'service': service, 'items_with_prices': items})
+
+        context = {
+            'professional': professional,
+            'services_with_items': services_with_items,
+            'page_title': f"Create Order for {professional.title or professional.user.get_full_name()}"
+        }
+        return render(request, self.template_name, context)
+
+    @transaction.atomic
+    def post(self, request, professional_id):
+        agent_profile = request.user.agent_profile
+        professional = get_object_or_404(Professional, pk=professional_id)
+        item_id = request.POST.get('item_id')
+        quantity_str = request.POST.get('quantity', '1')
+
+        if not item_id:
+            messages.error(request, "No item selected.")
+            return redirect(request.path_info)
+
+        try:
+            item = Item.objects.select_related('service').get(pk=item_id)
+            if item.service.professional != professional:
+                messages.error(request, "Invalid item for this professional.")
+                return redirect(request.path_info)
+
+            quantity = int(quantity_str)
+            if quantity <= 0:
+                messages.error(request, "Quantity must be positive.")
+                return redirect(request.path_info)
+
+        except (Item.DoesNotExist, ValueError):
+            messages.error(request, "Invalid item or quantity.")
+            return redirect(request.path_info)
+
+        order_currency = getattr(agent_profile, 'preferred_currency', 'EUR')
+        if hasattr(request.user.agent_profile.user, 'customer_profile') and request.user.agent_profile.user.customer_profile.preferred_currency: # Fallback to linked customer profile currency
+            order_currency = request.user.agent_profile.user.customer_profile.preferred_currency
+
+
+        order, created = Order.objects.get_or_create(
+            agent=agent_profile,
+            # professional_id=professional.pk, # This would be if Order has direct FK to Professional
+            status=Order.StatusChoices.PENDING,
+            defaults={'currency': order_currency}
+        )
+
+        if not created and order.currency != order_currency:
+            # This logic might need refinement: what if agent wants to change currency for an empty pending order?
+            # For now, use existing order's currency.
+            messages.warning(request, f"An existing pending order was found with currency {order.currency}. New items will use this currency.")
+            order_currency = order.currency # Ensure consistency
+
+        active_price = item.prices.filter(is_active=True, currency=order_currency).first()
+        if not active_price: # Fallback to EUR if specific currency not found
+             active_price = item.prices.filter(is_active=True, currency='EUR').first()
+        if not active_price: # Fallback to any active price if EUR also not found
+            active_price = item.prices.filter(is_active=True).first()
+
+        if not active_price:
+            messages.error(request, f"No active price found for item '{item.title}' in a compatible currency.")
+            return redirect(request.path_info)
+
+        order_item, item_created = OrderItem.objects.get_or_create(
+            order=order,
+            item=item,
+            professional=professional, # Explicitly set professional for this OrderItem
+            service=item.service,     # Explicitly set service for this OrderItem
+            defaults={
+                'price': active_price,
+                'quantity': quantity,
+                'price_amount_at_order': active_price.amount,
+                'price_currency_at_order': active_price.currency,
+                'price_frequency_at_order': active_price.frequency,
+            }
+        )
+
+        if not item_created:
+            order_item.quantity += quantity
+            order_item.save(update_fields=['quantity']) # Be specific about updated fields
+            messages.success(request, f"Updated quantity of '{item.title}' in your basket.")
+        else:
+            messages.success(request, f"Added '{item.title}' to your basket.")
+
+        order.calculate_total()
+
+        return redirect(request.path_info)
+
+
+class AgentOrderListView(LoginRequiredMixin, AgentRequiredMixin, TemplateView):
+    template_name = 'users/agent_order_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "My Orders"
+        # Pass the API endpoint URL to the template for Vue
+        context['orders_api_url'] = reverse('orders:agent_orders_api')
         return context

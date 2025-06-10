@@ -3,11 +3,14 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView, View, TemplateView
 from django.contrib import messages
-from django.http import Http404, HttpResponseForbidden # HttpResponseForbidden might be useful
+from django.http import Http404, HttpResponseForbidden, HttpResponseNotFound # HttpResponseForbidden might be useful, Added HttpResponseNotFound
 from django.db.models import Q, Prefetch # For complex queries in OrderListView, Added Prefetch
 from django.shortcuts import render # Added render for SelectItemsView GET
 from django.db import transaction
 import json # Moved json import to the top
+from django.http import JsonResponse
+from django.urls import reverse
+from users.views import AgentRequiredMixin # For API View
 
 from .models import Order, OrderItem
 from users.models import Customer, Professional, ProfessionalCustomerLink 
@@ -654,3 +657,65 @@ class BasketView(LoginRequiredMixin, CustomerRequiredMixin, TemplateView):
         context['page_title'] = "My Basket"
         # Total is on current_order.total_amount, no need to recalculate here if up-to-date
         return context
+
+class AgentOrdersApiView(LoginRequiredMixin, AgentRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        agent_profile = request.user.agent_profile
+        # Ensure 'labels' is prefetched if it's a ManyToManyField on Order
+        # and 'user' on customer/agent if using their details in __str__ or for currency.
+        orders = Order.objects.filter(agent=agent_profile).prefetch_related('labels').order_by('-order_date')
+
+        orders_data = []
+        for order in orders:
+            labels_data = [{'name': label.name, 'color': label.color, 'text_color': label.text_color}
+                           for label in order.labels.all()] # Assuming Label has color and text_color
+
+            # Basic placeholder URLs, these will need actual URL patterns
+            # and might need to check permissions if they were real views.
+            try:
+                edit_url = reverse('users:agent_edit_order', args=[order.pk])
+            except Exception: # Catch NoReverseMatch if URL is not yet defined
+                edit_url = "#edit-not-defined"
+
+            try:
+                # For API delete, it might be a different pattern or handled by the Vue app via POST/DELETE to this API view with ID.
+                # This is a placeholder for a GET-based delete URL for simplicity in example data.
+                delete_url = reverse('users:agent_delete_order_api', args=[order.pk])
+            except Exception:
+                delete_url = "#delete-not-defined"
+
+            orders_data.append({
+                'id': order.pk,
+                'title': str(order),
+                'status': order.get_status_display(),
+                'status_raw': order.status,
+                'total_amount': order.total_amount,
+                'currency_symbol': order.currency_display_symbol if hasattr(order, 'currency_display_symbol') else order.currency,
+                'order_date': order.order_date.strftime('%Y-%m-%d %H:%M'),
+                'labels': labels_data,
+                'edit_url': edit_url,
+                'delete_url': delete_url
+            })
+        return JsonResponse({'orders': orders_data})
+
+class AgentDeleteOrderApiView(LoginRequiredMixin, AgentRequiredMixin, View):
+    def post(self, request, order_id, *args, **kwargs): # Using POST for simplicity, could be DELETE
+        agent_profile = request.user.agent_profile
+        order = get_object_or_404(Order, pk=order_id)
+
+        # Check if the agent owns this order
+        if order.agent != agent_profile:
+            return HttpResponseForbidden(JsonResponse({'success': False, 'error': 'Permission denied.'}))
+
+        # Check if order can be deleted (e.g., only PENDING orders)
+        # Example:
+        # if order.status != Order.StatusChoices.PENDING:
+        #    return JsonResponse({'success': False, 'error': 'Only pending orders can be deleted.'}, status=400)
+
+        try:
+            order.delete()
+            return JsonResponse({'success': True, 'message': 'Order deleted successfully.'})
+        except Exception as e:
+            # Log the exception e
+            print(f"Error deleting order {order_id} for agent {agent_profile.user.username}: {e}") # Basic logging
+            return JsonResponse({'success': False, 'error': 'Failed to delete order.'}, status=500)

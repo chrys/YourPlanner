@@ -99,7 +99,7 @@ class Customer(TimeStampedModel):
         null=True,
         help_text="Marketing communication preferences"
     )
-    wedding_day = models.DateField(help_text="The planned wedding day (must be in the future).")
+    wedding_day = models.DateField(null=True, blank=True, help_text="The planned wedding day (must be in the future).")
 
     # New role field - not accessible by customers
     role = models.CharField(
@@ -185,6 +185,23 @@ class Customer(TimeStampedModel):
         indexes = [
             models.Index(fields=['company_name']),
         ]
+
+class Agent(TimeStampedModel):
+    """ Represents an Agent user profile linked to a User account. """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='agent_profile' # user.agent_profile
+    )
+    # created_at and updated_at are inherited from TimeStampedModel
+
+    def __str__(self):
+        return f"Agent: {self.user}"
+
+    class Meta:
+        verbose_name = "Agent"
+        verbose_name_plural = "Agents"
 
 class ProfessionalCustomerLink(TimeStampedModel):
     """ Represents a link or relationship between a Professional and a Customer. """

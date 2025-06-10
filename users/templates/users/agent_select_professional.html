@@ -1,0 +1,28 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ page_title }}</h1>
+    <p>Please select a Professional to create an order for:</p>
+
+    {% if professionals %}
+        <div class="list-group">
+            {% for professional in professionals %}
+                <a href="#" class="list-group-item list-group-item-action">
+                    {% if professional.profile_image %}
+                        <img src="{{ professional.profile_image.url }}" alt="{{ professional }}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 15px;">
+                    {% endif %}
+                    {{ professional.title|default:professional.user.get_full_name|default:professional.user.username }}
+                    {% if professional.specialization %}<small class="text-muted d-block">{{ professional.specialization }}</small>{% endif %}
+                </a>
+                {# The href should eventually point to the next step, passing the professional's ID #}
+                {# Example: href="{% url 'users:agent_create_order_for_professional' professional_id=professional.pk %}" #}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No professionals are currently available.</p>
+    {% endif %}
+</div>
+{% endblock %}

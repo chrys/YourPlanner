@@ -3,6 +3,8 @@ from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
 from core.models import TimeStampedModel
+from users.models import Agent
+from django.db.models import Q, CheckConstraint
 
 
 class Order(TimeStampedModel):
@@ -25,7 +27,16 @@ class Order(TimeStampedModel):
     customer = models.ForeignKey(
         'users.Customer', # String notation
         on_delete=models.PROTECT, # Don't delete orders if customer deleted
-        related_name='orders' # customer.orders.all()
+        related_name='orders', # customer.orders.all()
+        null=True,
+        blank=True
+    )
+    agent = models.ForeignKey(
+        Agent,
+        on_delete=models.SET_NULL,
+        related_name='orders',
+        null=True,
+        blank=True
     )
     order_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(
@@ -54,7 +65,12 @@ class Order(TimeStampedModel):
     # created_at and updated_at are inherited from TimeStampedModel
 
     def __str__(self):
-        return f"Order #{self.pk} by {self.customer} on {self.order_date.strftime('%Y-%m-%d')}"
+        owner = ""
+        if self.customer:
+            owner = f"Customer: {self.customer.user.username}" # Or self.customer directly if its __str__ is good
+        elif self.agent:
+            owner = f"Agent: {self.agent.user.username}" # Or self.agent directly
+        return f"Order #{self.pk} by {owner} on {self.order_date.strftime('%Y-%m-%d')}"
 
     # Optional: Method to calculate total based on items
     def calculate_total(self):
@@ -92,6 +108,15 @@ class Order(TimeStampedModel):
             models.Index(fields=['status']),
             models.Index(fields=['order_date']),
             models.Index(fields=['customer', 'status']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    (models.Q(customer__isnull=False) & models.Q(agent__isnull=True)) |
+                    (models.Q(customer__isnull=True) & models.Q(agent__isnull=False))
+                ),
+                name='order_has_one_owner_type'
+            )
         ]
     @property
     def currency_display_symbol(self):

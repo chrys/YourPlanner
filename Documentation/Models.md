@@ -6,13 +6,20 @@ This document provides an overview of the Django models used in the YourPlanner 
 
 ### Order
 
-Represents an order placed by a Customer.
+Represents an order, which can be placed by a Customer or an Agent.
 
 **Fields:**
 
 *   `customer`: ForeignKey to `users.Customer`
     *   `on_delete=models.PROTECT`: Prevents deletion of an order if the associated customer is deleted.
     *   `related_name='orders'`: Allows accessing a customer's orders via `customer.orders.all()`.
+    *   `null=True, blank=True`: This field is optional.
+    *   Note: An order must be associated with either a `customer` or an `agent`.
+*   `agent`: ForeignKey to `users.Agent`
+    *   `on_delete=models.SET_NULL`
+    *   `related_name='orders'`
+    *   `null=True, blank=True`: This field is optional.
+    *   Note: An order must be associated with either a `customer` or an `agent`.
 *   `order_date`: DateTimeField
     *   `default=timezone.now`: Sets the order date to the current time when an order is created.
 *   `status`: CharField
@@ -31,13 +38,15 @@ Represents an order placed by a Customer.
 
 **Relationships:**
 
-*   Many-to-One with `users.Customer`: An order belongs to one customer, and a customer can have multiple orders.
+*   Many-to-One with `users.Customer` (optional): An order can belong to one customer.
+*   Many-to-One with `users.Agent` (optional): An order can belong to one agent.
+*   Note: An order must be linked to either a `Customer` or an `Agent`, but not both.
 *   One-to-Many with `OrderItem`: An order can consist of multiple order items.
 
 **`__str__` Method:**
 
-Returns a string representation of the order, including its primary key, the associated customer, and the order date (formatted as YYYY-MM-DD).
-Example: `Order #1 by CustomerObj on 2023-10-27`
+Returns a string representation of the order, including its primary key, the associated owner (customer or agent), and the order date (formatted as YYYY-MM-DD).
+Example: `Order #1 by Customer: customer_username on 2023-10-27` or `Order #1 by Agent: agent_username on 2023-10-27`.
 
 **Methods:**
 
@@ -48,6 +57,8 @@ Example: `Order #1 by CustomerObj on 2023-10-27`
 *   `verbose_name = "Order"`
 *   `verbose_name_plural = "Orders"`
 *   `ordering = ['-order_date']`: Orders will be sorted by order date in descending order by default.
+*   `constraints`:
+    *   `CheckConstraint(name='order_has_one_owner_type')`: Ensures that an order is associated with either a customer or an agent, but not both, and that one of them is always set.
 
 ---
 
@@ -306,6 +317,37 @@ Example: `Customer: jdoe` (where `jdoe` is the string representation of the user
 
 *   `verbose_name = "Customer"`
 *   `verbose_name_plural = "Customers"`
+
+---
+
+### Agent
+
+Represents an Agent user profile linked to a User account. This model extends the built-in Django User model using a One-to-One relationship.
+
+**Fields:**
+
+*   `user`: OneToOneField to `settings.AUTH_USER_MODEL`
+    *   `on_delete=models.CASCADE`: If the associated User account is deleted, the Agent profile is also deleted.
+    *   `primary_key=True`: Uses the User's ID as the primary key for the Agent table.
+    *   `related_name='agent_profile'`: Allows accessing the agent profile via `user.agent_profile`.
+*   `created_at`: DateTimeField (inherited from TimeStampedModel)
+    *   `auto_now_add=True`: Automatically sets the timestamp when an agent profile is first created.
+*   `updated_at`: DateTimeField (inherited from TimeStampedModel)
+    *   `auto_now=True`: Automatically updates the timestamp whenever the agent profile is saved.
+
+**Relationships:**
+
+*   One-to-One with `settings.AUTH_USER_MODEL` (Django's built-in User model): Each Agent profile is linked to a single User account.
+
+**`__str__` Method:**
+
+Returns a string identifying the user as an agent.
+Example: `Agent: jdoe` (where `jdoe` is the string representation of the user object).
+
+**Meta:**
+
+*   `verbose_name = "Agent"`
+*   `verbose_name_plural = "Agents"`
 
 ---
 
