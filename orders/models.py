@@ -25,7 +25,9 @@ class Order(TimeStampedModel):
     customer = models.ForeignKey(
         'users.Customer', # String notation
         on_delete=models.PROTECT, # Don't delete orders if customer deleted
-        related_name='orders' # customer.orders.all()
+        related_name='orders', # customer.orders.all()
+        null=True,
+        blank=True,
     )
     order_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(
@@ -132,7 +134,9 @@ class OrderItem(TimeStampedModel):
     item = models.ForeignKey(
         'services.Item',
         on_delete=models.PROTECT, # Keep record even if item definition changes/deleted
-        related_name='order_items'
+        related_name='order_items',
+        null=True, # Allow null for items that might not be directly linked
+        blank=True, # Useful for cases where item is not directly applicable
     )
     price = models.ForeignKey(
         'services.Price',
