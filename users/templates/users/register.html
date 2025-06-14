@@ -62,22 +62,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const weddingDayWrapper = document.getElementById('div_id_wedding_day');
 
     function toggleFields() {
-        if (!roleField) return; // Exit if no role field (default professional case)
+    if (!roleField) return; // Exit if no role field (default professional case)
 
-        const isCustomer = roleField.value === 'customer';
-        
-        if (titleFieldWrapper) {
-            titleFieldWrapper.style.display = isCustomer ? 'none' : '';
-        }
-        
-        if (weddingDayWrapper) {
-            weddingDayWrapper.style.display = isCustomer ? '' : 'none';
-            const weddingDayInput = document.getElementById('id_wedding_day');
-            if (weddingDayInput) {
-                weddingDayInput.required = isCustomer;
-            }
+    const isCustomer = roleField.value === 'customer';
+    const isAgent = roleField.value === 'agent';
+    const isProfessional = roleField.value === 'professional';
+    
+    if (titleFieldWrapper) {
+        titleFieldWrapper.style.display = (isProfessional || isAgent) ? '' : 'none';
+        const titleInput = document.getElementById('id_title');
+        if (titleInput) {
+            titleInput.required = (isProfessional || isAgent);
         }
     }
+    
+    if (weddingDayWrapper) {
+        weddingDayWrapper.style.display = isCustomer ? '' : 'none';
+        const weddingDayInput = document.getElementById('id_wedding_day');
+        if (weddingDayInput) {
+            weddingDayInput.required = isCustomer;
+        }
+    }
+}
 
     // Initial state
     toggleFields();

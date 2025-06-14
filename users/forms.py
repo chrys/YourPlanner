@@ -20,6 +20,12 @@ class RegistrationForm(forms.ModelForm):
         widget=forms.HiddenInput(),  # Hide this field
         initial='customer'  # Set default value
     )
+    title = forms.CharField(  # Add title field
+        max_length=200,
+        required=False,
+        help_text="Required for professionals"
+    )
+    
     wedding_day = forms.DateField(
         required=True,  # Now always required since only customers can register
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
