@@ -6,9 +6,16 @@ from users.models import Professional
 from services.models import ServiceCategory, Service, Item, Price
 from decimal import Decimal
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.files.storage import default_storage
 import datetime
 
 User = get_user_model()
+
+# It's good practice to clean up uploaded media after tests if they are actually saved.
+# However, for SimpleUploadedFile with in-memory content, it might not be strictly necessary
+# unless the field saves files to disk during tests. For now, we assume default test runner handles media.
 
 class ServiceCategoryModelTests(TestCase):
     """
@@ -352,6 +359,59 @@ class ServiceModelTests(TestCase):
         expected_str = f"Test Service (by {self.professional})"
         self.assertEqual(str(service), expected_str)
 
+    # --- Tests for new fields in Service model ---
+
+    def test_create_service_with_price(self):
+        """Test creating a Service with a valid price."""
+        service = Service(
+            professional=self.professional,
+            title="Service with Price",
+            price=Decimal('199.99')
+        )
+        service.save()
+        self.assertEqual(service.price, Decimal('199.99'))
+
+    def test_create_service_without_price(self):
+        """Test creating a Service with no price (should be allowed)."""
+        service = Service(
+            professional=self.professional,
+            title="Service without Price",
+            price=None
+        )
+        service.save()
+        self.assertIsNone(service.price)
+
+    def test_create_service_with_image(self):
+        """Test creating a Service with an image."""
+        # Create a dummy image file
+        image_content = b"dummy image content"
+        image = SimpleUploadedFile("test_service_image.jpg", image_content, content_type="image/jpeg")
+
+        service = Service(
+            professional=self.professional,
+            title="Service with Image",
+            image=image
+        )
+        service.save()
+        self.assertIsNotNone(service.image)
+        self.assertTrue(service.image.name.startswith('service_images/test_service_image'))
+
+        # Clean up the created file if it's stored on disk by the field
+        if service.image and hasattr(service.image, 'path'):
+             if default_storage.exists(service.image.path):
+                default_storage.delete(service.image.path)
+
+
+    def test_create_service_without_image(self):
+        """Test creating a Service with no image (should be allowed)."""
+        service = Service(
+            professional=self.professional,
+            title="Service without Image",
+            image=None
+        )
+        service.save()
+        self.assertEqual(service.image, None) # or self.assertFalse(service.image)
+
 
 class ItemModelTests(TestCase):
     """
@@ -390,7 +450,12 @@ class ItemModelTests(TestCase):
             category=self.category,
             is_active=True
         )
-    
+        # Add default quantity for items created in setup, if other tests rely on it
+        # The model has default=0 for quantity, so not strictly needed for new tests
+        # but good for consistency if other tests might assume a stock/quantity.
+        # Let's assume existing tests are fine with quantity=0 (default) or we adapt them.
+        # For new tests, we will specify quantity explicitly.
+
     def test_create_item_with_valid_data(self):
         """
         Test Case ID: services_TC_M_I_001
@@ -401,10 +466,11 @@ class ItemModelTests(TestCase):
             service=self.service,
             title="Test Item",
             description="This is a test item",
-            stock=10,
+            # stock=10, # stock might be deprecated or used differently
+            quantity=10, # Using new quantity field
             position=1
         )
-        item.save()
+        item.save() # This will call full_clean if model's save() does, or we call clean() explicitly
         
         # Verify the item was created successfully
         self.assertEqual(Item.objects.count(), 1)
@@ -412,7 +478,7 @@ class ItemModelTests(TestCase):
         self.assertEqual(saved_item.service, self.service)
         self.assertEqual(saved_item.title, "Test Item")
         self.assertEqual(saved_item.description, "This is a test item")
-        self.assertEqual(saved_item.stock, 10)
+        self.assertEqual(saved_item.quantity, 10)
         self.assertEqual(saved_item.position, 1)
         self.assertEqual(saved_item.slug, f"test-item-{self.service.pk}")
     
@@ -566,6 +632,85 @@ class ItemModelTests(TestCase):
         )
         self.assertTrue(item2.is_available())
 
+    # --- Tests for new fields in Item model ---
+
+    def test_create_item_with_valid_quantity(self):
+        """Test creating an Item with a valid quantity."""
+        item_q5 = Item(service=self.service, title="Item Q5", quantity=5)
+        item_q5.full_clean() # Validate before saving
+        item_q5.save()
+        self.assertEqual(item_q5.quantity, 5)
+
+        item_q0 = Item(service=self.service, title="Item Q0", quantity=0)
+        item_q0.full_clean()
+        item_q0.save()
+        self.assertEqual(item_q0.quantity, 0)
+
+    def test_create_item_with_negative_quantity(self):
+        """Test creating an Item with a negative quantity raises ValidationError."""
+        with self.assertRaises(DjangoValidationError):
+            item = Item(service=self.service, title="Item NegativeQ", quantity=-1)
+            item.full_clean() # This should raise ValidationError due to MinValueValidator(0)
+
+    def test_create_item_with_valid_min_quantity(self):
+        """Test creating an Item with a valid min_quantity."""
+        item = Item(service=self.service, title="Item MinQ", quantity=10, min_quantity=2)
+        item.full_clean()
+        item.save()
+        self.assertEqual(item.min_quantity, 2)
+
+    def test_create_item_without_min_quantity(self):
+        """Test creating an Item with no min_quantity."""
+        item = Item(service=self.service, title="Item NoMinQ", quantity=10, min_quantity=None)
+        item.full_clean()
+        item.save()
+        self.assertIsNone(item.min_quantity)
+
+    def test_create_item_with_invalid_min_quantity(self):
+        """Test creating an Item with min_quantity < 1 raises ValidationError."""
+        with self.assertRaises(DjangoValidationError):
+            item = Item(service=self.service, title="Item InvalidMinQ", quantity=10, min_quantity=0)
+            item.full_clean() # MinValueValidator(1)
+
+    def test_create_item_with_valid_max_quantity(self):
+        """Test creating an Item with a valid max_quantity."""
+        item = Item(service=self.service, title="Item MaxQ", quantity=10, max_quantity=20)
+        item.full_clean()
+        item.save()
+        self.assertEqual(item.max_quantity, 20)
+
+    def test_create_item_without_max_quantity(self):
+        """Test creating an Item with no max_quantity."""
+        item = Item(service=self.service, title="Item NoMaxQ", quantity=10, max_quantity=None)
+        item.full_clean()
+        item.save()
+        self.assertIsNone(item.max_quantity)
+
+    def test_create_item_with_invalid_max_quantity(self):
+        """Test creating an Item with max_quantity < 1 raises ValidationError."""
+        with self.assertRaises(DjangoValidationError):
+            item = Item(service=self.service, title="Item InvalidMaxQ", quantity=10, max_quantity=0)
+            item.full_clean() # MinValueValidator(1)
+
+    def test_item_max_quantity_less_than_min_quantity(self):
+        """Test creating an Item with max_quantity < min_quantity raises ValidationError (if model clean handles it)."""
+        # This specific validation (max_quantity < min_quantity) is usually done in the model's clean() method.
+        # If not implemented in clean(), this test might need adjustment or might pass if only field validators run.
+        # Assuming the model's clean() method should handle this.
+        # Let's check if the model was updated with such a clean method. If not, this test might fail or pass vacuously.
+        # For now, we write the test expecting a ValidationError.
+        # If Item.clean() doesn't have this, this test would need Item to be saved and rely on a DB constraint or pass.
+        # The prompt implies this should be tested.
+        item = Item(service=self.service, title="Item MinMaxMismatch", quantity=10, min_quantity=5, max_quantity=3)
+        with self.assertRaises(DjangoValidationError):
+            item.full_clean() # Expecting a ValidationError from a model clean() method or similar logic
+
+    # Note: The `stock` field in Item model might be related to `quantity`.
+    # Existing `test_item_is_available_method` uses `stock`.
+    # We should clarify if `is_available` should now use `quantity` or if `stock` is still relevant.
+    # For now, assuming `is_available` might need an update if `quantity` replaces `stock`.
+    # The prompt didn't ask to change `is_available`.
+
 
 class PriceModelTests(TestCase):
     """
@@ -603,7 +748,8 @@ class PriceModelTests(TestCase):
             service=self.service,
             title="Test Item",
             description="Test item description",
-            stock=10
+            # stock=10, # Original field
+            quantity=10 # Assuming quantity is the new primary field for amount
         )
     
     def test_create_price_with_valid_data(self):

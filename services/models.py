@@ -1,7 +1,9 @@
 from django.db import models
+from django.db.models import DecimalField, ImageField, IntegerField
 from django.conf import settings
 from decimal import Decimal
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from core.models import TimeStampedModel, ActiveManager
 from django.utils.text import slugify
 
@@ -42,7 +44,10 @@ class Service(TimeStampedModel):
         related_name='services'
     )
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True) 
+    description = models.TextField(blank=True)
+    price = DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    image = ImageField(upload_to='service_images/', null=True, blank=True)
+
     is_active = models.BooleanField(default=True, help_text="Is this service currently offered?")
     featured = models.BooleanField(default=False, help_text="Feature this service in listings?")
     slug = models.SlugField(max_length=255, blank=True)
@@ -117,6 +122,9 @@ class Item(TimeStampedModel):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='item_images/', null=True, blank=True)
+    quantity = IntegerField(default=0, validators=[MinValueValidator(0)], help_text="Available quantity, cannot be negative.")
+    min_quantity = IntegerField(null=True, blank=True, validators=[MinValueValidator(1)], help_text="Minimum quantity per order.")
+    max_quantity = IntegerField(null=True, blank=True, validators=[MinValueValidator(1)], help_text="Maximum quantity per order.")
     is_active = models.BooleanField(default=True, help_text="Is this item currently available?")
 
     sku = models.CharField(
@@ -125,7 +133,7 @@ class Item(TimeStampedModel):
         null=True,
         help_text="Stock Keeping Unit - unique identifier for this item"
     )
-    stock = models.PositiveIntegerField(
+    stock = models.PositiveIntegerField( # This field might become redundant or be used differently with quantity
         default=0,
         help_text="Number of items in stock (0 for unlimited or not applicable)"
     )
@@ -161,6 +169,10 @@ class Item(TimeStampedModel):
         """
         if not self.title:
             raise ValidationError({'title': 'Item title cannot be empty'})
+
+        if self.min_quantity is not None and self.max_quantity is not None:
+            if self.max_quantity < self.min_quantity:
+                raise ValidationError({'max_quantity': 'Maximum quantity cannot be less than minimum quantity.'})
     
     def is_available(self):
         """
