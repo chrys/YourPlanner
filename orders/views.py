@@ -530,12 +530,26 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        # self.order is loaded by UserCanModifyOrderItemsMixin
-        services_qs = Service.objects.filter(is_active=True, professional__user__is_active=True) \
-            .prefetch_related(
-                Prefetch('items', queryset=Item.objects.filter(is_active=True)
-                    .prefetch_related(Prefetch('prices', queryset=Price.objects.filter(is_active=True).order_by('amount')))
+        # Get the customer's linked professionals
+        customer = self.order.customer
+        linked_professionals = Professional.objects.filter(
+            customer_links__customer=customer,  
+            customer_links__status=ProfessionalCustomerLink.StatusChoices.ACTIVE  
+        )
+        
+        # Get services only from linked professionals
+        services_qs = Service.objects.filter(
+            is_active=True,
+            professional__in=linked_professionals,
+            professional__user__is_active=True
+        ).prefetch_related(
+            Prefetch('items', queryset=Item.objects.filter(is_active=True)
+                .prefetch_related(
+                    Prefetch('prices', 
+                        queryset=Price.objects.filter(is_active=True).order_by('amount')
+                    )
                 )
+            )
         ).order_by('title')
 
         services_list = []
@@ -543,6 +557,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
             service_dict = {
                 'id': service.pk,
                 'title': service.title,
+                'professional_name': service.professional.title or service.professional.user.get_full_name(),
                 'items': []
             }
             for item in service.items.all():

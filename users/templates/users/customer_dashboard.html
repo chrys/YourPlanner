@@ -28,21 +28,15 @@
             <h4 class="mt-4 mb-3">{% trans "Account Actions" %}:</h4>
             <div class="list-group">
                 {% if professional %}
-                    <a href="{% url 'orders:order_create' %}" class="list-group-item list-group-item-action">
+                    <!-- <a href="{% url 'orders:order_create' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-plus-circle me-2"></i>{% trans "Create New Order / Select Items" %}
-                    </a>
+                    </a> -->
                     <a href="{% url 'orders:basket' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-shopping-basket me-2"></i>{% trans "View My Basket / Current Order" %}
-                    </a>
-                     <a href="{% url 'orders:order_list' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-list-alt me-2"></i>{% trans "View My Order History" %}
+                        <i class="fas fa-shopping-basket me-2"></i>{% trans "View My Basket" %}
                     </a>
                 {% endif %}
                 <a href="{% url 'users:profile' %}" class="list-group-item list-group-item-action">
                     <i class="fas fa-user-edit me-2"></i>{% trans "View/Edit My Profile" %}
-                </a>
-                <a href="{% url 'users:change_professional' %}" class="list-group-item list-group-item-action">
-                    <i class="fas fa-exchange-alt me-2"></i>{% trans "Change My Professional" %}
                 </a>
                 <a href="{% url 'password_change' %}" class="list-group-item list-group-item-action">
                      <i class="fas fa-key me-2"></i>{% trans "Change Password" %}

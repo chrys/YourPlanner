@@ -15,10 +15,19 @@
         <form id="select-items-form" method="post">
             {% csrf_token %}
             <div v-for="service in servicesData" :key="service.id" class="service-section card mb-4">
-                <div class="card-header bg-light">
-                    <h3 class="h5 mb-0">[[ service.title ]]</h3>
+                <div class="card-header bg-light d-flex align-items-center">
+                    <input type="checkbox"
+                        :id="'service_' + service.id"
+                        :value="service.id"
+                        v-model="selectedServices"
+                        class="form-check-input me-2"
+                        style="margin-top:0;">
+                    <h3 class="h5 mb-0">
+                        [[ service.title ]]
+                        <small class="text-muted">by [[ service.professional_name ]]</small>
+                    </h3>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0" v-if="selectedServices.includes(service.id)">
                     <table class="items-table table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -47,6 +56,7 @@
                                                class="form-control form-control-sm mx-auto"
                                                style="width: 80px;"
                                                v.model.number="quantities[price.id]"
+                                               :disabled="!selectedServices.includes(service.id)"
                                                @input="validateQuantity(price.id)">
                                     </td>
                                 </tr>
@@ -99,11 +109,12 @@ createApp({
         const quantities = ref({}); // Store quantities by price_id
         const showDialog = ref(false);
         const showSuccess = ref(false);
-
+        const selectedServices = ref([]); 
         onMounted(() => {
             servicesData.value = window.__servicesData__;
+            // Optionally pre-select all services, or leave empty for user to choose
+            // selectedServices.value = servicesData.value.map(s => s.id);
             const initialQuantities = window.__currentQuantities__;
-            // Initialize quantities for Vue reactivity, mapping price_id to quantity
             servicesData.value.forEach(service => {
                 service.items.forEach(item => {
                     item.prices.forEach(price => {
@@ -127,9 +138,16 @@ createApp({
         }
 
         function submitForm() {
-            // Vue's v-model on the input fields ensures their values are part of the form submission
-            // when the form is submitted.
-            // We just need to trigger the form submission.
+            // Remove quantities for unselected services
+            servicesData.value.forEach(service => {
+                if (!selectedServices.value.includes(service.id)) {
+                    service.items.forEach(item => {
+                        item.prices.forEach(price => {
+                            quantities.value[price.id] = 0;
+                        });
+                    });
+                }
+            });
             document.getElementById('select-items-form').submit();
         }
 
@@ -137,11 +155,11 @@ createApp({
         return {
             servicesData,
             quantities,
+            selectedServices,
             showDialog,
-            showSuccess, // Kept if needed for other UI feedback, though direct submit is used.
+            showSuccess,
             validateQuantity,
             confirmUpdate,
-            // submitForm is not directly called from template anymore, but by confirmUpdate
         };
     }
 }).mount('#select-items-app');
