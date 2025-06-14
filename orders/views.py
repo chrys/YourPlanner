@@ -203,6 +203,11 @@ class OrderCreateView(LoginRequiredMixin, CustomerRequiredMixin, CreateView):
     form_class = OrderForm
     template_name = 'orders/order_form.html' # To be created
     
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
     def form_valid(self, form):
         form.instance.customer = self.request.user.customer_profile
         form.instance.status = Order.StatusChoices.PENDING # Default status

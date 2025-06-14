@@ -5,7 +5,7 @@
     {% if object %}
         {% trans "Update Template" %} - {{ object.title }}
     {% else %}
-        {% trans "Create New Template" %}
+        {% trans "Create New Package" %}
     {% endif %}
 {% endblock title %}
 
@@ -15,7 +15,7 @@
         {% if object %}
             {% trans "Update Template" %}: {{ object.title }}
         {% else %}
-            {% trans "Create New Template" %}
+            {% trans "Create New Package" %}
         {% endif %}
     </h2>
 
@@ -23,7 +23,7 @@
         {% csrf_token %}
 
         <div class="card mb-3">
-            <div class="card-header">{% trans "Template Details" %}</div>
+            <div class="card-header">{% trans "Package Details" %}</div>
             <div class="card-body">
                 {{ form.title|as_crispy_field }}
                 {{ form.description|as_crispy_field }}

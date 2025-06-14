@@ -6,12 +6,13 @@
 {% block content %}
 <div class="container mt-4">
     <h2>{{ page_title|default:"Start a New Order" }}</h2>
-    <p>Review your details below. After creating the order, you'll be able to add items.</p>
+    <p>Click the button below to create your order and start adding items.</p>
 
     <form method="post">
         {% csrf_token %}
         {{ form|crispy }}
         <button type="submit" class="btn btn-primary">Create Order and Add Items</button>
+        <a href="{% url 'orders:order_list' %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 {% endblock %}

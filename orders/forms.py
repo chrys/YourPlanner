@@ -15,7 +15,16 @@ class OrderForm(forms.ModelForm):
     
     class Meta:
         model = Order
-        fields = ['labels'] # Added labels field
+        fields = []  # Empty list - no fields needed for initial order creation
+        
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Remove labels field if user is a customer
+        if self.user and hasattr(self.user, 'customer_profile'):
+            if 'labels' in self.fields:
+                del self.fields['labels']
 
 class OrderStatusUpdateForm(forms.ModelForm):
     class Meta:
@@ -55,7 +64,7 @@ class OrderItemForm(forms.ModelForm):
 
     class Meta:
         model = OrderItem
-        fields = ['price', 'price_amount_at_order', 'quantity', 'labels']
+        fields = []  # Empty list - no fields needed for initial order creation
 
 
     def __init__(self, *args, **kwargs):

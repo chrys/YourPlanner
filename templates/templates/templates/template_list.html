@@ -1,13 +1,13 @@
 {% extends "core/base.html" %}
 {% load i18n static %}
 
-{% block title %}{% trans "My Templates" %}{% endblock title %}
+{% block title %}{% trans "My Packages" %}{% endblock title %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>{% trans "My Templates" %}</h2>
-        <a href="{% url 'templates:template-create' %}" class="btn btn-primary">{% trans "Create New Template" %}</a>
+        <h2>{% trans "My Packages" %}</h2>
+        <a href="{% url 'templates:template-create' %}" class="btn btn-primary">{% trans "Create New Package" %}</a>
     </div>
 
     {% if messages %}
@@ -47,7 +47,7 @@
         </div>
     {% else %}
         <div class="alert alert-info" role="alert">
-            {% trans "You haven't created any templates yet." %} <a href="{% url 'templates:template-create' %}" class="alert-link">{% trans "Create your first template now!" %}</a>
+            {% trans "You haven't created any packages yet." %} <a href="{% url 'templates:template-create' %}" class="alert-link">{% trans "Create your first package now!" %}</a>
         </div>
     {% endif %}
 </div>
