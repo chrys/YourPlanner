@@ -1,0 +1,105 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center welcome-title">{{ page_title }}</h2>
+
+    {% include "_messages.html" %} {# To display messages from the view #}
+
+    {% if services %}
+        <div class="circle-grid">
+            {% for service in services %}
+                <a href="{% url 'orders:customer_service_select_items' service_pk=service.pk %}" class="circle-link" title="{% blocktrans with service_title=service.title %}Select items from {{ service_title }}{% endblocktrans %}">
+                    <div class="circle">
+                        <span>{{ service.title }}</span>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% elif linked_professional %}
+        <div class="alert alert-info text-center" role="alert">
+            {% blocktrans with prof_name=linked_professional.title|default:linked_professional.user.get_full_name|default:linked_professional.user.username %}
+            Your professional, <strong>{{ prof_name }}</strong>, has not listed any active services yet.
+            {% endblocktrans %}
+        </div>
+    {% else %}
+        {# This message is usually shown via the messages framework if no professional is linked #}
+        {# You can add a fallback message here if needed #}
+        <div class="alert alert-warning text-center" role="alert">
+            {% trans "No services to display. Please ensure you are linked with a professional." %}
+        </div>
+    {% endif %}
+
+    <div class="text-center mt-5">
+        <a href="{% url 'users:user_management' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> {% trans "Back to Management" %}
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .circle-link {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .circle-grid { /* Styles from core/static/core/css/home.css */
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 40px 60px; 
+        margin: 40px 0 60px 0;
+    }
+
+    .circle { /* Styles from core/static/core/css/home.css, adjusted for direct span child */
+        width: 160px; 
+        height: 160px;
+        border: 2px solid #e88ea1;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-weight: 700;
+        font-size: 1.2em; /* Consistent with home.html */
+        color: #222;
+        background: #fff;
+        transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+        padding: 10px; /* Added padding for text inside */
+        box-sizing: border-box; /* Ensure padding is included in width/height */
+    }
+
+    .circle:hover { /* Combined hover effects */
+        background: #e88ea1;
+        color: #fff;
+        border-color: #e88ea1;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .circle span { /* Simplified styling for the title span */
+        display: block; /* Ensures it behaves as a block for alignment */
+        /* font-size: 1.1em; /* Adjusted to inherit from .circle or set as needed */
+        /* margin-bottom removed as there's no image below it */
+    }
+    
+    /* Removed .circle-image-preview as the image is removed from the circle */
+
+    .welcome-title { /* Copied from home.css for consistency */
+        text-align: center;
+        font-family: 'Pacifico', cursive; /* Ensure this font is loaded if you want the exact style */
+        font-size: 2.5em;
+        font-weight: 300; /* home.css has Pacifico which is inherently somewhat bold */
+        color: #333;
+        margin-top: 40px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}

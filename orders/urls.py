@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     OrderCreateView, OrderListView, OrderDetailView, OrderStatusUpdateView, OrderCancelView,
     OrderItemCreateView, OrderItemUpdateView, OrderItemDeleteView,
-    SelectItemsView, BasketView 
+    SelectItemsView, BasketView, CustomerServiceItemSelectionView
 )
 
 app_name = 'orders'
@@ -25,4 +25,6 @@ urlpatterns = [
     # Other Order related URLs
     path('<int:order_pk>/select-items/', SelectItemsView.as_view(), name='select_items'),
     path('basket/', BasketView.as_view(), name='basket'),
+    path('service/<int:service_pk>/select-items/', CustomerServiceItemSelectionView.as_view(), name='customer_service_select_items'),
+
 ]

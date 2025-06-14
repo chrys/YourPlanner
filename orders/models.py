@@ -58,20 +58,20 @@ class Order(TimeStampedModel):
     def __str__(self):
         return f"Order #{self.pk} by {self.customer} on {self.order_date.strftime('%Y-%m-%d')}"
 
-    # Optional: Method to calculate total based on items
     def calculate_total(self):
         from django.db.models import F, Sum, DecimalField, ExpressionWrapper
         total = self.items.aggregate(
             total=Sum(
                 ExpressionWrapper(
-                    F('quantity') * F('price_amount_at_order'),
+                    F('quantity') * F('price_amount_at_order'), # This correctly uses pre-discount amount
                     output_field=DecimalField(max_digits=12, decimal_places=2)
                 )
             )
         )['total'] or Decimal('0.00')
         self.total_amount = total
-        self.save(update_fields=['total_amount'])
-        return total
+        # self.save(update_fields=['total_amount']) # The view should handle saving the order instance
+        return total # Return the total so the view can decide to save or use it
+
     
     @property
     def order_age(self):
@@ -177,15 +177,35 @@ class OrderItem(TimeStampedModel):
         return f"{self.quantity} x {self.item.title} in Order #{self.order.pk}"
 
     def save(self, *args, **kwargs):
-        # Automatically capture price details when the item is first added
+        # Automatically capture price and related entity details when the item is first added
         if not self.pk and self.price: # If creating and price is set
             self.price_amount_at_order = self.price.amount
             self.price_currency_at_order = self.price.currency
             self.price_frequency_at_order = self.price.frequency
+            
+            # Populate related item, service, and professional if not already set
+            # This makes the model more robust, complementing the view logic.
+            if not self.item_id and self.price.item_id: # Check item_id to avoid unnecessary DB hits if item is already set
+                self.item = self.price.item
+            if not self.service_id and self.price.item and self.price.item.service_id:
+                self.service = self.price.item.service
+            if not self.professional_id and self.price.item and self.price.item.service and self.price.item.service.professional_id:
+                self.professional = self.price.item.service.professional
+                
         super().save(*args, **kwargs)
 
     @property
-    def final_price(self):
+    def subtotal_before_discount(self):
+        """
+        Calculate the subtotal before any discount.
+        This is useful for display and for the Order.calculate_total method's logic.
+        """
+        if self.price_amount_at_order is not None and self.quantity is not None:
+            return self.price_amount_at_order * self.quantity
+        return Decimal('0.00')
+
+    @property
+    def final_price(self): # Your existing final_price is good
         """
         Calculate the final price after discount.
         """

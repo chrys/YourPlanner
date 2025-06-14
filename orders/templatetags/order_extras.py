@@ -1,9 +1,10 @@
 from django import template
 register = template.Library()
 
-@register.filter
+@register.filter(name='get_item')
 def get_item(dictionary, key):
-    return dictionary.get(str(key), 0)  # Convert key to string and default to 0
+    """Allows accessing dictionary items with a variable key in Django templates."""
+    return dictionary.get(key)
 
 @register.filter
 def multiply(value, arg):

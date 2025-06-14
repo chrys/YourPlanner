@@ -17,7 +17,7 @@ import json # For serializing data for Vue
 from .models import Professional, Customer, ProfessionalCustomerLink
 from templates.models import Template, TemplateImage # For CustomerTemplateListView
 from orders.models import Order, OrderItem
-from services.models import Price # Needed for finding active price for an item
+from services.models import Price, Service # Needed for finding active price for an item
 # from django import forms # Not used directly in views.py if forms are in forms.py
 from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm
 from labels.models import Label
@@ -42,6 +42,53 @@ class CustomerRequiredMixin(UserPassesTestMixin):
 
 
 # --- Class-Based Views ---
+
+class CustomerProfessionalServicesView(LoginRequiredMixin, CustomerRequiredMixin, ListView):
+    model = Service
+    template_name = 'users/customer_professional_services.html'
+    context_object_name = 'services'
+
+    def get_queryset(self):
+        # Ensure customer_profile exists due to CustomerRequiredMixin
+        customer = self.request.user.customer_profile
+        try:
+            # Get the active professional link for the customer
+            active_link = ProfessionalCustomerLink.objects.select_related('professional__user').get(
+                customer=customer,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE # Make sure this status choice exists
+            )
+            self.linked_professional = active_link.professional
+            # Fetch active services from the linked professional
+            return Service.objects.filter(
+                professional=self.linked_professional,
+                is_active=True,
+                professional__user__is_active=True # Also ensure the professional's user account is active
+            ).order_by('title')
+        except ProfessionalCustomerLink.DoesNotExist:
+            self.linked_professional = None
+            messages.warning(self.request, "You are not currently linked with an active professional. Please choose one from your management page.")
+            return Service.objects.none()
+        except Exception as e:
+            # Log the error e for admin review
+            self.linked_professional = None
+            messages.error(self.request, "An error occurred while trying to retrieve services. Please try again later.")
+            return Service.objects.none()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Services from Your Professional"
+        if hasattr(self, 'linked_professional') and self.linked_professional:
+            prof_display_name = self.linked_professional.title or \
+                                self.linked_professional.user.get_full_name() or \
+                                self.linked_professional.user.username
+            context['page_title'] = f"Services from {prof_display_name}"
+            context['linked_professional'] = self.linked_professional
+        else:
+            # This case should ideally be handled by the queryset returning none
+            # and a message being displayed.
+            context['linked_professional'] = None
+        return context
+
 
 class UserRegistrationView(CreateView):
     template_name = 'users/register.html'

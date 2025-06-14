@@ -20,6 +20,9 @@
     <div id="side-menu" class="side-menu">
         <button class="close-btn" onclick="closeMenu()">&times;</button>
         <a href="/" class="menu-item">Welcome To V Planner</a>
+        {% if user.is_authenticated and user.customer_profile %}
+            <a href="{% url 'users:customer_professional_services' %}" class="menu-item">Our Services</a>
+        {% endif %}
         <a href="{% url 'users:register' %}" class="menu-item">User Registration</a>
         <a href="{% url 'users:user_management' %}" class="menu-item">User Management</a>
         <a href="#" class="menu-item">Event Locations</a>

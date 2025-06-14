@@ -1,12 +1,12 @@
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404, render
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView, View, TemplateView
 from django.contrib import messages
 from django.http import Http404, HttpResponseForbidden # HttpResponseForbidden might be useful
 from django.db.models import Q, Prefetch # For complex queries in OrderListView, Added Prefetch
-from django.shortcuts import render # Added render for SelectItemsView GET
 from django.db import transaction
+from django.conf import settings 
 import json # Moved json import to the top
 
 from .models import Order, OrderItem
@@ -14,186 +14,179 @@ from users.models import Customer, Professional, ProfessionalCustomerLink
 from services.models import Service, Item, Price # For select_items and OrderItemForm population
 from .forms import OrderForm, OrderStatusUpdateForm, OrderItemForm
 
-# --- Authorization Mixins ---
+from .mixins import CustomerRequiredMixin, UserCanViewOrderMixin, AdminAccessMixin, CustomerOwnsOrderMixin, UserCanViewOrderMixin, UserCanModifyOrderItemsMixin
 
-class CustomerRequiredMixin(UserPassesTestMixin):
-    """Ensures the logged-in user has a customer profile."""
-    def test_func(self):
-        try:
-            # Check if profile exists and is not None
-            return hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile is not None
-        except Customer.DoesNotExist: # This exception might not be directly raised by hasattr
-            return False
-        except AttributeError: # If user is AnonymousUser which has no customer_profile
-            return False
+class CustomerServiceItemSelectionView(LoginRequiredMixin, CustomerRequiredMixin, View):
+    template_name = 'orders/customer_service_item_selection.html'
 
+    def get_service_and_check_permission(self, request, service_pk):
+        """
+        Fetches the service and checks if the customer is allowed to order it.
+        A customer can order if they are actively linked to the service's professional,
+        OR if the service is offered by a 'default' professional.
+        """
+        service = get_object_or_404(
+            Service.objects.select_related('professional__user')
+            .prefetch_related(
+                Prefetch('items', queryset=Item.objects.filter(is_active=True).prefetch_related(
+                    Prefetch('prices', queryset=Price.objects.filter(is_active=True).order_by('amount'))
+                ))
+            ),
+            pk=service_pk,
+            is_active=True, # Only active services
+            professional__user__is_active=True # Only from active professionals
+        )
 
-    def handle_no_permission(self):
-        messages.error(self.request, "You need a customer profile to access this page.")
-        return redirect('users:profile_choice') # Or 'users:customer_profile_create'
+        customer_profile = request.user.customer_profile
+        
+        # Check if linked to the professional
+        is_linked_directly = ProfessionalCustomerLink.objects.filter(
+            customer=customer_profile,
+            professional=service.professional,
+            status=ProfessionalCustomerLink.StatusChoices.ACTIVE # Assuming this status exists
+        ).exists()
 
+        # Check if service is from a default professional
+        is_from_default_professional = hasattr(service.professional, 'default') and service.professional.default
 
-class AdminAccessMixin(UserPassesTestMixin):
-    """Ensures the logged-in user is a staff member."""
-    def test_func(self):
-        return self.request.user.is_staff
+        if not (is_linked_directly or is_from_default_professional):
+            messages.error(request, "You are not authorized to order items from this service.")
+            return None
+        return service
 
-    def handle_no_permission(self):
-        messages.error(self.request, "You do not have permission to access this page.")
-        if self.request.user.is_authenticated:
-            return redirect('/')
-        return redirect('users:login') # Assuming 'users:login'
+    def get(self, request, service_pk):
+        service = self.get_service_and_check_permission(request, service_pk)
+        if not service:
+            return redirect('core:home') # Or a more relevant page
+        
+        customer_profile = request.user.customer_profile
+        # Try to get the latest pending order, or create a new one.
+        pending_orders = Order.objects.filter(
+            customer=customer_profile,
+            status=Order.StatusChoices.PENDING
+        ).order_by('-created_at') # Get the most recent one first
 
+        if pending_orders.exists():
+            order = pending_orders.first()
+            # Optional: If you want to strictly enforce one pending order,
+            # you could log or handle the case where pending_orders.count() > 1
+            if pending_orders.count() > 1:
+                # Log this situation for review, as it indicates a potential issue
+                # import logging
+                # logger = logging.getLogger(__name__)
+                # logger.warning(f"Customer {customer_profile.pk} has multiple PENDING orders. Using the latest one: {order.pk}")
+                pass # For now, we just use the latest one
+        else:
+            order = Order.objects.create(
+                customer=customer_profile,
+                status=Order.StatusChoices.PENDING,
+                currency=service.professional.preferred_currency if hasattr(service.professional, 'preferred_currency') and service.professional.preferred_currency else settings.DEFAULT_CURRENCY
+            )
+        # The redundant get_or_create call that was here has been removed.
+        # 'order' variable is now correctly assigned from the logic above.
 
-class CustomerOwnsOrderMixin(UserPassesTestMixin):
-    """
-    Ensures the current customer owns the order. Loads self.order.
-    Assumes 'pk' or 'order_pk' is in self.kwargs for the order's primary key.
-    """
-    order_pk_url_kwarg = 'pk'
+        current_quantities = {
+            oi.price.pk: oi.quantity
+            for oi in OrderItem.objects.filter(order=order)
+        }
 
-    def test_func(self):
-        order_id = self.kwargs.get(self.order_pk_url_kwarg)
-        if not order_id:
-            # This should ideally not be reached if URL patterns are correct
-            raise Http404("Order ID not found in URL context.")
-        try:
-            # Ensure user has a customer profile first
-            if not (hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile):
-                return False
-            customer = self.request.user.customer_profile
-            self.order = get_object_or_404(Order, pk=order_id, customer=customer)
-            return True
-        except Customer.DoesNotExist: # Should be caught by the hasattr check above
-            return False
-        except Http404:
-            return False # Order not found or not owned by this customer
+        context = {
+            'service': service,
+            'order': order, # Pass the order for context, e.g., link to basket
+            'current_quantities': current_quantities,
+            'page_title': f"Select from: {service.title}",
+        }
+        return render(request, self.template_name, context)
 
-    def handle_no_permission(self):
-        messages.error(self.request, "You do not have permission to view or modify this order.")
-        return redirect('orders:order_list')
+    def post(self, request, service_pk):
+        service = self.get_service_and_check_permission(request, service_pk)
+        if not service:
+            return redirect('core:home')
 
+        customer_profile = request.user.customer_profile
+        # Try to get the latest pending order, or create a new one.
+        pending_orders = Order.objects.filter(
+            customer=customer_profile,
+            status=Order.StatusChoices.PENDING
+        ).order_by('-created_at')
 
-class ProfessionalManagesOrderMixin(UserPassesTestMixin):
-    """
-    Ensures the current professional is associated with the order via an OrderItem.
-    Loads self.order. Assumes 'pk' or 'order_pk' is in self.kwargs.
-    """
-    order_pk_url_kwarg = 'pk'
+        if pending_orders.exists():
+            order = pending_orders.first()
+            if pending_orders.count() > 1:
+                # Optional: Log this situation for review
+                # import logging
+                # logger = logging.getLogger(__name__)
+                # logger.warning(f"Customer {customer_profile.pk} has multiple PENDING orders for POST. Using the latest one: {order.pk}")
+                pass
+        else:
+            order = Order.objects.create(
+                customer=customer_profile,
+                status=Order.StatusChoices.PENDING,
+                currency=service.professional.preferred_currency if hasattr(service.professional, 'preferred_currency') and service.professional.preferred_currency else settings.DEFAULT_CURRENCY
+            )
+        # The get_or_create call that was here has been replaced by the logic above.
+        # 'order' variable is now correctly assigned.
 
-    def test_func(self):
-        order_id = self.kwargs.get(self.order_pk_url_kwarg)
-        if not order_id:
-            raise Http404("Order ID not found in URL context.")
-        try:
-            if not (hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile):
-                return False
-            professional = self.request.user.professional_profile
-            self.order = get_object_or_404(Order, pk=order_id) # Fetch the order first
+        items_updated_count = 0
+        items_added_count = 0
+        items_removed_count = 0
 
-            is_managing = OrderItem.objects.filter(
-                order=self.order,
-                price__item__service__professional=professional
-            ).exists()
-            return is_managing
-        except Professional.DoesNotExist: # Should be caught by hasattr
-            return False
-        except Http404:
-            return False # Order not found
+        with transaction.atomic():
+            # Iterate through all prices of all items for the current service
+            for item_in_service in service.items.all():
+                for price_in_item in item_in_service.prices.all():
+                    quantity_key = f'quantity_price_{price_in_item.pk}'
+                    quantity_str = request.POST.get(quantity_key)
 
-    def handle_no_permission(self):
-        messages.error(self.request, "You do not have permission to view or manage this order.")
-        return redirect('services:service_list') # Redirect to a professional's typical view
-
-
-class UserCanViewOrderMixin(UserPassesTestMixin):
-    """
-    Generic mixin to check if a user can view an order.
-    Loads self.order. Assumes 'pk' is in self.kwargs.
-    """
-    def test_func(self):
-        order_id = self.kwargs.get('pk')
-        if not order_id:
-            raise Http404("Order ID not found in URL context.")
-
-        self.order = get_object_or_404(Order, pk=order_id)
-
-        if self.request.user.is_staff:
-            return True
-
-        # Check for customer ownership
-        if hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile:
-            if self.order.customer == self.request.user.customer_profile:
-                return True
-
-        # Check for professional management
-        if hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile:
-            professional = self.request.user.professional_profile
-            if OrderItem.objects.filter(order=self.order, price__item__service__professional=professional).exists():
-                return True
-
-        return False
-
-    def handle_no_permission(self):
-        messages.error(self.request, "You do not have permission to view this order.")
-        if self.request.user.is_authenticated:
-            # Determine a sensible redirect based on potential roles
-            if hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile:
-                 return redirect('services:service_list')
-            elif hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile:
-                 return redirect('orders:order_list')
-            return redirect('/') # Fallback for authenticated users with no clear role page
-        return redirect('users:login')
-
-
-class UserCanModifyOrderItemsMixin(UserPassesTestMixin):
-    """
-    Checks if the user can modify items for the current order.
-    Allowed if:
-    1. User is customer owning the order AND order is PENDING.
-    2. User is an admin (staff).
-    3. User is a Professional linked to the order's Customer.
-    Loads self.order. Assumes 'pk' or 'order_pk' is in self.kwargs.
-    """
-    order_pk_url_kwarg = 'pk'
-
-    def test_func(self):
-        order_id = self.kwargs.get(self.order_pk_url_kwarg)
-        if not order_id:
-            raise Http404("Order ID not found in URL context.")
-
-        # Use select_related to potentially improve efficiency if customer profile is accessed often
-        self.order = get_object_or_404(Order.objects.select_related('customer__user'), pk=order_id)
-
-        if self.request.user.is_staff:
-            return True
-
-        if hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile:
-            if self.order.customer == self.request.user.customer_profile and self.order.status == Order.StatusChoices.PENDING:
-                return True
+                    if quantity_str is None: # This price's quantity wasn't submitted
+                        continue
+                    
+                    try:
+                        quantity = int(quantity_str)
+                        if quantity < 0: # Negative quantities are not allowed
+                            messages.warning(request, f"Invalid quantity for {price_in_item.item.title}. Quantity set to 0.")
+                            quantity = 0
+                    except ValueError:
+                        messages.warning(request, f"Invalid quantity format for {price_in_item.item.title}. Quantity set to 0.")
+                        quantity = 0
+                    
+                    if quantity > 0:
+                        order_item, created = OrderItem.objects.update_or_create(
+                            order=order,
+                            price=price_in_item,
+                            defaults={
+                                'quantity': quantity,
+                                'item': price_in_item.item,
+                                'service': price_in_item.item.service,
+                                'professional': price_in_item.item.service.professional,
+                                'price_amount_at_order': price_in_item.amount,
+                                'price_currency_at_order': price_in_item.currency,
+                                'price_frequency_at_order': price_in_item.frequency,
+                            }
+                        )
+                        if created:
+                            items_added_count += 1
+                        elif order_item.quantity != quantity : # Check if quantity actually changed
+                            items_updated_count +=1
+                    else: # Quantity is 0 or less, so remove the item from the order if it exists
+                        deleted_count, _ = OrderItem.objects.filter(order=order, price=price_in_item).delete()
+                        if deleted_count > 0:
+                            items_removed_count += 1
             
-         # Condition for a Professional linked to the order's customer and order is PENDING
-        if hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile:
-            professional = self.request.user.professional_profile
-            # Check if an active link exists between this professional and the order's customer
-            is_linked_and_active = ProfessionalCustomerLink.objects.filter(
-                professional=professional,
-                customer=self.order.customer,
-                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-            ).exists()
+            order.calculate_total() # Corrected method name
+            order.save()
 
-            if is_linked_and_active and self.order.status == Order.StatusChoices.PENDING:
-                return True
+        if items_added_count > 0:
+            messages.success(request, f"{items_added_count} item(s) successfully added to your order.")
+        if items_updated_count > 0:
+            messages.success(request, f"{items_updated_count} item(s) in your order successfully updated.")
+        if items_removed_count > 0:
+            messages.info(request, f"{items_removed_count} item(s) removed from your order.")
+        if not (items_added_count or items_updated_count or items_removed_count):
+            messages.info(request, "No changes were made to your order items for this service.")
 
-        return False
-
-    def handle_no_permission(self):
-        messages.error(self.request, "Order items cannot be modified for this order at its current status, or you lack permission.")
-        # Try to redirect to order detail if order was loaded, otherwise to order list
-        order_pk_to_redirect = self.kwargs.get(self.order_pk_url_kwarg)
-        if order_pk_to_redirect:
-             return redirect('orders:order_detail', pk=order_pk_to_redirect)
-        return redirect('orders:order_list')
+        # Redirect back to the same page to show updated quantities or to the basket
+        return redirect('orders:customer_service_select_items', service_pk=service.pk)
 
 
 # --- Order CBVs ---
