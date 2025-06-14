@@ -42,7 +42,7 @@ class Service(TimeStampedModel):
         related_name='services'
     )
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True) 
     is_active = models.BooleanField(default=True, help_text="Is this service currently offered?")
     featured = models.BooleanField(default=False, help_text="Feature this service in listings?")
     slug = models.SlugField(max_length=255, blank=True)
@@ -115,7 +115,7 @@ class Item(TimeStampedModel):
         related_name='items' # service.items.all()
     )
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='item_images/', null=True, blank=True)
     is_active = models.BooleanField(default=True, help_text="Is this item currently available?")
 

@@ -1,4 +1,7 @@
 {% extends "core/base.html" %}
+{% block extra_head %} {# Or a similar block in your base template #}
+    {{ form.media }}
+{% endblock %}
 
 {% block title %}
     {% if object %}Edit Service: {{ object.title }}{% else %}Create New Service{% endif %}

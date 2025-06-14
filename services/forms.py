@@ -1,12 +1,13 @@
 from django import forms
 from .models import Service, Item, Price
 from labels.models import Label
+from django_summernote.widgets import SummernoteWidget
 
 class ServiceForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(label_type='SERVICE'), # MODIFIED
+        queryset=Label.objects.filter(label_type='SERVICE'), 
         required=False,
-        widget=forms.CheckboxSelectMultiple, # MODIFIED
+        widget=forms.CheckboxSelectMultiple, 
         help_text="Optional labels to categorize this service"
     )
     
@@ -15,7 +16,7 @@ class ServiceForm(forms.ModelForm):
         fields = ['title', 'description', 'is_active', 'labels']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'description': SummernoteWidget(), 
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             # Note: widget for labels is now part of the field definition above
         }
@@ -23,9 +24,9 @@ class ServiceForm(forms.ModelForm):
 class ItemForm(forms.ModelForm):
     image = forms.ImageField(widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'}), help_text="Upload an image for the item (optional).", required=False)
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(label_type='ITEM'), # MODIFIED
+        queryset=Label.objects.filter(label_type='ITEM'), 
         required=False,
-        widget=forms.CheckboxSelectMultiple, # MODIFIED
+        widget=forms.CheckboxSelectMultiple, 
         help_text="Optional labels to categorize this item"
     )
     
@@ -34,7 +35,7 @@ class ItemForm(forms.ModelForm):
         fields = ['title', 'description', 'image', 'labels']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'description': SummernoteWidget(),
             # Note: widget for labels is now part of the field definition above
         }
 
