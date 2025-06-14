@@ -20,6 +20,10 @@ class Professional(TimeStampedModel):
     title = models.CharField(max_length=200, blank=True, null=True)  # <-- Add this line
     specialization = models.CharField(max_length=200, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
+    default = models.BooleanField(
+        default=False,
+        help_text="If True, this professional will be used as the default for new orders"
+    )
     profile_image = models.ImageField(
         upload_to='professional_profiles/',
         null=True,
@@ -57,6 +61,12 @@ class Professional(TimeStampedModel):
         """
         if self.rating and (self.rating < 1 or self.rating > 5):
             raise ValidationError({'rating': 'Rating must be between 1 and 5'})
+        
+        # Ensure only one default professional exists
+        if self.default:
+            default_exists = Professional.objects.filter(default=True).exclude(pk=self.pk).exists()
+            if default_exists:
+                raise ValidationError({'default': 'There can only be one default professional'})
     
     def calculate_availability(self, date=None):
         """

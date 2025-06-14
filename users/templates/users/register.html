@@ -1,9 +1,15 @@
-{% extends "core/base.html" %} {# Assuming base.html is the project's base template #}
+{% extends "core/base.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load i18n %}
 
-{% block title %}{{ page_title|default:"Register" }}{% endblock %}
+{% block title %}
+    {% if has_default_professional %}
+        {% trans "Customer Registration" %}
+    {% else %}
+        {{ page_title|default:"Register" }}
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -11,20 +17,34 @@
         <div class="col-md-8 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-body p-4">
-                    <h2 class="card-title text-center mb-4">{{ page_title|default:"Create Your Account" }}</h2>
+                    <h2 class="card-title text-center mb-4">
+                        {% if has_default_professional %}
+                            {% trans "Create Your Customer Account" %}
+                        {% else %}
+                            {{ page_title|default:"Create Your Account" }}
+                        {% endif %}
+                    </h2>
+
+                    {% if has_default_professional %}
+                        <p class="text-center text-muted mb-4">
+                            {% trans "Register as a customer to get started with our services." %}
+                        </p>
+                    {% endif %}
 
                     <form method="post" id="registration-form">
                         {% csrf_token %}
-
                         {{ form|crispy }}
-
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">{% trans "Register" %}</button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                {% trans "Register" %}
+                            </button>
                         </div>
                     </form>
+
                     <p class="text-center mt-3">
                         <small class="text-muted">
-                            {% trans "Already have an account?" %} <a href="{% url 'login' %}">{% trans "Log in" %}</a>
+                            {% trans "Already have an account?" %}
+                            <a href="{% url 'login' %}">{% trans "Log in" %}</a>
                         </small>
                     </p>
                 </div>
@@ -32,30 +52,39 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-{# Minimal Vue for conditional field visibility if RegistrationForm doesn't handle it via widgets #}
-{# This assumes that the 'title' field's wrapper has an ID like 'div_id_title' (common with crispy) #}
-{# and the 'role' field has ID 'id_role' #}
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const roleField = document.getElementById('id_role');
-    const titleFieldWrapper = document.getElementById('div_id_title'); // This ID might change based on form rendering
+    const titleFieldWrapper = document.getElementById('div_id_title');
+    const weddingDayWrapper = document.getElementById('div_id_wedding_day');
 
-    function toggleTitleField() {
-        if (roleField && titleFieldWrapper) {
-            if (roleField.value === 'professional') {
-                titleFieldWrapper.style.display = '';
-            } else {
-                titleFieldWrapper.style.display = 'none';
+    function toggleFields() {
+        if (!roleField) return; // Exit if no role field (default professional case)
+
+        const isCustomer = roleField.value === 'customer';
+        
+        if (titleFieldWrapper) {
+            titleFieldWrapper.style.display = isCustomer ? 'none' : '';
+        }
+        
+        if (weddingDayWrapper) {
+            weddingDayWrapper.style.display = isCustomer ? '' : 'none';
+            const weddingDayInput = document.getElementById('id_wedding_day');
+            if (weddingDayInput) {
+                weddingDayInput.required = isCustomer;
             }
         }
     }
 
+    // Initial state
+    toggleFields();
+    
+    // Add change listener if role field exists
     if (roleField) {
-        // Initial check
-        toggleTitleField();
-        // Add event listener
-        roleField.addEventListener('change', toggleTitleField);
+        roleField.addEventListener('change', toggleFields);
     }
 });
 </script>

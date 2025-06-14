@@ -4,6 +4,7 @@ from .models import Professional, Customer
 from labels.models import Label
 from django.utils import timezone 
 
+
 class RegistrationForm(forms.ModelForm):
     ROLE_CHOICES = (
         ('customer', 'Customer'),
@@ -13,39 +14,50 @@ class RegistrationForm(forms.ModelForm):
     last_name = forms.CharField(max_length=30, required=True)
     email = forms.EmailField(required=True)
     password = forms.CharField(widget=forms.PasswordInput)
-    role = forms.ChoiceField(choices=ROLE_CHOICES, required=True)
-    title = forms.CharField(max_length=200, required=False)  # Only for professionals
-    wedding_day = forms.DateField(
-        required=False,  # Will be made required conditionally in clean method
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        help_text="Required if registering as a customer."
+    role = forms.ChoiceField(
+        choices=ROLE_CHOICES, 
+        required=True,
+        widget=forms.HiddenInput(),  # Hide this field
+        initial='customer'  # Set default value
     )
-    # labels = forms.ModelMultipleChoiceField(
-    #     queryset=Label.objects.all(),
-    #     required=False,
-    #     widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
-    #     help_text="Optional labels to categorize this user"
-    # )
+    wedding_day = forms.DateField(
+        required=True,  # Now always required since only customers can register
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        help_text="Your planned wedding day (must be in the future)."
+    )
 
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'password']
-        
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Check if there's no default professional
+        if not Professional.objects.filter(default=True).exists():
+            # If no default professional, show the role field
+            self.fields['role'] = forms.ChoiceField(
+                choices=self.ROLE_CHOICES,
+                required=True,
+                widget=forms.Select(attrs={'class': 'form-control'})
+            )
+            # Make wedding_day not required initially
+            self.fields['wedding_day'].required = False
+
     def clean(self):
         cleaned_data = super().clean()
         role = cleaned_data.get('role')
-        title = cleaned_data.get('title')
         wedding_day = cleaned_data.get('wedding_day')
+        title = cleaned_data.get('title')
 
         if role == 'professional' and not title:
             self.add_error('title', 'Title is required for professionals.')
-        
-        if role == 'customer':
+
+        if role == 'customer' or Professional.objects.filter(default=True).exists():
             if not wedding_day:
                 self.add_error('wedding_day', 'Wedding day is required for customers.')
-            elif wedding_day <= timezone.now().date(): # This should catch it
+            elif wedding_day <= timezone.now().date():
                 self.add_error('wedding_day', 'The wedding day must be in the future.')
-        
+
         return cleaned_data
     
 class ProfessionalChoiceForm(forms.Form):

@@ -44,15 +44,17 @@ class CustomerRequiredMixin(UserPassesTestMixin):
 # --- Class-Based Views ---
 
 class UserRegistrationView(CreateView):
-    form_class = RegistrationForm
     template_name = 'users/register.html'
+    form_class = RegistrationForm
     success_url = reverse_lazy('users:user_management')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['has_default_professional'] = Professional.objects.filter(default=True).exists()
+        return context
+
     def form_valid(self, form):
-        print("FORM VALID", form.cleaned_data)
         email = form.cleaned_data['email']
-        
-        # Check for existing email first
         if User.objects.filter(email=email).exists():
             login_url = reverse('login')
             error_message = mark_safe(
@@ -63,7 +65,6 @@ class UserRegistrationView(CreateView):
 
         try:
             with transaction.atomic():
-                # Create user first
                 user = User.objects.create_user(
                     username=email,
                     email=email,
@@ -71,45 +72,44 @@ class UserRegistrationView(CreateView):
                     last_name=form.cleaned_data['last_name'],
                     password=form.cleaned_data['password']
                 )
-                print(f"Created user: {user.email} ID: {user.id}")
 
-                # Create corresponding profile
-                if form.cleaned_data['role'] == 'customer':
-                    Customer.objects.create(
-                    user=user,
-                    wedding_day=form.cleaned_data.get('wedding_day')
-                )
-                    print("Created customer profile")
-                else:
-                    prof = Professional.objects.create(
+                # If there's a default professional, always create customer
+                if Professional.objects.filter(default=True).exists():
+                    customer = Customer.objects.create(
                         user=user,
-                        title=form.cleaned_data['title']
+                        wedding_day=form.cleaned_data['wedding_day']
                     )
-                    print("Created professional profile:", prof.title)
-
-                # Log in user directly
-                login(self.request, user)
-                messages.success(self.request, 'Registration successful. You are now logged in.')
-
-                if form.cleaned_data['role'] == 'customer':
-                    # New redirect for customers
-                    return redirect(reverse_lazy('users:deposit_payment'))
+                    # Automatically link to default professional
+                    default_professional = Professional.objects.get(default=True)
+                    ProfessionalCustomerLink.objects.create(
+                        professional=default_professional,
+                        customer=customer,
+                        status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                    )
+                    messages.success(self.request, f'Registration successful. You are now linked with {default_professional.title}.')
                 else:
-                    # Existing redirect for professionals
-                    return redirect(self.success_url)
+                    # Original logic for when no default professional exists
+                    if form.cleaned_data['role'] == 'customer':
+                        Customer.objects.create(
+                            user=user,
+                            wedding_day=form.cleaned_data['wedding_day']
+                        )
+                    else:
+                        Professional.objects.create(
+                            user=user,
+                            title=form.cleaned_data['title']
+                        )
+
+                login(self.request, user)
+                if form.cleaned_data['role'] == 'customer':
+                    return redirect(reverse_lazy('users:deposit_payment'))
+                return redirect(self.success_url)
 
         except Exception as e:
-            print(f"EXCEPTION DURING REGISTRATION: {repr(e)}")
             if 'user' in locals():
-                print("Cleaning up - deleting created user")
                 user.delete()
             messages.error(self.request, "An unexpected error occurred during registration. Please try again.")
             return self.form_invalid(form)
-
-    def form_invalid(self, form):
-        print("FORM INVALID", form.errors)
-        return super().form_invalid(form)
-
 class UserManagementView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user = request.user
