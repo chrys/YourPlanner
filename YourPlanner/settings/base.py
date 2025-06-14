@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rules.apps.RulesConfig',
     'crispy_forms',
     'crispy_bootstrap5',
+    'django_summernote',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -178,6 +179,22 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'unique-snowflake',
     }
+}
+
+SUMMERNOTE_CONFIG = {
+    'summernote': {
+        'width': '100%',
+        'height': '240', # Adjust as needed
+        'toolbar': [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'clear']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['insert', ['link', 'picture']], # 'picture' requires proper media setup
+            ['view', ['fullscreen', 'codeview']],
+        ],
+    },
+    # You can add other configs here, like for attachments
+    # 'attachment_upload_to': 'attachments/%Y/%m/%d/', # Example
 }
 
 # Logging configuration

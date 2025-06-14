@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
-from users.models import Professional # Adjusted: Removed UserProfile, assuming Professional links directly or via User
+from users.models import Professional 
 from services.models import Service
 
 class Template(models.Model):

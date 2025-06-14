@@ -47,6 +47,7 @@ class Service(TimeStampedModel):
     description = models.TextField(blank=True)
     price = DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     image = ImageField(upload_to='service_images/', null=True, blank=True)
+
     is_active = models.BooleanField(default=True, help_text="Is this service currently offered?")
     featured = models.BooleanField(default=False, help_text="Feature this service in listings?")
     slug = models.SlugField(max_length=255, blank=True)
@@ -119,7 +120,7 @@ class Item(TimeStampedModel):
         related_name='items' # service.items.all()
     )
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='item_images/', null=True, blank=True)
     quantity = IntegerField(default=0, validators=[MinValueValidator(0)], help_text="Available quantity, cannot be negative.")
     min_quantity = IntegerField(null=True, blank=True, validators=[MinValueValidator(1)], help_text="Minimum quantity per order.")

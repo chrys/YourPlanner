@@ -14,8 +14,10 @@ urlpatterns = [
     path('templates/', include('templates.urls', namespace='templates')), 
     path('config/', include('configuration.urls', namespace='configuration')),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('summernote/', include('django_summernote.urls')),
     path('', include('core.urls', namespace='core')),
 ]
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
