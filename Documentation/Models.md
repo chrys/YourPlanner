@@ -123,6 +123,12 @@ A service offered by a Professional.
     *   `max_length=255`
 *   `description`: TextField
     *   `blank=True`: The description is optional.
+*   `price`: DecimalField
+    *   `max_digits=10`, `decimal_places=2`
+    *   `null=True`, `blank=True`: The price is optional.
+*   `image`: ImageField
+    *   `upload_to='service_images/'`: Specifies the subdirectory of `MEDIA_ROOT` where images will be uploaded.
+    *   `null=True`, `blank=True`: The image is optional.
 *   `is_active`: BooleanField
     *   `default=True`: The service is active by default.
     *   `help_text="Is this service currently offered?"`
@@ -165,6 +171,18 @@ An individual item or component within a Service.
 *   `image`: ImageField
     *   `upload_to='item_images/'`: Specifies the subdirectory of `MEDIA_ROOT` where images will be uploaded.
     *   `null=True`, `blank=True`: The image is optional.
+*   `quantity`: IntegerField
+    *   `default=0`: Default quantity is 0.
+    *   `validators=[MinValueValidator(0)]`: Ensures quantity cannot be negative.
+    *   `help_text="Available quantity, cannot be negative."`
+*   `min_quantity`: IntegerField
+    *   `null=True`, `blank=True`: Minimum quantity per order is optional.
+    *   `validators=[MinValueValidator(1)]`: Ensures minimum quantity is at least 1, if set.
+    *   `help_text="Minimum quantity per order."`
+*   `max_quantity`: IntegerField
+    *   `null=True`, `blank=True`: Maximum quantity per order is optional.
+    *   `validators=[MinValueValidator(1)]`: Ensures maximum quantity is at least 1, if set.
+    *   `help_text="Maximum quantity per order."`
 *   `created_at`: DateTimeField
     *   `auto_now_add=True`: Automatically sets the timestamp when an item is first created.
 *   `updated_at`: DateTimeField
