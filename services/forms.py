@@ -11,12 +11,15 @@ class ServiceForm(forms.ModelForm):
         help_text="Optional labels to categorize this service"
     )
     
+    image = forms.ImageField(widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'}), help_text="Upload an image for the service (optional).", required=False) 
+
     class Meta:
         model = Service
-        fields = ['title', 'description', 'is_active', 'labels']
+        fields = ['title', 'description', 'is_active', 'labels', 'image', 'price']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': SummernoteWidget(), 
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             # Note: widget for labels is now part of the field definition above
         }
@@ -32,7 +35,7 @@ class ItemForm(forms.ModelForm):
     
     class Meta:
         model = Item
-        fields = ['title', 'description', 'image', 'labels']
+        fields = ['title', 'description', 'image', 'quantity', 'min_quantity', 'max_quantity', 'labels'] # 
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': SummernoteWidget(),

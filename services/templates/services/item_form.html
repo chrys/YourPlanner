@@ -13,9 +13,7 @@
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-
         {{ form.as_p }}
-
         <button type="submit" class="btn btn-primary">
             {% if object %}Save Changes{% else %}Add Item{% endif %}
         </button>
