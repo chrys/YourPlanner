@@ -81,8 +81,8 @@
                 <div class="alert alert-info" role="alert">
                     {% trans "Your basket is currently empty." %}
                     {% if request.user.customer_profile %}
-                        <br><a href="{% url 'orders:order_create' %}" class="alert-link">{% trans "Start a new order" %}</a>
-                        {% trans "or find services to add." %}
+                        <br><a href="{% url 'users:customer_template_list' %}" class="alert-link">
+                            {% trans "Pick a Package to start" %}</a>
                     {% endif %}
                 </div>
             {% endif %}
