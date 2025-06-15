@@ -95,6 +95,13 @@ class Order(TimeStampedModel):
             models.Index(fields=['order_date']),
             models.Index(fields=['customer', 'status']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['customer'],
+                condition=models.Q(status='PENDING'),
+                name='unique_pending_order_per_customer'
+            ),
+        ]
     @property
     def currency_display_symbol(self):
         symbols = {
