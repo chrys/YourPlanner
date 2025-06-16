@@ -209,55 +209,33 @@ LOGGING = {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        # Optional: log to a file
         'file': {
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'debug.log'),
+            'filename': os.path.join(BASE_DIR, 'logs', 'django-debug.log'),
             'formatter': 'verbose',
         },
-    },
-    'root': {
-        'handlers': ['console', 'file'],  # log to both console and file
-        'level': 'DEBUG',
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
-        'orders': {  # your app name
-            'handlers': ['console', 'file'],
+        'django.db.backends': {
+            'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': False,
+            'propagate': True,
         },
-        'users': {
+        'orders': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
-            'propagate': False,
-        },
-        'services': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'labels': {  # Add the labels app logger
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
+            'propagate': True,
         },
     },
 }
-
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"

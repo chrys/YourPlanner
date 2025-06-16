@@ -84,3 +84,4 @@ if os.getenv('REDIS_URL'):
 LOGGING['handlers']['file']['filename'] = os.path.join(BASE_DIR, 'logs', 'yourplanner.log')
 LOGGING['handlers']['file']['level'] = 'ERROR'
 LOGGING['loggers']['django']['level'] = 'ERROR'
+
