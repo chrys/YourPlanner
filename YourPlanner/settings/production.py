@@ -22,8 +22,8 @@ SECURE_HSTS_PRELOAD = True
 
 # Static & Media Files
 # URLs must include the subpath prefix.
-STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
+STATIC_URL = '/yourplanner/static/'
+MEDIA_URL = '/yourplanner/media/'
 
 # STATIC_ROOT is where `collectstatic` will place all static files.
 # Your web server (Nginx) should be configured to serve files from this directory.
