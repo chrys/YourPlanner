@@ -32,6 +32,12 @@ USE_X_FORWARDED_HOST = True
 CSRF_COOKIE_PATH = '/yourplanner'
 SESSION_COOKIE_PATH = '/yourplanner'
 
+LOGIN_URL = '/yourplanner/users/accounts/login/'
+LOGIN_REDIRECT_URL = '/yourplanner/users/management/'
+LOGOUT_REDIRECT_URL = '/yourplanner/'
+
+
+
 # Static/Media files
 STATIC_URL = '/yourplanner/static/'
 STATIC_ROOT = BASE_DIR.parent / 'static'
