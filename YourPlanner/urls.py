@@ -13,7 +13,7 @@ urlpatterns = [
     path('orders/', include('orders.urls')),
     path('templates/', include('templates.urls', namespace='templates')), 
     path('config/', include('configuration.urls', namespace='configuration')),
-    path('accounts/', include('django.contrib.auth.urls')),
+    #path('accounts/', include('django.contrib.auth.urls')),
     path('summernote/', include('django_summernote.urls')),
     path('', include('core.urls', namespace='core')),
 ]
