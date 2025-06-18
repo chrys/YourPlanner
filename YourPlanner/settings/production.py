@@ -36,8 +36,8 @@ MEDIA_ROOT = BASE_DIR.parent / 'media_production'
 
 # Cookie Paths
 # Scope cookies to the application's subpath.
-CSRF_COOKIE_PATH = '/'
-SESSION_COOKIE_PATH = '/'
+CSRF_COOKIE_PATH = '/yourplanner/'
+SESSION_COOKIE_PATH = '/yourplanner/'
 
 # Database Configuration
 # Uses DATABASE_URL environment variable for security.
