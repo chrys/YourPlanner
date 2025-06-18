@@ -32,9 +32,9 @@ USE_X_FORWARDED_HOST = True
 CSRF_COOKIE_PATH = '/yourplanner'
 SESSION_COOKIE_PATH = '/yourplanner'
 
-LOGIN_URL = '/users/accounts/login/'
-LOGIN_REDIRECT_URL = '/users/management/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = '/yourplanner/users/accounts/login/'
+LOGIN_REDIRECT_URL = '/yourplanner/users/management/'
+LOGOUT_REDIRECT_URL = '/yourplanner/'
 
 
 
