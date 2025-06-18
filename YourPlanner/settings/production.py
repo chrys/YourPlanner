@@ -9,7 +9,7 @@ ALLOWED_HOSTS = ['www.fasolaki.com']
 
 # Subpath Configuration
 # This tells Django that the entire application is served under /yourplanner/
-#FORCE_SCRIPT_NAME = '/yourplanner'
+FORCE_SCRIPT_NAME = '/yourplanner'
 USE_X_FORWARDED_HOST = True
 
 # Security Settings for HTTPS
