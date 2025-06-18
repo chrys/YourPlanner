@@ -173,8 +173,8 @@ DEFAULT_CURRENCY = 'EUR'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_URL = '/users/accounts/login/'
-LOGIN_REDIRECT_URL = '/users/management/'
+LOGIN_URL = 'users:login'
+LOGIN_REDIRECT_URL = 'users:user_management'
 
 # Crispy Forms Settings
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
