@@ -1,80 +1,56 @@
-"""
-Production settings for YourPlanner project.
-"""
 import os
-from dotenv import load_dotenv
 from .base import *
+import dj_database_url
 
-# Load environment variables from .env file
-load_dotenv()
+# General Production Settings
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+DEBUG = False
+ALLOWED_HOSTS = ['www.fasolaki.com']
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+# Subpath Configuration
+# This tells Django that the entire application is served under /yourplanner/
+FORCE_SCRIPT_NAME = '/yourplanner'
+USE_X_FORWARDED_HOST = True
 
-# Use environment variable for secret key
-SECRET_KEY = os.getenv('SECRET_KEY', SECRET_KEY)
-
-# Allow specific hosts
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'www.fasolaki.com').split(',')
-
-# Security settings
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
+# Security Settings for HTTPS
 CSRF_COOKIE_SECURE = True
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
+SESSION_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-FORCE_SCRIPT_NAME = '/yourplanner'
-USE_X_FORWARDED_HOST = True
-CSRF_COOKIE_PATH = '/yourplanner'
-SESSION_COOKIE_PATH = '/yourplanner'
+# Static & Media Files
+# URLs must include the subpath prefix.
+STATIC_URL = '/yourplanner/static/'
+MEDIA_URL = '/yourplanner/media/'
 
+# STATIC_ROOT is where `collectstatic` will place all static files.
+# Your web server (Nginx) should be configured to serve files from this directory.
+STATIC_ROOT = BASE_DIR.parent / 'staticfiles_production'
+
+# MEDIA_ROOT is for user-uploaded files.
+MEDIA_ROOT = BASE_DIR.parent / 'media_production'
+
+# Login/Logout URLs
+# These paths should NOT include the /yourplanner prefix.
+# Django's reverse() will add it automatically because of FORCE_SCRIPT_NAME.
 LOGIN_URL = '/users/accounts/login/'
 LOGIN_REDIRECT_URL = '/users/management/'
 LOGOUT_REDIRECT_URL = '/'
 
+# Cookie Paths
+# Scope cookies to the application's subpath.
+CSRF_COOKIE_PATH = '/yourplanner/'
+SESSION_COOKIE_PATH = '/yourplanner/'
 
+# Database Configuration
+# Uses DATABASE_URL environment variable for security.
+DATABASES = {
+    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'), conn_max_age=600)
+}
 
-# Static/Media files
-STATIC_URL = '/yourplanner/static/'
-STATIC_ROOT = BASE_DIR.parent / 'static'
-MEDIA_URL = '/yourplanner/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# Database
-if os.getenv('DATABASE_URL'):
-    import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'yourplanner'),
-            'USER': os.getenv('DB_USER', 'planner'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'PlannerPlanner2025!'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'OPTIONS': {
-                'options': '-c search_path=public'
-            }
-        }
-    }
-
-# Email settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
-
-# Cache settings
+# Caching (using Redis is recommended for production)
 if os.getenv('REDIS_URL'):
     CACHES = {
         'default': {
@@ -86,8 +62,24 @@ if os.getenv('REDIS_URL'):
         }
     }
 
-# Logging
-LOGGING['handlers']['file']['filename'] = os.path.join(BASE_DIR, 'logs', 'yourplanner.log')
-LOGGING['handlers']['file']['level'] = 'ERROR'
-LOGGING['loggers']['django']['level'] = 'ERROR'
-
+# Logging (adjust as needed)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
