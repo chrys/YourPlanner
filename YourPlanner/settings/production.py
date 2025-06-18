@@ -22,8 +22,8 @@ SECURE_HSTS_PRELOAD = True
 
 # Static & Media Files
 # URLs must include the subpath prefix.
-STATIC_URL = '/yourplanner/static/'
-MEDIA_URL = '/yourplanner/media/'
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
 
 # STATIC_ROOT is where `collectstatic` will place all static files.
 # Your web server (Nginx) should be configured to serve files from this directory.
@@ -36,8 +36,8 @@ MEDIA_ROOT = BASE_DIR.parent / 'media_production'
 
 # Cookie Paths
 # Scope cookies to the application's subpath.
-CSRF_COOKIE_PATH = '/yourplanner/'
-SESSION_COOKIE_PATH = '/yourplanner/'
+CSRF_COOKIE_PATH = '/'
+SESSION_COOKIE_PATH = '/'
 
 # Database Configuration
 # Uses DATABASE_URL environment variable for security.
