@@ -32,12 +32,7 @@ STATIC_ROOT = BASE_DIR.parent / 'staticfiles_production'
 # MEDIA_ROOT is for user-uploaded files.
 MEDIA_ROOT = BASE_DIR.parent / 'media_production'
 
-# Login/Logout URLs
-# These paths should NOT include the /yourplanner prefix.
-# Django's reverse() will add it automatically because of FORCE_SCRIPT_NAME.
-LOGIN_URL = '/users/accounts/login/'
-LOGIN_REDIRECT_URL = '/users/management/'
-LOGOUT_REDIRECT_URL = '/'
+
 
 # Cookie Paths
 # Scope cookies to the application's subpath.
