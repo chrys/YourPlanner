@@ -1,14 +1,15 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Professional, Customer
+from .models import Professional, Customer, Agent
 from labels.models import Label
 from django.utils import timezone 
-
+from orders.models import Order
 
 class RegistrationForm(forms.ModelForm):
     ROLE_CHOICES = (
         ('customer', 'Customer'),
         ('professional', 'Professional'),
+        ('agent', 'Agent'),
     )
     first_name = forms.CharField(max_length=30, required=True)
     last_name = forms.CharField(max_length=30, required=True)
@@ -30,6 +31,12 @@ class RegistrationForm(forms.ModelForm):
         required=True,  # Now always required since only customers can register
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         help_text="Your planned wedding day (must be in the future)."
+    )
+    
+    agency_name = forms.CharField(
+        max_length=200,
+        required=False,
+        help_text="Required for agents"
     )
 
     class Meta:
@@ -54,9 +61,13 @@ class RegistrationForm(forms.ModelForm):
         role = cleaned_data.get('role')
         wedding_day = cleaned_data.get('wedding_day')
         title = cleaned_data.get('title')
+        agency_name = cleaned_data.get('agency_name')
 
         if role == 'professional' and not title:
             self.add_error('title', 'Title is required for professionals.')
+            
+        if role == 'agent' and not agency_name:
+            self.add_error('agency_name', 'Agency name is required for agents.')
 
         if role == 'customer' or Professional.objects.filter(default=True).exists():
             if not wedding_day:
@@ -136,6 +147,44 @@ class CustomerLabelForm(forms.ModelForm):
         model = Customer
         fields = ['labels']
 
+
+class AgentForm(forms.ModelForm):
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.filter(label_type='AGENT'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select labels relevant to this agent profile."
+    )
+
+    class Meta:
+        model = Agent
+        fields = [
+            'agency_name', 'labels'
+        ]
+        widgets = {
+            'agency_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class AgentSelectProfessionalForm(forms.Form):
+    professional = forms.ModelChoiceField(
+        queryset=Professional.objects.all(),
+        required=True,
+        label="Select a Professional",
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['professional'].label_from_instance = lambda obj: obj.title or obj.user.get_full_name() or obj.user.username
+
+class AgentOrderForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['notes', 'currency']
+        widgets = {
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'currency': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 3}),
+        }
 
 class DepositPaymentForm(forms.Form):
     deposit_paid_checkbox = forms.BooleanField(label="I have paid the deposit", required=True)

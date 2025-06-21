@@ -15,6 +15,12 @@ from .views_professional import (
     CustomerBasketView,
     CustomerLabelUpdateView
 )
+from .views_agent import (
+    AgentCreateOrderView,
+    AgentSelectServicesView,
+    AgentFinalizeOrderView,
+    AgentEditOrderView
+)
 
 app_name = 'users' # Added for namespacing
 
@@ -36,9 +42,12 @@ urlpatterns = [
     path('customer-templates/<int:pk>/', CustomerTemplateDetailView.as_view(), name='customer_template_detail'),
     path('my-professional-services/', CustomerProfessionalServicesView.as_view(), name='customer_professional_services'),
 
-    
+    # Agent views
+    path('agent/create-order/', AgentCreateOrderView.as_view(), name='agent_create_order'),
+    path('agent/select-services/', AgentSelectServicesView.as_view(), name='agent_select_services'),
+    path('agent/finalize-order/', AgentFinalizeOrderView.as_view(), name='agent_finalize_order'),
+    path('agent/edit-order/<int:pk>/', AgentEditOrderView.as_view(), name='agent_edit_order'),
 ]
-
 
 urlpatterns += [
     path('accounts/', include('django.contrib.auth.urls')),

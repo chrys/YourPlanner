@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const roleField = document.getElementById('id_role');
     const titleFieldWrapper = document.getElementById('div_id_title');
     const weddingDayWrapper = document.getElementById('div_id_wedding_day');
+    const agencyNameWrapper = document.getElementById('div_id_agency_name');
 
     function toggleFields() {
     if (!roleField) return; // Exit if no role field (default professional case)
@@ -69,10 +70,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const isProfessional = roleField.value === 'professional';
     
     if (titleFieldWrapper) {
-        titleFieldWrapper.style.display = (isProfessional || isAgent) ? '' : 'none';
+        titleFieldWrapper.style.display = (isProfessional) ? '' : 'none';
         const titleInput = document.getElementById('id_title');
         if (titleInput) {
-            titleInput.required = (isProfessional || isAgent);
+            titleInput.required = isProfessional;
         }
     }
     
@@ -81,6 +82,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const weddingDayInput = document.getElementById('id_wedding_day');
         if (weddingDayInput) {
             weddingDayInput.required = isCustomer;
+        }
+    }
+    
+    if (agencyNameWrapper) {
+        agencyNameWrapper.style.display = isAgent ? '' : 'none';
+        const agencyNameInput = document.getElementById('id_agency_name');
+        if (agencyNameInput) {
+            agencyNameInput.required = isAgent;
         }
     }
 }

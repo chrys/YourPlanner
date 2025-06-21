@@ -327,6 +327,40 @@ Example: `Customer: jdoe` (where `jdoe` is the string representation of the user
 
 ---
 
+### Agent
+
+Represents an Agent user profile linked to a User account. Agents are a special type of user that can create orders on behalf of customers. This model extends the built-in Django User model using a One-to-One relationship.
+
+**Fields:**
+
+*   `user`: OneToOneField to `settings.AUTH_USER_MODEL`
+    *   `on_delete=models.CASCADE`: If the associated User account is deleted, the Agent profile is also deleted.
+    *   `primary_key=True`: Uses the User's ID as the primary key for the Agent table.
+    *   `related_name='agent_profile'`: Allows accessing the agent profile via `user.agent_profile`.
+*   `agency_name`: CharField
+    *   `max_length=200`, `blank=True`, `null=True`: The agent's agency name is optional.
+*   `created_at`: DateTimeField
+    *   `auto_now_add=True`: Automatically sets the timestamp when an agent profile is first created.
+*   `updated_at`: DateTimeField
+    *   `auto_now=True`: Automatically updates the timestamp whenever the agent profile is saved.
+
+**Relationships:**
+
+*   One-to-One with `settings.AUTH_USER_MODEL` (Django's built-in User model): Each Agent profile is linked to a single User account.
+*   One-to-Many with `orders.Order`: An agent can create multiple orders.
+
+**`__str__` Method:**
+
+Returns a string identifying the user as an agent.
+Example: `Agent: jdoe` (where `jdoe` is the string representation of the user object).
+
+**Meta:**
+
+*   `verbose_name = "Agent"`
+*   `verbose_name_plural = "Agents"`
+
+---
+
 ### ProfessionalCustomerLink
 
 Represents a link or relationship between a Professional and a Customer. This acts as a many-to-many through table.
@@ -388,4 +422,3 @@ The standard commands to do this are:
     This command applies any unapplied migrations, bringing the database schema in sync with your model definitions.
 
 It's good practice to run `python manage.py makemigrations` after any model change to ensure your schema definition is captured, and then `python manage.py migrate` to apply those changes.
-```

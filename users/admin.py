@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Professional, Customer, ProfessionalCustomerLink
+from .models import Professional, Customer, ProfessionalCustomerLink, Agent
 
 @admin.register(Professional)
 class ProfessionalAdmin(admin.ModelAdmin):
@@ -18,6 +18,14 @@ class ProfessionalAdmin(admin.ModelAdmin):
         if not request.user.is_superuser:
             fields = [f for f in fields if f != 'default']
         return fields
+
+@admin.register(Agent)
+class AgentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'agency_name', 'created_at')
+    search_fields = ('user__username', 'user__email', 'agency_name')
+    list_filter = ('created_at',)
+    date_hierarchy = 'created_at'
+    filter_horizontal = ('labels',)
 
 # Register other models if not already registered
 @admin.register(Customer)
