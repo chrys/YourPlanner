@@ -472,3 +472,4 @@ test-results/.last-run.json
 tests-UI/register-customer.spec.ts
 package-lock.json
 .gitignore
+tests/register-customer.spec.ts
