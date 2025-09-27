@@ -473,3 +473,4 @@ tests-UI/register-customer.spec.ts
 package-lock.json
 .gitignore
 tests/register-customer.spec.ts
+YourPlanner/media/template_images/*
