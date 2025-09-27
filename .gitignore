@@ -474,3 +474,5 @@ package-lock.json
 .gitignore
 tests/register-customer.spec.ts
 YourPlanner/media/template_images/*
+.github/instructions/Ask Context.instructions.md
+requirements.txt
