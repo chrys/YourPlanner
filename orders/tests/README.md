@@ -72,28 +72,5 @@ The test suite covers the following functionality:
 - Updating an item in an order
 - Deleting an item from an order
 
-## Test Case Mapping
 
-Each test method corresponds to a specific test case from the requirements document:
-
-- `test_create_new_order` - Test case orders_#001
-- `test_calculate_total_amount` - Test case orders_#002
-- `test_can_be_cancelled` - Test case orders_#003
-- `test_change_order_status` - Test case orders_#004
-- `test_change_payment_status` - Test case orders_#005
-- `test_create_new_order_item` - Test case orders_#006
-- `test_calculate_final_price` - Test case orders_#007
-- `test_create_order_status_history_entry` - Test case orders_#008
-- `test_create_new_order_using_form` - Test case orders_#009
-- `test_update_order_status_using_form` - Test case orders_#010
-- `test_add_item_to_order_using_form` - Test case orders_#011
-- `test_update_item_in_order_using_form` - Test case orders_#012
-- `test_create_order_view` - Test case orders_#013
-- `test_list_orders_view` - Test case orders_#014
-- `test_order_detail_view` - Test case orders_#015
-- `test_update_order_status_view` - Test case orders_#016
-- `test_cancel_order_view` - Test case orders_#017
-- `test_add_item_to_order_view` - Test case orders_#018
-- `test_update_item_in_order_view` - Test case orders_#019
-- `test_delete_item_from_order_view` - Test case orders_#020
 
