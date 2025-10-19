@@ -1,179 +1,397 @@
 {% extends "core/base.html" %}
-{% load i18n static crispy_forms_tags %}
+{% load i18n static %}
+{% load crispy_forms_tags %} 
+{% block title %}{% if object %}{% trans "Edit Template" %}{% else %}{% trans "Create Template" %}{% endif %}{% endblock title %}
 
-{% block title %}
-    {% if object %}
-        {% trans "Update Template" %} - {{ object.title }}
-    {% else %}
-        {% trans "Create New Package" %}
-    {% endif %}
-{% endblock title %}
+{% block extra_head %}
+    {{ form.media }}
+    {{ image_formset.media }}
+    {{ group_formset.media }}  <!-- CHANGE: Added group formset media -->
+{% endblock extra_head %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>
-        {% if object %}
-            {% trans "Update Template" %}: {{ object.title }}
-        {% else %}
-            {% trans "Create New Package" %}
-        {% endif %}
-    </h2>
+    <h2>{% if object %}{% trans "Edit Template" %}: {{ object.title }}{% else %}{% trans "Create New Template" %}{% endif %}</h2>
 
-    <form method="post" enctype="multipart/form-data">
+    {% if form.errors or image_formset.errors or group_formset.errors %}  <!-- CHANGE: Added group_formset.errors -->
+        <div class="alert alert-danger">
+            <p>{% trans "Please correct the errors below:" %}</p>
+            {{ form.non_field_errors }}
+            {{ image_formset.non_form_errors }}
+            {{ group_formset.non_form_errors }}  <!-- CHANGE: Show group formset errors -->
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="template-form">
         {% csrf_token %}
+
+        <!-- CHANGE: Basic Template Information -->
         <div class="card mb-3">
             <div class="card-header">{% trans "Package Details" %}</div>
             <div class="card-body">
                 {{ form.title|as_crispy_field }}
                 {{ form.description|as_crispy_field }}
                 {{ form.services|as_crispy_field }}
-                {{ form.base_price|as_crispy_field }} <!-- Change: Show base_price -->
-                {{ form.currency|as_crispy_field }} <!-- Change: Show currency -->
-                {{ form.default_guests|as_crispy_field }} <!-- Change: Show default_guests -->
-                {{ form.price_per_additional_guest|as_crispy_field }} <!-- Change: Show price_per_additional_guest -->
+                {{ form.base_price|as_crispy_field }}
+                {{ form.currency|as_crispy_field }}
+                {{ form.default_guests|as_crispy_field }}
+                {{ form.price_per_additional_guest|as_crispy_field }}
             </div>
         </div>
+
+        <!-- CHANGE: Item Groups Section -->
         <div class="card mb-3">
-            <div class="card-header">{% trans "Template Images" %}</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>{% trans "Item Groups" %}</span>
+            </div>
             <div class="card-body">
-                {{ image_formset.management_form }}
-                <div id="image-forms-container">
-                    {% for image_form in image_formset %}
-                        <div class="image-form mb-3 p-3 border rounded">
-                            <h5>{% trans "Image" %} {{ forloop.counter }}</h5>
-                            {% if image_form.instance.pk and image_form.instance.image %}
-                                <div class="mb-2">
-                                    <img src="{{ image_form.instance.image.url }}" alt="{% trans 'Current image' %}" style="max-width: 200px; max-height: 150px; border-radius: 5px;">
-                                </div>
-                            {% endif %}
-                            {{ image_form.image|as_crispy_field }}
-                            <div class="form-check mb-2">
-                                {{ image_form.is_default }}
-                                <label class="form-check-label" for="{{ image_form.is_default.id_for_label }}">
-                                    {% trans "Set as default image" %}
-                                </label>
+                <div class="mb-3">
+                    <label for="id_number_of_groups" class="form-label">{% trans "Number of Item Groups" %}</label>
+                    {{ form.number_of_groups }}
+                    <div class="form-text">{% trans "Specify how many groups of items you want to create" %}</div>
+                </div>
+                <button type="button" id="generate-groups-btn" class="btn btn-outline-primary mt-2">
+                    {% trans "Generate Groups" %}
+                </button> 
+                <div id="item-groups-container">
+                    {{ group_formset.management_form }}
+                    {% for group_form in group_formset %}
+                        <div class="item-group-form card mb-3" data-group-index="{{ forloop.counter0 }}">
+                            <div class="card-header">
+                                <strong>{% trans "Group" %} {{ forloop.counter }}</strong>
+                                {% if group_form.instance.pk %}
+                                    <button type="button" class="btn btn-sm btn-danger float-end delete-group-btn">
+                                        {% trans "Delete Group" %}
+                                    </button>
+                                {% endif %}
                             </div>
-                            {% if image_form.instance.pk %}
-                                <div class="form-check">
-                                    {{ image_form.DELETE }}
-                                    <label class="form-check-label" for="{{ image_form.DELETE.id_for_label }}">
-                                        {% trans "Delete this image" %}
-                                    </label>
+                            <div class="card-body">
+                                {{ group_form.id }}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ group_form.name.label }}</label>
+                                    {{ group_form.name }}
+                                    {% if group_form.name.errors %}
+                                        <div class="text-danger">{{ group_form.name.errors }}</div>
+                                    {% endif %}
                                 </div>
-                            {% endif %}
-                            {% for error in image_form.non_field_errors %}
-                                <div class="alert alert-danger">{{ error }}</div>
-                            {% endfor %}
-                             <!-- Display field-specific errors for image_form -->
-                            {% for field in image_form %}
-                                {% for error in field.errors %}
-                                    <div class="alert alert-danger">{{ field.label }}: {{ error }}</div>
-                                {% endfor %}
-                            {% endfor %}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ group_form.mandatory_count.label }}</label>
+                                    {{ group_form.mandatory_count }}
+                                    <div class="form-text">{{ group_form.mandatory_count.help_text }}</div>
+                                    {% if group_form.mandatory_count.errors %}
+                                        <div class="text-danger">{{ group_form.mandatory_count.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{{ group_form.items.label }}</label>
+                                    <div class="row">
+                                        {% for checkbox in group_form.items %}
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    {{ checkbox.tag }}
+                                                    <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                                        {{ checkbox.choice_label }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="form-text">{{ group_form.items.help_text }}</div>
+                                    {% if group_form.items.errors %}
+                                        <div class="text-danger">{{ group_form.items.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                {{ group_form.DELETE }}
+                            </div>
                         </div>
                     {% endfor %}
+                    <!-- CHANGE: Hidden container with all available items as checkboxes for JS cloning -->
+                    <div id="all-items-checkboxes" class="d-none">
+                        {# CHANGE: Use all_items context variable, which must be provided by the view #}
+                        {% for item in all_items %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="items" value="{{ item.pk }}" id="item-checkbox-{{ item.pk }}">
+                            <label class="form-check-label" for="item-checkbox-{{ item.pk }}">{{ item }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <!-- CHANGE: Add a hidden template for new groups -->
+                    <div class="item-group-form card mb-3 d-none" id="group-form-template">
+                        <div class="card-header">
+                            <strong>Group X</strong>
+                        </div>
+                        <div class="card-body">
+                            <!-- Add empty fields as in your real group form -->
+                            <div class="mb-3">  <!-- CHANGE: group name field stays in hidden template -->
+                                <label class="form-label">Group Name</label>
+                                <input type="text" class="form-control" name="name" value="" />  <!-- CHANGE: JS will rename to groups-{index}-name -->
+                            </div>
+                            <div class="mb-3">  <!-- CHANGE: mandatory count field stays in hidden template -->
+                                <label class="form-label">Mandatory Items Count</label>
+                                <input type="number" class="form-control" name="mandatory_count" value="0" min="0" />  <!-- CHANGE: JS will rename to groups-{index}-mandatory_count -->
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Items</label>
+                                <div class="row items-checkboxes-row">
+                                    <!-- CHANGE: JS will populate checkboxes here from #all-items-checkboxes -->
+                                </div>
+                                <div class="form-text">Select items for this group</div>
+                            </div>
+                            <input type="checkbox" name="DELETE" style="display:none;" />  <!-- CHANGE: JS will rename to groups-{index}-DELETE -->
+                        </div>
+                    </div>
                 </div>
-                <button type="button" id="add-image-form" class="btn btn-outline-secondary btn-sm">{% trans "Add Another Image" %}</button>
             </div>
         </div>
 
-        {% if form.non_field_errors %}
-            {% for error in form.non_field_errors %}
-                <div class="alert alert-danger">{{ error }}</div>
-            {% endfor %}
-        {% endif %}
-        {% if image_formset.non_form_errors %}
-            {% for error in image_formset.non_form_errors %}
-                <div class="alert alert-danger">{{ error }}</div>
-            {% endfor %}
-        {% endif %}
+        <!-- Images Section (unchanged) -->
+        <div class="card mb-3">
+            <div class="card-header">{% trans "Images" %}</div>
+            <div class="card-body">
+                {{ image_formset.management_form }}
+                {% for image_form in image_formset %}
+                    <div class="image-form mb-3 p-3 border rounded">
+                        {{ image_form.id }}
+                        <div class="row">
+                            <div class="col-md-8">
+                                {{ image_form.image|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check mt-4">
+                                    {{ image_form.is_default }}
+                                    <label class="form-check-label" for="{{ image_form.is_default.id_for_label }}">
+                                        {% trans "Set as default image" %}
+                                    </label>
+                                </div>
+                                {% if image_form.instance.pk %}
+                                    <div class="form-check mt-2">
+                                        {{ image_form.DELETE }}
+                                        <label class="form-check-label text-danger" for="{{ image_form.DELETE.id_for_label }}">
+                                            {% trans "Delete this image" %}
+                                        </label>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if image_form.instance.image %}
+                            <div class="mt-2">
+                                <img src="{{ image_form.instance.image.url }}" alt="{% trans 'Current image' %}" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
 
-        <button type="submit" class="btn btn-primary">
-            {% if object %}
-                {% trans "Update Template" %}
-            {% else %}
-                {% trans "Create Template" %}
-            {% endif %}
-        </button>
-        <a href="{% if object %}{% url 'templates:template-detail' pk=object.pk %}{% else %}{% url 'templates:template-list' %}{% endif %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">
+                {% if object %}{% trans "Update Template" %}{% else %}{% trans "Create Template" %}{% endif %}
+            </button>
+            <a href="{% url 'templates:template-list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+        </div>
     </form>
 </div>
 
+<!-- CHANGE: JavaScript to handle dynamic group forms -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const imageFormsContainer = document.getElementById('image-forms-container');
-    const addImageFormButton = document.getElementById('add-image-form');
-    const totalFormsInput = document.querySelector('input[name="images-TOTAL_FORMS"]'); // Corrected prefix
-    const emptyFormTemplate = document.createElement('template');
+    const numberInput = document.getElementById('id_number_of_groups');
+    const groupsContainer = document.getElementById('item-groups-container');
+    const managementForm = document.querySelector('input[name="groups-TOTAL_FORMS"]');
+    const generateBtn = document.getElementById('generate-groups-btn'); // CHANGE: Get the button
+    const allItemsContainer = document.getElementById('all-items-checkboxes'); // CHANGE: Get the items container
+    
+    if (!numberInput || !groupsContainer || !managementForm || !generateBtn) return;  // CHANGE: guard required elements
 
-    // Find the empty form (usually the last one if extra > 0, or create from scratch if needed)
-    // For simplicity, let's assume the last form rendered by formset (if extra=1) is the template
-    // A more robust way is to render an empty form with a specific ID or class in the Django template
-    // and clone that. For now, we'll try to clone the last form.
+    // CHANGE: Get the first existing group form as a template (if it exists)
+    let templateForm = groupsContainer.querySelector('.item-group-form:not(#group-form-template)');
+    
+    function updateGroupForms() {
+        const targetCount = parseInt(numberInput.value) || 0;
+        const existingForms = Array.from(groupsContainer.querySelectorAll('.item-group-form:not(#group-form-template)'));
+        const currentCount = existingForms.length;
 
-    // It's safer to have a template for the empty form.
-    // Let's assume the last form in the formset is the one to copy (if extra >=1)
-    // Or, if we have a hidden template:
-    // let emptyFormHtml = document.getElementById('empty-image-form-template').innerHTML;
+        // CHANGE: Show/hide existing forms based on target
+        existingForms.forEach((form, index) => {
+            if (index < targetCount) {
+                form.style.display = '';
+                // Update the group number in header
+                const header = form.querySelector('.card-header strong');
+                if (header) {
+                    header.textContent = `{% trans "Group" %} ${index + 1}`;
+                }
+            } else {
+                form.style.display = 'none';
+            }
+        });
 
-    // Simplified approach: clone the last form in the formset if available
-    // This relies on `extra=1` in the formset definition.
-    let formIdx = imageFormsContainer.children.length; // Initial number of forms
-
-    if (imageFormsContainer.children.length > 0) {
-         // Create a template from the last form to handle prefixes correctly
-        let lastForm = imageFormsContainer.children[formIdx - 1].cloneNode(true);
-        // Clear values from the cloned form
-        lastForm.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
-        lastForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
-        lastForm.querySelectorAll('input[type="hidden"][id*="id_images-"][name*="-id"]').forEach(input => input.value = ''); // Clear hidden ID for new forms
-        lastForm.querySelectorAll('img').forEach(img => img.remove()); // Remove existing image preview
-        lastForm.querySelectorAll('.alert').forEach(alert => alert.remove()); // Remove error messages
-
-        emptyFormTemplate.innerHTML = lastForm.outerHTML;
-    } else {
-        // Fallback or more complex empty form generation if no initial extra form.
-        // This part would need the exact HTML structure of an image_form.
-        // For now, this will only work if `extra >= 1` in the formset.
-        console.warn("No initial extra form found to use as a template for adding more images.");
-        // You might hide the "Add Another Image" button if this is the case and `extra=0`
-        // addImageFormButton.style.display = 'none';
+        // CHANGE: Add new forms if needed
+        if (targetCount > currentCount) {
+            for (let i = currentCount; i < targetCount; i++) {
+                addNewGroupForm(i);
+            }
+        }
+        
+        // CHANGE: Update management form count to match requested number
+        managementForm.value = targetCount;  // CHANGE: keep TOTAL_FORMS in sync with visible count
     }
 
+    // CHANGE: Populate items into a group's items container from the hidden all-items list
+    function populateItemsCheckboxes(targetForm, index) {
+        const itemsRow = targetForm.querySelector('.items-checkboxes-row');  // CHANGE: container inside group form
+        if (!itemsRow || !allItemsContainer) return;  // CHANGE: nothing to populate if missing
 
-    addImageFormButton.addEventListener('click', function() {
-        if (!emptyFormTemplate.innerHTML && imageFormsContainer.children.length > 0) {
-            // Dynamically create template if not already created
-            let lastForm = imageFormsContainer.children[imageFormsContainer.children.length - 1].cloneNode(true);
-            lastForm.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
-            lastForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
-            lastForm.querySelectorAll('input[type="hidden"][id*="id_images-"][name*="-id"]').forEach(input => input.value = '');
-            lastForm.querySelectorAll('img').forEach(img => img.remove());
-            lastForm.querySelectorAll('.alert').forEach(alert => alert.remove());
-            emptyFormTemplate.innerHTML = lastForm.outerHTML;
+        itemsRow.innerHTML = '';  // CHANGE: clear before inserting
+
+        const sources = allItemsContainer.querySelectorAll('.form-check');
+        sources.forEach((srcDiv) => {
+            const srcInput = srcDiv.querySelector('input[type="checkbox"]');
+            const srcLabel = srcDiv.querySelector('label');
+            if (!srcInput || !srcLabel) return;
+
+            const col = document.createElement('div');
+            col.className = 'col-md-4 mb-2';
+            const formCheck = document.createElement('div');
+            formCheck.className = 'form-check';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.className = 'form-check-input';
+            input.value = srcInput.value;
+            input.name = `groups-${index}-items`;  // CHANGE: formset-compliant name
+            input.id = `id_groups-${index}-items_${srcInput.value}`;  // CHANGE: unique id per item
+
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.setAttribute('for', input.id);
+            label.textContent = srcLabel.textContent;
+
+            formCheck.appendChild(input);
+            formCheck.appendChild(label);
+            col.appendChild(formCheck);
+            itemsRow.appendChild(col);
+        });
+    }
+
+    function addNewGroupForm(index) {
+        // CHANGE: Use the first form as template, or create from scratch
+        if (!templateForm && !allItemsContainer) {
+            console.error('No template form or items found');
+            return;
         }
 
-
-        if (emptyFormTemplate.innerHTML) {
-            let newFormHtml = emptyFormTemplate.innerHTML.replace(/images-\d+-/g, 'images-' + formIdx + '-').replace(/images-__prefix__-/g, 'images-' + formIdx + '-');
-            let newFormDiv = document.createElement('div');
-            newFormDiv.innerHTML = newFormHtml; // This will create a new div with the form inside
-
-            // The actual form content we want is the first child of the parsed HTML
-            let formElementToAdd = newFormDiv.firstChild;
-            if (formElementToAdd) {
-                 // Update heading if any
-                let heading = formElementToAdd.querySelector('h5');
-                if(heading) heading.textContent = `{% trans "Image" %} ${formIdx + 1}`;
-
-                imageFormsContainer.appendChild(formElementToAdd);
-                totalFormsInput.value = parseInt(totalFormsInput.value) + 1;
-                formIdx++;
-            } else {
-                console.error("Could not create new form from template.");
-            }
+        let newForm;
+        if (templateForm) {
+            // Clone existing form with all items
+            newForm = templateForm.cloneNode(true);
         } else {
-            alert("{% trans 'Could not add new image form. Please ensure JavaScript is enabled and page loaded correctly.' %}");
+            // Create new form from hidden template
+            const hiddenTemplate = document.getElementById('group-form-template');
+            if (!hiddenTemplate) return;
+            newForm = hiddenTemplate.cloneNode(true);
+            newForm.classList.remove('d-none');  // CHANGE: make visible
+            newForm.removeAttribute('id');  // CHANGE: remove template id
+            // CHANGE: explicitly set names/ids for hidden-template fields to formset names
+            const nameInput = newForm.querySelector('input[name="name"]');
+            if (nameInput) {
+                nameInput.name = `groups-${index}-name`;  // CHANGE
+                nameInput.id = `id_groups-${index}-name`;  // CHANGE
+                const nameLabel = nameInput.closest('.mb-3')?.querySelector('label.form-label');
+                if (nameLabel) nameLabel.setAttribute('for', nameInput.id);  // CHANGE
+            }
+            const mandatoryInput = newForm.querySelector('input[name="mandatory_count"]');
+            if (mandatoryInput) {
+                mandatoryInput.name = `groups-${index}-mandatory_count`;  // CHANGE
+                mandatoryInput.id = `id_groups-${index}-mandatory_count`;  // CHANGE
+                const mLabel = mandatoryInput.closest('.mb-3')?.querySelector('label.form-label');
+                if (mLabel) mLabel.setAttribute('for', mandatoryInput.id);  // CHANGE
+            }
+            const deleteInput = newForm.querySelector('input[name="DELETE"]');
+            if (deleteInput) {
+                deleteInput.name = `groups-${index}-DELETE`;  // CHANGE
+                deleteInput.id = `id_groups-${index}-DELETE`;  // CHANGE
+            }
+            // CHANGE: populate items checkboxes from hidden source
+            populateItemsCheckboxes(newForm, index);
+        }
+        
+        newForm.setAttribute('data-group-index', index);
+        newForm.setAttribute('data-generated', 'true'); // CHANGE: Mark as generated
+        newForm.style.display = '';
+        
+        // CHANGE: Update all field names and IDs to use the new index
+        const fields = newForm.querySelectorAll('input, select, textarea, label');
+        fields.forEach(field => {
+            // Update name attribute
+            if (field.hasAttribute('name')) {
+                const name = field.getAttribute('name');
+                field.setAttribute('name', name.replace(/groups-\d+/, `groups-${index}`));
+            }
+            
+            // Update id attribute
+            if (field.hasAttribute('id')) {
+                const id = field.getAttribute('id');
+                field.setAttribute('id', id.replace(/groups-\d+/, `groups-${index}`));
+            }
+            
+            // Update for attribute (for labels)
+            if (field.hasAttribute('for')) {
+                const forAttr = field.getAttribute('for');
+                field.setAttribute('for', forAttr.replace(/groups-\d+/, `groups-${index}`));
+            }
+            
+            // CHANGE: Clear values for input fields
+            if (field.tagName === 'INPUT') {
+                if (field.type === 'checkbox') {
+                    field.checked = false;
+                } else if (field.type === 'text' || field.type === 'number') {
+                    if (!field.name.includes('TOTAL_FORMS') && !field.name.includes('INITIAL_FORMS')) {
+                        field.value = field.name.includes('mandatory_count') ? '0' : '';
+                    }
+                } else if (field.type === 'hidden' && !field.name.includes('-id')) {
+                    field.value = '';
+                }
+            } else if (field.tagName === 'TEXTAREA') {
+                field.value = '';
+            }
+        });
+
+        // CHANGE: Update the group header
+        const header = newForm.querySelector('.card-header strong');
+        if (header) {
+            header.textContent = `{% trans "Group" %} ${index + 1}`;
+        }
+
+        // CHANGE: Remove the delete button if it exists (new forms shouldn't have delete for existing items)
+        const deleteBtn = newForm.querySelector('.delete-group-btn');
+        const idField = newForm.querySelector('input[name$="-id"]');
+        if (deleteBtn && (!idField || !idField.value)) {
+            deleteBtn.remove();
+        }
+
+        // CHANGE: Append the new form to the container (before hidden template if it exists)
+        const hiddenTemplate = document.getElementById('group-form-template');
+        if (hiddenTemplate) {
+            groupsContainer.insertBefore(newForm, hiddenTemplate);
+        } else {
+            groupsContainer.appendChild(newForm);
+        }
+    }
+
+    // CHANGE: Only update groups when button is clicked
+    generateBtn.addEventListener('click', updateGroupForms);
+
+    // CHANGE: Handle delete buttons
+    groupsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-group-btn')) {
+            const form = e.target.closest('.item-group-form');
+            const deleteCheckbox = form.querySelector('input[name$="-DELETE"]');
+            if (deleteCheckbox) {
+                deleteCheckbox.checked = true;
+                form.style.display = 'none';
+                const currentValue = parseInt(numberInput.value) || 0;
+                numberInput.value = Math.max(0, currentValue - 1);
+            }
         }
     });
 });

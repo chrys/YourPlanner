@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from users.models import Professional 
-from services.models import Service
+from services.models import Service, Item  # CHANGE: Added Item import
 from decimal import Decimal 
 from django.core.validators import MinValueValidator 
 
@@ -36,7 +36,7 @@ class Template(models.Model):
         _("Additional Guest Price"),
         max_digits=8,
         decimal_places=2,
-        default=Decimal('0.00'),  # Change: Use Decimal instead of float
+        default=Decimal('0.00'),
         help_text=_("Price for each guest above the default number."),
         validators=[MinValueValidator(0)]
     )
@@ -52,9 +52,90 @@ class Template(models.Model):
     def __str__(self):
         return self.title
 
+
+class TemplateItemGroup(models.Model):  # CHANGE: New model for item groups
+    """
+    Represents a group of items within a template.
+    Professional defines how many items from this group are mandatory.
+    """
+    template = models.ForeignKey(
+        Template, 
+        on_delete=models.CASCADE, 
+        related_name='item_groups',
+        verbose_name=_("Template")
+    )
+    name = models.CharField(
+        _("Group Name"), 
+        max_length=200,
+        help_text=_("e.g., 'Main Course', 'Desserts', 'Decorations'")
+    )
+    position = models.PositiveIntegerField(
+        _("Position"),
+        default=0,
+        help_text=_("Display order of this group")
+    )
+    mandatory_count = models.PositiveIntegerField(
+        _("Mandatory Items Count"),
+        default=0,
+        help_text=_("Number of items customer must select from this group (0 = optional)")
+    )
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Template Item Group")
+        verbose_name_plural = _("Template Item Groups")
+        ordering = ['template', 'position', 'name']
+
+    def __str__(self):
+        return f"{self.template.title} - {self.name}"
+
+    def clean(self):
+        # Only validate if the group has been saved and has items
+        if self.pk and self.mandatory_count > self.items.count():  # CHANGE: Only check items if pk exists
+            raise ValidationError({
+                'mandatory_count': _(
+                    "Mandatory count (%(count)d) cannot exceed the number of items in the group (%(total)d)."
+                ) % {'count': self.mandatory_count, 'total': self.items.count()}
+            })
+
+
+class TemplateItemGroupItem(models.Model):  # CHANGE: New model for items in groups
+    """
+    Links specific items to a template item group.
+    """
+    group = models.ForeignKey(
+        TemplateItemGroup,
+        on_delete=models.CASCADE,
+        related_name='items',
+        verbose_name=_("Group")
+    )
+    item = models.ForeignKey(
+        Item,
+        on_delete=models.CASCADE,
+        related_name='template_group_items',
+        verbose_name=_("Item")
+    )
+    position = models.PositiveIntegerField(
+        _("Position"),
+        default=0,
+        help_text=_("Display order within the group")
+    )
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Template Group Item")
+        verbose_name_plural = _("Template Group Items")
+        ordering = ['group', 'position', 'item__title']
+        unique_together = ['group', 'item']  # CHANGE: prevent duplicate items in same group
+
+    def __str__(self):
+        return f"{self.group.name} - {self.item.title}"
+
+
 class TemplateImage(models.Model):
     template = models.ForeignKey(Template, related_name='images', on_delete=models.CASCADE, verbose_name=_("Template"))
-    image = models.ImageField(_("Image"), upload_to='template_images/') # Ensure this is NOT blank=True, null=True
+    image = models.ImageField(_("Image"), upload_to='template_images/')
     is_default = models.BooleanField(_("Default Image"), default=False)
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
