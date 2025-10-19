@@ -3,12 +3,44 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from users.models import Professional 
 from services.models import Service
+from decimal import Decimal 
+from django.core.validators import MinValueValidator 
 
 class Template(models.Model):
     professional = models.ForeignKey(Professional, on_delete=models.CASCADE, related_name='templates', verbose_name=_("Professional"))
     title = models.CharField(_("Title"), max_length=200)
     description = models.TextField(_("Description"), blank=True, null=True)
     services = models.ManyToManyField(Service, related_name='templates', verbose_name=_("Services"), blank=True)
+    
+    base_price = models.DecimalField(
+        _("Base Price"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'), 
+        help_text=_("The starting price for the template package."),
+        validators=[MinValueValidator(0)]
+    )
+    currency = models.CharField(
+        _("Currency"),
+        max_length=3,
+        choices=[('EUR', 'Euro'), ('USD', 'US Dollar'), ('GBP', 'British Pound')],
+        default='EUR',
+        help_text=_("The currency for the template's pricing.")
+    )
+    default_guests = models.PositiveIntegerField(
+        _("Number of Guests"),
+        default=0,
+        help_text=_("The number of guests included in the base price. Users can adjust this.")
+    )
+    price_per_additional_guest = models.DecimalField(
+        _("Additional Guest Price"),
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal('0.00'),  # Change: Use Decimal instead of float
+        help_text=_("Price for each guest above the default number."),
+        validators=[MinValueValidator(0)]
+    )
+    
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 

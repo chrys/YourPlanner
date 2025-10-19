@@ -21,16 +21,18 @@
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-
         <div class="card mb-3">
             <div class="card-header">{% trans "Package Details" %}</div>
             <div class="card-body">
                 {{ form.title|as_crispy_field }}
                 {{ form.description|as_crispy_field }}
                 {{ form.services|as_crispy_field }}
+                {{ form.base_price|as_crispy_field }} <!-- Change: Show base_price -->
+                {{ form.currency|as_crispy_field }} <!-- Change: Show currency -->
+                {{ form.default_guests|as_crispy_field }} <!-- Change: Show default_guests -->
+                {{ form.price_per_additional_guest|as_crispy_field }} <!-- Change: Show price_per_additional_guest -->
             </div>
         </div>
-
         <div class="card mb-3">
             <div class="card-header">{% trans "Template Images" %}</div>
             <div class="card-body">
