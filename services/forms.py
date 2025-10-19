@@ -27,7 +27,7 @@ class ServiceForm(forms.ModelForm):
 class ItemForm(forms.ModelForm):
     image = forms.ImageField(widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'}), help_text="Upload an image for the item (optional).", required=False)
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.filter(label_type='ITEM'), 
+        queryset=Label.objects.filter(label_type='ITEM').order_by('name'), 
         required=False,
         widget=forms.CheckboxSelectMultiple, 
         help_text="Optional labels to categorize this item"
