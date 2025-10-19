@@ -12,7 +12,11 @@ class ServiceCategory(TimeStampedModel):
     Categories for organizing services.
     """
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True, help_text="Optional description of this category")
+    description = models.TextField(
+        blank=True, 
+        null=True, 
+        default=None,
+        help_text="Optional description of this category")
     slug = models.SlugField(max_length=100, unique=True)
     
     def __str__(self):
@@ -23,7 +27,7 @@ class ServiceCategory(TimeStampedModel):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
     
-    class Meta:
+    class Meta(TimeStampedModel.Meta):  # CHANGED: Explicitly inherit from parent Meta
         verbose_name = "Service Category"
         verbose_name_plural = "Service Categories"
         ordering = ['name']
@@ -95,7 +99,7 @@ class Service(TimeStampedModel):
         # This is a placeholder - would need a Review model to implement fully
         return 0.0
 
-    class Meta:
+    class Meta(TimeStampedModel.Meta):  # CHANGED: Explicitly inherit from parent Meta
         verbose_name = "Service"
         verbose_name_plural = "Services"
         ordering = ['professional', 'title']
@@ -181,7 +185,7 @@ class Item(TimeStampedModel):
         # If stock is 0, it means unlimited or not applicable
         return self.stock > 0 or self.stock == 0
 
-    class Meta:
+    class Meta(TimeStampedModel.Meta):  # CHANGED: Explicitly inherit from parent Meta
         verbose_name = "Item"
         verbose_name_plural = "Items"
         ordering = ['service', 'position', 'title']
@@ -297,7 +301,7 @@ class Price(TimeStampedModel):
             return self.amount - discount
         return self.amount
 
-    class Meta:
+    class Meta(TimeStampedModel.Meta):  # CHANGED: Explicitly inherit from parent Meta
         verbose_name = "Price"
         verbose_name_plural = "Prices"
         ordering = ['item', 'amount']
