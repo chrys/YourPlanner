@@ -1,0 +1,97 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Select Services and Items" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="card-title mb-4">{% trans "Select Services and Items" %}</h2>
+
+            {% include "_messages.html" %}
+
+            <p class="text-muted mb-4">
+                {% trans "Professional:" %} <strong>{{ professional }}</strong>
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if services %}
+                    {% for service in services %}
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">{{ service.title }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">{{ service.description }}</p>
+                                
+                                {% if service.items.all %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>{% trans "Item" %}</th>
+                                                    <th>{% trans "Description" %}</th>
+                                                    <th>{% trans "Price" %}</th>
+                                                    <th>{% trans "Quantity" %}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in service.items.all %}
+                                                    {% if item.prices.filter.exists %}
+                                                        <tr>
+                                                            <td>{{ item.title }}</td>
+                                                            <td>{{ item.description }}</td>
+                                                            <td>
+                                                                {% for price in item.prices.all %}
+                                                                    {% if price.is_active %}
+                                                                        {{ price.amount }} {{ price.currency }} ({{ price.get_frequency_display }})
+                                                                        {% if not forloop.last %}<br>{% endif %}
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" name="item_{{ item.pk }}" 
+                                                                    min="0" max="{{ item.max_quantity|default:99 }}" 
+                                                                    value="0" class="form-control" style="width: 80px;">
+                                                            </td>
+                                                        </tr>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-info">
+                                        {% trans "No items available for this service." %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'users:agent_create_order' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> {% trans "Back to Professional Selection" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            {% trans "Next" %} <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        {% trans "This professional has no active services." %}
+                    </div>
+                    <a href="{% url 'users:agent_create_order' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> {% trans "Back to Professional Selection" %}
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

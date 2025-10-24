@@ -135,7 +135,7 @@ class Customer(TimeStampedModel):
         """
         if self.preferred_currency and len(self.preferred_currency) != 3:
             raise ValidationError({'preferred_currency': 'Currency code must be 3 characters'})
-    
+        
         if self.wedding_day and self.wedding_day <= timezone.now().date():
             raise ValidationError({'wedding_day': 'The wedding day must be in the future.'})
         
@@ -194,6 +194,40 @@ class Customer(TimeStampedModel):
         verbose_name_plural = "Customers"
         indexes = [
             models.Index(fields=['company_name']),
+        ]
+
+class Agent(TimeStampedModel):
+    """ Represents an Agent user profile linked to a User account. """
+    
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        primary_key=True, # Use the user's ID as the primary key
+        related_name='agent_profile' # user.agent_profile
+    )
+    agency_name = models.CharField(max_length=200, blank=True, null=True)
+    labels = models.ManyToManyField(
+        'labels.Label',
+        blank=True,
+        related_name='agents',
+        help_text="Optional labels to categorize this agent"
+    )
+    # created_at and updated_at are inherited from TimeStampedModel
+
+    def __str__(self):
+        return f"Agent: {self.user}"
+    
+    def clean(self):
+        """
+        Validate agent data.
+        """
+        pass  # Add any agent-specific validation here
+    
+    class Meta:
+        verbose_name = "Agent"
+        verbose_name_plural = "Agents"
+        indexes = [
+            models.Index(fields=['agency_name']),
         ]
 
 class ProfessionalCustomerLink(TimeStampedModel):

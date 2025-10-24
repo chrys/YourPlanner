@@ -29,6 +29,14 @@ class Order(TimeStampedModel):
         null=True,
         blank=True,
     )
+    agent = models.ForeignKey(
+        'users.Agent', # String notation
+        on_delete=models.PROTECT, # Don't delete orders if agent deleted
+        related_name='agent_orders', # agent.agent_orders.all()
+        null=True,
+        blank=True,
+        help_text="Agent who created this order, if applicable"
+    )
     order_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(
         max_length=15,
@@ -56,8 +64,18 @@ class Order(TimeStampedModel):
     # created_at and updated_at are inherited from TimeStampedModel
 
     def __str__(self):
-        return f"Order #{self.pk} by {self.customer} on {self.order_date.strftime('%Y-%m-%d')}"
+        creator = self.agent if self.agent else self.customer
+        return f"Order #{self.pk} by {creator} on {self.order_date.strftime('%Y-%m-%d')}"
 
+    def clean(self):
+        """
+        Validate that either customer or agent is set, but not both.
+        """
+        if self.customer and self.agent:
+            raise models.ValidationError("An order cannot have both a customer and an agent.")
+        if not self.customer and not self.agent:
+            raise models.ValidationError("An order must have either a customer or an agent.")
+        
     def calculate_total(self):
         from django.db.models import F, Sum, DecimalField, ExpressionWrapper
         total = self.items.aggregate(  # type: ignore[attr-defined]  # Changed: Added type ignore comment for dynamic Django reverse relation

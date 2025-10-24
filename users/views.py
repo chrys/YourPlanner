@@ -1,27 +1,32 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views import View
+from django.views.generic import CreateView, UpdateView, ListView, DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.auth import login
+from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.utils.safestring import mark_safe
-# from django.core.exceptions import ValidationError # Not used
-from django.db import transaction
-from django.contrib.auth import login
 from django.utils.html import escape
-from django.urls import reverse, reverse_lazy
-from django.http import HttpResponseRedirect, Http404
-from django.views.generic import CreateView, View, TemplateView, FormView, ListView, DetailView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.shortcuts import get_object_or_404 # Though DetailView handles its own 404
+from django.db import transaction
+from django.http import HttpResponseRedirect, JsonResponse, Http404
+from django.core.exceptions import PermissionDenied
+from django.utils import timezone
+from django.db.models import Q, Count, Sum, F, Value, CharField
+from django.db.models.functions import Concat
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
 from django.templatetags.static import static # For placeholder image URL
 import json # For serializing data for Vue
-
-from .models import Professional, Customer, ProfessionalCustomerLink
-from templates.models import Template, TemplateImage # For CustomerTemplateListView
-from orders.models import Order, OrderItem
-from services.models import Price, Service # Needed for finding active price for an item
 # from django import forms # Not used directly in views.py if forms are in forms.py
 from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm
 from labels.models import Label
-
+from .models import Professional, Customer, ProfessionalCustomerLink, Agent
+from templates.models import Template, TemplateImage # For CustomerTemplateListView
+from orders.models import Order, OrderItem
+from services.models import Price, Service # Needed for finding active price for an item
 
 # --- Mixins ---
 class CustomerRequiredMixin(UserPassesTestMixin):
@@ -141,6 +146,11 @@ class UserRegistrationView(CreateView):
                             user=user,
                             wedding_day=form.cleaned_data['wedding_day']
                         )
+                    elif form.cleaned_data['role'] == 'agent':
+                        Agent.objects.create(
+                            user=user,
+                            agency_name=form.cleaned_data['agency_name']
+                        )
                     else:
                         Professional.objects.create(
                             user=user,
@@ -160,6 +170,20 @@ class UserRegistrationView(CreateView):
 class UserManagementView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user = request.user
+        
+        # Check if user is an agent
+        try:
+            agent = user.agent_profile
+            # User is an agent, show agent dashboard
+            orders = Order.objects.filter(agent=agent).order_by('-order_date')
+            return render(request, 'users/agent_dashboard.html', {
+                'agent': agent,
+                'orders': orders,
+                'page_title': "Agent Dashboard"
+            })
+        except Agent.DoesNotExist:
+            pass  # Not an agent, continue with other checks
+        
         try:
             customer = user.customer_profile
         except Customer.DoesNotExist: # User is not a customer (could be Professional or Admin without CustomerProfile)
