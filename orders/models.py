@@ -60,7 +60,7 @@ class Order(TimeStampedModel):
 
     def calculate_total(self):
         from django.db.models import F, Sum, DecimalField, ExpressionWrapper
-        total = self.items.aggregate(
+        total = self.items.aggregate(  # type: ignore[attr-defined]  # Changed: Added type ignore comment for dynamic Django reverse relation
             total=Sum(
                 ExpressionWrapper(
                     F('quantity') * F('price_amount_at_order'), # This correctly uses pre-discount amount
@@ -86,7 +86,7 @@ class Order(TimeStampedModel):
         """
         return self.status in [self.StatusChoices.PENDING, self.StatusChoices.CONFIRMED]
 
-    class Meta:
+    class Meta:  # type: ignore[misc]  # Changed: Added type ignore for Django Meta override pattern
         verbose_name = "Order"
         verbose_name_plural = "Orders"
         ordering = ['-order_date']
@@ -181,7 +181,8 @@ class OrderItem(TimeStampedModel):
     # No updated_at needed typically for line items once created?
 
     def __str__(self):
-        return f"{self.quantity} x {self.item.title} in Order #{self.order.pk}"
+        item_title = self.item.title if self.item else "No Item"  # Changed: Added null check for item
+        return f"{self.quantity} x {item_title} in Order #{self.order.pk}"  # Changed: Use item_title variable
 
     def save(self, *args, **kwargs):
         # Automatically capture price and related entity details when the item is first added
@@ -192,11 +193,11 @@ class OrderItem(TimeStampedModel):
             
             # Populate related item, service, and professional if not already set
             # This makes the model more robust, complementing the view logic.
-            if not self.item_id and self.price.item_id: # Check item_id to avoid unnecessary DB hits if item is already set
+            if not self.item and self.price.item: # Changed: Use field name instead of item_id
                 self.item = self.price.item
-            if not self.service_id and self.price.item and self.price.item.service_id:
+            if not self.service and self.price.item and self.price.item.service: # Changed: Use field name instead of service_id
                 self.service = self.price.item.service
-            if not self.professional_id and self.price.item and self.price.item.service and self.price.item.service.professional_id:
+            if not self.professional and self.price.item and self.price.item.service and self.price.item.service.professional: # Changed: Use field name instead of professional_id
                 self.professional = self.price.item.service.professional
                 
         super().save(*args, **kwargs)
@@ -219,7 +220,7 @@ class OrderItem(TimeStampedModel):
         item_total = self.quantity * self.price_amount_at_order
         return max(Decimal('0.00'), item_total - self.discount_amount)
 
-    class Meta:
+    class Meta:  # type: ignore[misc]  # Changed: Added type ignore for Django Meta override pattern
         verbose_name = "Order Item"
         verbose_name_plural = "Order Items"
         ordering = ['order', 'position', 'created_at']
@@ -260,7 +261,7 @@ class OrderStatusHistory(TimeStampedModel):
     def __str__(self):
         return f"Order #{self.order.pk} status changed from {self.old_status or 'None'} to {self.new_status}"
     
-    class Meta:
+    class Meta:  # type: ignore[misc]  # Changed: Added type ignore for Django Meta override pattern
         verbose_name = "Order Status History"
         verbose_name_plural = "Order Status Histories"
         ordering = ['-created_at']

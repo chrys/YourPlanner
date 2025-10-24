@@ -1,0 +1,13 @@
+from django.urls import path  # [added]
+from . import api  # [added]
+
+urlpatterns = [  # [added]
+    path('basket', api.basket_get, name='api_basket_get'),  # [added]
+    path('basket/template', api.template_post, name='api_template_post'),  # [added]
+    path('basket/template/guests', api.template_guests_patch, name='api_template_guests_patch'),  # [added]
+    path('basket/services', api.services_post, name='api_services_post'),  # [added]
+    path('basket/services/<int:service_id>/items/<int:item_id>', api.service_item_patch, name='api_service_item_patch'),  # [added]
+    path('basket/items', api.items_post, name='api_items_post'),  # [added]
+    path('basket/items/<int:item_id>', api.item_patch, name='api_item_patch'),  # [added]
+    path('basket/verify', api.verify_post, name='api_verify_post'),  # [added]
+]  # [added]
