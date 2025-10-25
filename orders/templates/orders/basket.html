@@ -1,6 +1,7 @@
-{% extends "core/base.html" %} 
+{% extends "core/base.html" %}
 {% load static %}
 {% load i18n %}
+
 {% block title %}{{ page_title|default:"My Basket" }}{% endblock %}
 
 {% block content %}
@@ -12,7 +13,7 @@
         <div class="card-body p-4">
             {% include "_messages.html" %}
 
-            {% if order and order_items %}
+            {% if order %}  <!-- Check if order exists -->
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <p><strong>{% trans "Order ID" %}:</strong> {{ order.pk_formatted }}</p>
@@ -27,57 +28,160 @@
                     </div>
                 </div>
 
-                <div class="table-responsive mb-4">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">{% trans "Service" %}</th>
-                                <th scope="col">{% trans "Item" %}</th>
-                                <th scope="col" class="text-center">{% trans "Quantity" %}</th>
-                                <th scope="col" class="text-end">{% trans "Unit Price" %}</th>
-                                <th scope="col" class="text-end">{% trans "Subtotal" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(order_item, idx) in vueOrderItems" :key="order_item.id">
-                                <td>[[ idx + 1 ]]</td>
-                                <td>[[ order_item.service_title ]]</td>
-                                <td>[[ order_item.item_title ]]</td>
-                                <td class="text-center">[[ order_item.quantity ]]</td>
-                                <td class="text-end">[[ order_item.unit_price ]] [[ order_item.currency ]]</td>
-                                <td class="text-end">[[ order_item.subtotal ]] [[ order_item.currency ]]</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="row justify-content-end">
-                    <div class="col-md-5 col-lg-4">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="text-muted">{% trans "Subtotal (calculated)" %}:</span>
-                            <span>[[ calculatedSubtotal ]] [[ vueCurrency ]]</span>
+                <!-- Display Template as a locked snapshot (not editable items) -->
+                {% if order.template %}  <!-- Check if template exists -->
+                <div class="card mb-4 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-box"></i> {% trans "Package" %}: {{ order.template.title }}
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Base Price:" %}</strong> {{ order.template.base_price|floatformat:2 }} {{ order.currency }}</p>
+                                <p><strong>{% trans "Guests:" %}</strong> {{ order.template_guest_count }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Package Price:" %}</strong></p>
+                                <p class="h5 text-primary">{{ order.template_total_amount|floatformat:2 }} {{ order.currency }}</p>
+                            </div>
                         </div>
-                        {# Example VAT, if applicable, can be calculated or displayed if part of order total #}
-                        {# <div class="d-flex justify-content-between mb-1"> #}
-                        {# <span class="text-muted">VAT (if any):</span> #}
-                        {# <span>[[ calculatedVAT ]] [[ vueCurrency ]]</span> #}
-                        {# </div> #}
-                        <hr>
-                        <div class="d-flex justify-content-between h5 fw-bold">
-                            <span>{% trans "Order Total" %}:</span>
-                            <span>{{ order.total_amount|floatformat:2 }} {{ order_items.0.price.currency|default:order.currency_display_symbol }}</span>
+                        
+                        <!-- Show included services (locked, not editable) -->
+                        <div class="mt-3">
+                            <h5>{% trans "Included Services & Items" %}</h5>
+                            <ul class="list-group list-group-flush">
+                                {% for service in order.template.services.all %}  <!-- Loop through template services -->
+                                    <li class="list-group-item">
+                                        <strong>{{ service.title }}</strong>
+                                        {% if service.items.all %}  <!-- Show items within each service -->
+                                            <ul class="list-unstyled ms-3 mt-2">
+                                                {% for item in service.items.all %}
+                                                    <li><small>• {{ item.title }}</small></li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Action buttons for template -->
+                        <div class="mt-3 pt-2 border-top">
+                            <button type="button" class="btn btn-sm btn-outline-info" id="adjust-guests-btn-{{ order.pk }}" data-bs-toggle="collapse" data-bs-target="#adjust-guests-form-{{ order.pk }}" aria-expanded="false" aria-controls="adjust-guests-form-{{ order.pk }}">  <!-- Added id for JS targeting and collapse toggle -->
+                                <i class="fas fa-users"></i> {% trans "Adjust Guests" %}
+                            </button>
+                            
+                            <form method="post" action="{% url 'orders:remove_template' %}" class="d-inline ms-2">  <!-- FIX: Point to basket namespace wrapper as per routing change -->
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i> {% trans "Remove Package" %}
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Adjust guests form (collapsed) - ID must match data-bs-target -->
+                         <div class="collapse mt-3" id="adjust-guests-form-{{ order.pk }}">  <!-- Unique ID with order.pk for collapse targeting -->
+                            <div class="card card-body bg-light">
+                                <form method="post" action="{% url 'orders:update_template_guests' pk=order.pk %}" id="guest-form-{{ order.pk }}" class="guest-update-form">  <!-- FIX: Correct malformed Django URL tag -->
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label for="guest-count-{{ order.pk }}" class="form-label">{% trans "Number of Guests" %}</label>  <!-- FIX: Added label for clarity -->
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="guest-count-{{ order.pk }}" name="guest_count" min="{{ order.template.default_guests }}" value="{{ order.template_guest_count }}" required>  <!-- FIX: Moved all attributes on single line to prevent HTML rendering issues -->
+                                            <button type="submit" class="btn btn-primary">{% trans "Update" %}</button>  <!-- FIX: Made button inline with input -->
+                                        </div>
+                                        <small class="form-text text-muted d-block mt-2">
+                                            {% blocktrans with price=order.template.price_per_additional_guest currency=order.currency %}Additional guests: {{ price }} {{ currency }} each{% endblocktrans %}
+                                        </small>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% else %}  <!-- No template case -->
+                    <div class="alert alert-info">
+                        {% trans "No package selected yet. " %}<a href="{% url 'users:customer_template_list' %}">{% trans "Browse packages" %}</a>
+                    </div>
+                {% endif %}
 
-                <div class="d-flex justify-content-end mt-4 gap-2">
-                    <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn basket-btn-vue-2">{% trans "Update Items" %}</a>
-                    <button type="button" class="btn btn-secondary" @click="printPage"><i class="fas fa-print me-1"></i> {% trans "Print" %}</button>
-                    {# Add a 'Proceed to Checkout' button if applicable #}
-                    {# <a href="#" class="btn btn-success">Proceed to Checkout</a> #}
+                <!-- Display add-on items (only these are editable) -->
+                {% if order.items.exists %}  <!-- Check if items exist -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4 class="mb-0">{% trans "Add-On Items" %}</h4>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th scope="col">{% trans "Service" %}</th>
+                                        <th scope="col">{% trans "Item" %}</th>
+                                        <th scope="col" class="text-center">{% trans "Quantity" %}</th>
+                                        <th scope="col" class="text-end">{% trans "Unit Price" %}</th>
+                                        <th scope="col" class="text-end">{% trans "Subtotal" %}</th>
+                                        <th scope="col" class="text-center">{% trans "Actions" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order.items.all %}  <!-- Loop through add-on items only -->
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ item.service.title }}</td>
+                                            <td>{{ item.item.title }}</td>
+                                            <td class="text-center">{{ item.quantity }}</td>
+                                            <td class="text-end">{{ item.price_amount_at_order|floatformat:2 }} {{ item.price_currency_at_order }}</td>
+                                            <td class="text-end">{{ item.subtotal_before_discount|floatformat:2 }} {{ item.price_currency_at_order }}</td>
+                                            <td class="text-center">
+                                                <a href="{% url 'orders:orderitem_update' order_pk=order.pk item_pk=item.pk %}" class="btn btn-sm btn-outline-warning">
+                                                    <i class="fas fa-edit"></i> {% trans "Edit" %}
+                                                </a>
+                                                <a href="{% url 'orders:orderitem_delete' order_pk=order.pk item_pk=item.pk %}" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i> {% trans "Remove" %}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            {% else %}
+                {% endif %}
+
+                <!-- Order total summary -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {% if order.template_total_amount %}  <!-- Display template total if exists -->
+                                    <p>{% trans "Package Total:" %} <strong>{{ order.template_total_amount|floatformat:2 }} {{ order.currency }}</strong></p>
+                                {% endif %}
+                                {% if order.items.exists %}  <!-- Display add-ons total if items exist -->
+                                    <p>{% trans "Items Total:" %} <strong id="addon-total">0.00</strong> {{ order.currency }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <h4>{% trans "Grand Total:" %} <span class="text-primary">{{ order.total_amount|floatformat:2 }} {{ order.currency }}</span></h4>
+                            </div>
+                        </div>
+                        
+                        <!-- Action buttons -->
+                        <div class="d-flex justify-content-end mt-4 gap-2">
+                            <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn basket-btn-vue-2">
+                                <i class="fas fa-plus"></i> {% trans "Add More Items" %}
+                            </a>
+                            <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-success">
+                                <i class="fas fa-check"></i> {% trans "Review Order" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}  <!-- No order exists -->
                 <div class="alert alert-info" role="alert">
                     {% trans "Your basket is currently empty." %}
                     {% if request.user.customer_profile %}
@@ -91,97 +195,135 @@
 </main>
 
 <script>
-const { createApp, ref, computed, onMounted } = Vue;
-
-createApp({
-    delimiters: ['[[', ']]'],
-    setup() {
-        const vueOrderItems = ref([]);
-        const vueOrderTotal = ref(0);
-        const vueCurrency = ref("{{ order_items.0.price.currency|default:'USD'|escapejs }}"); // Default currency from first item or USD
-
-        onMounted(() => {
-            vueOrderItems.value = [
-                {% for item in order_items %}
-                {
-                    id: {{ item.pk }},
-                    item_title: "{{ item.price.item.title|escapejs }}",
-                    service_title: "{{ item.price.item.service.title|escapejs }}",
-                    quantity: {{ item.quantity }},
-                    // Use price_at_purchase if available and reliable, else current price.amount
-                    unit_price: parseFloat("{{ item.price_at_purchase|default:item.price.amount|floatformat:2 }}").toFixed(2),
-                    currency: "{{ item.price.currency|escapejs }}",
-                    subtotal: ({{ item.quantity }} * parseFloat("{{ item.price_at_purchase|default:item.price.amount|floatformat:2 }}")).toFixed(2)
-                }{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ];
-            vueOrderTotal.value = parseFloat("{{ order.total_amount|default:0|floatformat:2 }}");
+    // Initialize Bootstrap collapse manually and handle form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        // Find all guest update forms
+        const guestForms = document.querySelectorAll('.guest-update-form');
+        
+        // Fallback: Toggle Adjust Guests collapse when Bootstrap JS isn't loaded
+        const adjustButtons = document.querySelectorAll('[id^="adjust-guests-btn-"]');
+        adjustButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (typeof bootstrap === 'undefined' || !bootstrap.Collapse) {  // FIX: Provide manual toggle when Bootstrap JS missing
+                    const target = btn.getAttribute('data-bs-target');
+                    const el = target ? document.querySelector(target) : null;
+                    if (el) {
+                        const isShown = el.classList.contains('show') || el.style.display === 'block';
+                        el.classList.toggle('show', !isShown);
+                        el.style.display = isShown ? 'none' : 'block';
+                        e.preventDefault();
+                    }
+                }
+            });
         });
-
-        const calculatedSubtotal = computed(() => {
-            return vueOrderItems.value.reduce((sum, item) => sum + (parseFloat(item.unit_price) * item.quantity), 0).toFixed(2);
+        
+        guestForms.forEach(form => {
+            // Get the collapse element for this form
+            const collapseId = form.id.replace('guest-form-', 'adjust-guests-form-');
+            const collapseElement = document.getElementById(collapseId);
+            
+            if (collapseElement) {
+                // Initialize Bootstrap collapse if available
+                if (typeof bootstrap !== 'undefined' && bootstrap.Collapse) {  // FIX: Guard against missing Bootstrap JS
+                    const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                        toggle: false  // Don't toggle on init
+                    });
+                }
+                
+                // Handle form submission - show loading state
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();  // Prevent default submission
+                    
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{% trans "Updating..." %}';  // Show loading state
+                    submitBtn.disabled = true;  // Disable button
+                    
+                    // Submit form via fetch for better UX
+                    fetch(form.action, {  // FIX: Ensure same-origin credentials are sent for CSRF-protected POST
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        // Reload page to show updated values
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);  // Log error to console
+                        alert('{% trans "An error occurred. Please try again." %}');  // Show error message
+                        submitBtn.innerHTML = originalText;  // Restore button
+                        submitBtn.disabled = false;  // Re-enable button
+                    });
+                });
+            }
         });
-
-        // Example VAT calculation if needed for display, assuming total_amount might be pre-tax or post-tax
-        // const calculatedVAT = computed(() => (calculatedSubtotal.value * 0.10).toFixed(2));
-
-        function printPage() {
-            window.print();
+        
+        // Calculate add-on items total
+        const addonTotal = document.getElementById('addon-total');
+        if (addonTotal) {
+            let total = 0;
+            const rows = document.querySelectorAll('table tbody tr');
+            rows.forEach(row => {
+                const subtotalCell = row.querySelector('td:nth-child(6)');
+                if (subtotalCell) {
+                    const amount = parseFloat(subtotalCell.textContent.replace(/[^0-9.-]+/g, ''));
+                    total += isNaN(amount) ? 0 : amount;
+                }
+            });
+            addonTotal.textContent = total.toFixed(2);
         }
-
-        return {
-            vueOrderItems,
-            vueOrderTotal,
-            vueCurrency,
-            calculatedSubtotal,
-            // calculatedVAT,
-            printPage
-        };
-    }
-}).mount('#basket-app');
+    });
 </script>
 
 <style>
-/* Renamed to avoid conflicts if .basket-btn is global */
 .basket-btn-vue-2 {
     background: #e88ea1;
     color: #fff;
     border: none;
-    padding: 0.5rem 1rem; /* Adjusted padding */
-    border-radius: .25rem; /* Bootstrap's default border-radius */
+    padding: 0.5rem 1rem;
+    border-radius: .25rem;
     font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
-    font-weight: 600; /* Adjusted font-weight */
-    display: inline-flex; /* Changed to inline-flex */
+    font-weight: 600;
+    display: inline-flex;
     align-items: center;
     text-decoration: none;
     justify-content: center;
 }
+
 .basket-btn-vue-2:hover {
     background: #fff;
     color: #e88ea1;
     border: 1px solid #e88ea1;
 }
-/* Ensure table looks good with Bootstrap */
+
 .table {
-    margin-bottom: 0; /* Remove default bottom margin if card body has padding */
+    margin-bottom: 0;
 }
+
 @media print {
-    .navbar, .footer, .btn, .alert-link { /* More comprehensive hide list for printing */
+    .navbar, .footer, .btn, .alert-link {
         display: none !important;
     }
+    
     #basket-app.card {
         box-shadow: none !important;
         border: none !important;
     }
+    
     body {
         background: #fff !important;
-        padding-top: 0 !important; /* Remove padding if any from base layout */
+        padding-top: 0 !important;
     }
+    
     .card-header {
-        background-color: #fff !important; /* Ensure header is white for print */
-        border-bottom: 1px solid #dee2e6 !important; /* Keep a light border */
+        background-color: #fff !important;
+        border-bottom: 1px solid #dee2e6 !important;
     }
 }
 </style>
