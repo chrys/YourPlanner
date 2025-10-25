@@ -147,18 +147,10 @@
 
                     <!-- CHANGE: Add to order checkbox -->
                     <div class="template-quantity-control mt-4">
-                        <label :for="'template_quantity_' + template.id" class="form-label">{% trans "Add this package to order:" %}</label>
-                        <input type="number"
-                               :id="'template_quantity_' + template.id"
+                        <!-- CHANGE: Hidden input set to 1 for automatic package selection -->
+                        <input type="hidden"
                                :name="'quantity_' + template.id"
-                               min="0"
-                               max="1"
-                               class="form-control"
-                               style="width: 100px;"
-                               v-model.number="quantities[template.id]"
-                               :disabled="!selectedTemplates.includes(template.id)"
-                               @input="validateTemplateQuantity(template.id)">
-                        <small class="text-muted">{% trans "(Check to add once)" %}</small>
+                               value="1">
                         <!-- CHANGE: Hidden input to submit guest count with form -->
                         <input type="hidden"
                                :name="'guest_count_' + template.id"
@@ -197,7 +189,7 @@ window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
 
 <script>
-const { createApp, ref, onMounted } = Vue;
+const { createApp, ref, onMounted, watch } = Vue;  // CHANGE: Import watch function
 
 createApp({
     delimiters: ['[[', ']]'],
@@ -231,8 +223,21 @@ createApp({
             templatesData.value.forEach(template => {
                 templateGuests.value[template.id] = template.default_guests;
                 calculateTemplatePrice(template);
+                // CHANGE: Initialize quantity to 0, will be set to 1 when checkbox is checked
+                quantities.value[template.id] = 0;
             });
         });
+        
+        // CHANGE: Watch for template selection changes and auto-set quantity to 1
+        watch(selectedTemplates, (newSelected) => {
+            templatesData.value.forEach(template => {
+                if (newSelected.includes(template.id)) {
+                    quantities.value[template.id] = 1;  // Auto-set to 1 when selected
+                } else {
+                    quantities.value[template.id] = 0;  // Set to 0 when deselected
+                }
+            });
+        }, { deep: true });
 
         function validateQuantity(priceId) {
             if (quantities.value[priceId] < 0 || isNaN(quantities.value[priceId])) {
