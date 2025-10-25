@@ -15,7 +15,7 @@ from django.templatetags.static import static # For placeholder image URL
 import json # For serializing data for Vue
 
 from .models import Professional, Customer, ProfessionalCustomerLink
-from templates.models import Template, TemplateImage # For CustomerTemplateListView
+from packages.models import Template, TemplateImage # For CustomerTemplateListView
 from orders.models import Order, OrderItem
 from services.models import Price, Service # Needed for finding active price for an item
 # from django import forms # Not used directly in views.py if forms are in forms.py

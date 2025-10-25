@@ -11,7 +11,7 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('services/', include('services.urls')),
     path('orders/', include('orders.urls')),
-    path('templates/', include('templates.urls', namespace='templates')), 
+    path('packages/', include('packages.urls', namespace='packages')),
     path('config/', include('configuration.urls', namespace='configuration')),
     #path('accounts/', include('django.contrib.auth.urls')),
     path('summernote/', include('django_summernote.urls')),

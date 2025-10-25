@@ -122,7 +122,8 @@ class TemplateItemGroupItem(models.Model):  # CHANGE: New model for items in gro
         help_text=_("Display order within the group")
     )
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
-
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)  # CHANGE: Added missing updated_at field
+    
     class Meta:
         verbose_name = _("Template Group Item")
         verbose_name_plural = _("Template Group Items")

@@ -6,15 +6,15 @@ import django.db.models.deletion  # [added]
 class Migration(migrations.Migration):  # [added]
 
     dependencies = [  # [added]
-        ('templates', '0001_initial'),  # [added] Assumes templates app has initial migration
-        ('orders', '0002_order_unique_pending_order_per_customer'),  # [added]
+        ('orders', '0002_order_unique_pending_order_per_customer'),
+        ('packages', '0001_initial'),
     ]
 
     operations = [  # [added]
         migrations.AddField(  # [added]
             model_name='order',  # [added]
             name='template',  # [added]
-            field=models.ForeignKey(null=True, blank=True, on_delete=django.db.models.deletion.PROTECT, related_name='orders', to='templates.template'),  # [added]
+            field=models.ForeignKey(null=True, blank=True, on_delete=django.db.models.deletion.PROTECT, related_name='orders', to='packages.template'),  # [added]
         ),
         migrations.AddField(  # [added]
             model_name='order',  # [added]

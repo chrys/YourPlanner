@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class TemplatesConfig(AppConfig):
+class PackagesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'templates'
+    name = 'packages'

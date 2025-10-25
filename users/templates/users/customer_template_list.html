@@ -34,6 +34,15 @@
                                 <a :href="getDetailUrl(template_item.pk)" class="text-decoration-none">[[ template_item.title ]]</a>
                             </h5>
                             <p class="card-text flex-grow-1">[[ truncateDescription(template_item.description, 100) ]]</p>
+                            <div class="mt-2 mb-3">
+                                <!-- CHANGE: Show price preview in list -->
+                                <small class="text-muted d-block">
+                                    {% trans "From" %}: <strong>[[ template_item.base_price ]] [[ template_item.currency ]]</strong>
+                                </small>
+                                <small class="text-muted">
+                                    {% trans "for" %} [[ template_item.default_guests ]] {% trans "guests" %}
+                                </small>
+                            </div>
                             <button
                                 class="btn btn-primary mt-auto"
                                 :disabled="selectedTemplate === template_item.pk"

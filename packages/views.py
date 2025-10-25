@@ -6,8 +6,8 @@ from django.db import transaction
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
-from .models import Template, TemplateItemGroup, TemplateItemGroupItem  # CHANGE: Added new models
-from .forms import TemplateForm, TemplateImageFormSet, TemplateItemGroupFormSet  # CHANGE: Added formset
+from .models import Template, TemplateItemGroup, TemplateItemGroupItem
+from .forms import TemplateForm, TemplateImageFormSet, TemplateItemGroupFormSet
 from users.models import Professional
 
 try:
@@ -32,7 +32,7 @@ class TemplateCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVi
     model = Template
     form_class = TemplateForm
     template_name = 'templates/template_form.html'
-    success_url = reverse_lazy('templates:template-list')
+    success_url = reverse_lazy('packages:template-list')
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -66,7 +66,7 @@ class TemplateCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVi
             )
             data['number_of_groups'] = 0
 
-        # CHANGE: Provide all_items for dynamic group JS (must match queryset in TemplateItemGroupForm)
+        # CHANGE: Provide all_items for dynamic group JS
         from services.models import Item
         if professional_profile:
             all_items = Item.objects.filter(service__professional=professional_profile, is_active=True).select_related('service').order_by('service__title', 'title')
@@ -78,7 +78,7 @@ class TemplateCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVi
     def form_valid(self, form):
         context = self.get_context_data()
         image_formset = context['image_formset']
-        group_formset = context['group_formset']  # CHANGE: Get group formset
+        group_formset = context['group_formset']
 
         default_image_count = 0
         has_at_least_one_image_to_upload = False
@@ -126,8 +126,7 @@ class TemplateCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVi
                 form.add_error(None, _("Only one image can be marked as default."))
                 return self.form_invalid(form)
 
-        # CHANGE: Save everything in transaction
-        with transaction.atomic():
+        with transaction.atomic():  # CHANGE: Use atomic transaction for data consistency
             try:
                 if not (hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile is not None):
                     messages.error(self.request, _("Professional profile not found for this user."))
@@ -150,26 +149,28 @@ class TemplateCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVi
                         first_image.save()
                         messages.info(self.request, _("The first uploaded image has been set as default."))
 
-                # CHANGE: Save item groups
+                # CHANGE: Save item groups and their items
                 group_formset.instance = self.object
                 saved_groups = group_formset.save(commit=False)
                 
                 for group in saved_groups:
                     group.save()
                     
-                    # CHANGE: Get the items selected for this group
+                    # CHANGE: Get the items selected for this group from formset
                     group_form = None
                     for form_instance in group_formset.forms:
                         if form_instance.instance == group:
                             group_form = form_instance
                             break
                     
+                    # CHANGE: Create item group items using objects.create() to properly handle auto_now fields
                     if group_form and 'items' in group_form.cleaned_data:
                         selected_items = group_form.cleaned_data['items']
                         
-                        # CHANGE: Clear existing items and add new ones
+                        # CHANGE: Clear existing items before adding new ones
                         TemplateItemGroupItem.objects.filter(group=group).delete()
                         
+                        # CHANGE: Create items individually to properly trigger auto_now field updates
                         for position, item in enumerate(selected_items):
                             TemplateItemGroupItem.objects.create(
                                 group=group,
@@ -192,7 +193,7 @@ class TemplateCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVi
 
         messages.success(self.request, _("Template created successfully!"))
         return super().form_valid(form)
-
+    
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         return kwargs
@@ -205,7 +206,7 @@ class TemplateUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, UpdateVi
     context_object_name = 'template'
 
     def get_success_url(self):
-        return reverse_lazy('templates:template-detail', kwargs={'pk': self.object.pk})
+        return reverse_lazy('packages:template-detail', kwargs={'pk': self.object.pk})
 
     def get_queryset(self):
         if hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile is not None:
@@ -239,7 +240,7 @@ class TemplateUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, UpdateVi
             )
             data['number_of_groups'] = self.object.item_groups.count()
 
-        # CHANGE: Provide all_items for dynamic group JS (must match queryset in TemplateItemGroupForm)
+        # CHANGE: Provide all_items for dynamic group JS
         from services.models import Item
         if professional_profile:
             all_items = Item.objects.filter(service__professional=professional_profile, is_active=True).select_related('service').order_by('service__title', 'title')
@@ -251,15 +252,15 @@ class TemplateUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, UpdateVi
     def form_valid(self, form):
         context = self.get_context_data()
         image_formset = context['image_formset']
-        group_formset = context['group_formset']  # CHANGE: Get group formset
+        group_formset = context['group_formset']
 
         default_image_count = 0
-        has_at_least_one_image_being_saved = False
+        has_at_least_one_image_to_upload = False
 
         if not form.is_valid():
             return self.form_invalid(form)
 
-        # CHANGE: Validate formsets (same logic as create)
+        # CHANGE: Validate image formset
         if not image_formset.is_valid():
             for error_list in image_formset.non_form_errors():
                 for error in error_list:
@@ -271,6 +272,7 @@ class TemplateUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, UpdateVi
                             form.add_error(None, _("Image %(num)d (%(field)s): %(error)s") % {'num': i_form_idx + 1, 'field': field, 'error': e})
             return self.form_invalid(form)
 
+        # CHANGE: Validate group formset
         if not group_formset.is_valid():
             for error_list in group_formset.non_form_errors():
                 for error in error_list:
@@ -282,63 +284,86 @@ class TemplateUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, UpdateVi
                             form.add_error(None, _("Group %(num)d (%(field)s): %(error)s") % {'num': i_form_idx + 1, 'field': field, 'error': e})
             return self.form_invalid(form)
 
+        # CHANGE: Validate images
         for image_data in image_formset.cleaned_data:
-            if image_data:
-                if image_data.get('DELETE'):
-                    continue
-                if image_data.get('image') or image_data.get('id'):
-                    has_at_least_one_image_being_saved = True
+            if image_data and not image_data.get('DELETE', False):
+                if image_data.get('image'):
+                    has_at_least_one_image_to_upload = True
                 if image_data.get('is_default', False):
                     default_image_count += 1
 
-        if has_at_least_one_image_being_saved:
+        if has_at_least_one_image_to_upload:
             if default_image_count == 0:
-                form.add_error(None, _("If you have images for the template, you must select one as the default."))
+                form.add_error(None, _("If you upload images, you must select one image as the default."))
                 return self.form_invalid(form)
             elif default_image_count > 1:
                 form.add_error(None, _("Only one image can be marked as default."))
                 return self.form_invalid(form)
 
-        # CHANGE: Save with transaction (same pattern as create)
-        with transaction.atomic():
-            self.object = form.save()
+        with transaction.atomic():  # CHANGE: Use atomic transaction for data consistency
+            try:
+                if not (hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile is not None):
+                    messages.error(self.request, _("Professional profile not found for this user."))
+                    form.add_error(None, _("Professional profile not found."))
+                    return self.form_invalid(form)
 
-            image_formset.instance = self.object
-            image_formset.save()
+                self.object = form.save(commit=False)
+                self.object.professional = self.request.user.professional_profile
+                self.object.save()
+                form.save_m2m()
 
-            if not self.object.images.filter(is_default=True).exists() and self.object.images.exists():
-                first_image = self.object.images.order_by('created_at').first()
-                if first_image:
-                    first_image.is_default = True
-                    first_image.save(update_fields=['is_default'])
+                # CHANGE: Save image formset
+                image_formset.instance = self.object
+                image_formset.save()
 
-            # CHANGE: Save item groups (same pattern as create)
-            group_formset.instance = self.object
-            saved_groups = group_formset.save(commit=False)
-            
-            for group in saved_groups:
-                group.save()
+                if has_at_least_one_image_to_upload and not self.object.images.filter(is_default=True).exists():
+                    first_image = self.object.images.first()
+                    if first_image:
+                        first_image.is_default = True
+                        first_image.save()
+                        messages.info(self.request, _("The first uploaded image has been set as default."))
+
+                # CHANGE: Save item groups and their items
+                group_formset.instance = self.object
+                saved_groups = group_formset.save(commit=False)
                 
-                group_form = None
-                for form_instance in group_formset.forms:
-                    if form_instance.instance == group:
-                        group_form = form_instance
-                        break
+                for group in saved_groups:
+                    group.save()
+                    
+                    # CHANGE: Get the items selected for this group from formset
+                    group_form = None
+                    for form_instance in group_formset.forms:
+                        if form_instance.instance == group:
+                            group_form = form_instance
+                            break
+                    
+                    # CHANGE: Create item group items using objects.create() to properly handle auto_now fields
+                    if group_form and 'items' in group_form.cleaned_data:
+                        selected_items = group_form.cleaned_data['items']
+                        
+                        # CHANGE: Clear existing items before adding new ones
+                        TemplateItemGroupItem.objects.filter(group=group).delete()
+                        
+                        # CHANGE: Create items individually to properly trigger auto_now field updates
+                        for position, item in enumerate(selected_items):
+                            TemplateItemGroupItem.objects.create(
+                                group=group,
+                                item=item,
+                                position=position
+                            )
                 
-                if group_form and 'items' in group_form.cleaned_data:
-                    selected_items = group_form.cleaned_data['items']
-                    
-                    TemplateItemGroupItem.objects.filter(group=group).delete()
-                    
-                    for position, item in enumerate(selected_items):
-                        TemplateItemGroupItem.objects.create(
-                            group=group,
-                            item=item,
-                            position=position
-                        )
-            
-            for deleted_group in group_formset.deleted_objects:
-                deleted_group.delete()
+                # CHANGE: Handle deleted groups
+                for deleted_group in group_formset.deleted_objects:
+                    deleted_group.delete()
+
+            except Professional.DoesNotExist:
+                messages.error(self.request, _("User is not associated with a professional profile."))
+                form.add_error(None, _("User is not a professional."))
+                return self.form_invalid(form)
+            except Exception as e:
+                messages.error(self.request, _("An unexpected error occurred: %(error)s") % {'error': str(e)})
+                form.add_error(None, _("An unexpected error occurred during saving."))
+                return self.form_invalid(form)
 
         messages.success(self.request, _("Template updated successfully!"))
         return super().form_valid(form)
@@ -371,7 +396,8 @@ class TemplateDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'template'
 
     def get_queryset(self):
-        qs = Template.objects.prefetch_related('images', 'services__category', 'item_groups__items__item')  # CHANGE: Added item_groups prefetch
+        # CHANGE: Added item_groups prefetch for related items
+        qs = Template.objects.prefetch_related('images', 'services__category', 'item_groups__items__item')
         if self.request.user.is_superuser:
             return qs
 

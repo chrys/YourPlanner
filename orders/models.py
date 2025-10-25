@@ -45,6 +45,26 @@ class Order(TimeStampedModel):
     total_amount = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
+    
+    
+    template = models.ForeignKey(                      
+        'packages.Template',
+        on_delete=models.PROTECT,
+        null=True,                                      
+        blank=True,
+        related_name='orders'
+    )
+    template_guest_count = models.PositiveIntegerField( 
+        default=0,                                      
+        blank=True
+    )
+    template_total_amount = models.DecimalField(        
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    
     currency = models.CharField(max_length=3, default='EUR', blank=True) # Should match item currencies
     notes = models.TextField(blank=True, null=True, help_text="Additional notes about this order")
     labels = models.ManyToManyField(

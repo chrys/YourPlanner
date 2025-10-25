@@ -67,12 +67,25 @@
                                 </li>
                             {% endfor %}
                         </ul>
+                         <div class="card bg-light mt-3 mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{% trans "Package Price" %}</h5>
+                                {% if template.base_price %}
+                                    <p class="mb-1"><strong class="text-primary">{{ template.base_price|floatformat:2 }} {{ template.currency }}</strong></p>
+                                    <small class="text-muted">{% blocktrans count guests=template.default_guests %}for {{ guests }} guest{% plural %}for {{ guests }} guests{% endblocktrans %}</small>
+                                    {% if template.price_per_additional_guest %}
+                                        <p class="mb-0 mt-2"><small class="text-muted">{{ template.price_per_additional_guest|floatformat:2 }} {{ template.currency }} {% trans "per additional guest" %}</small></p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="text-muted">{% trans "Price to be determined" %}</p>
+                                {% endif %}
+                            </div>
+                        </div>    
                         <form method="post" action="" class="mt-3">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-shopping-basket me-2"></i>{% trans "Add All to Basket" %}
+                                <i class="fas fa-shopping-basket me-2"></i>{% trans "Add Template to Basket" %}
                             </button>
-                            <p><small>{% trans "you can change quantities in the basket" %}</small></p>
                         </form>
                     {% else %}
                         <p>{% trans "This template currently has no services assigned." %}</p>

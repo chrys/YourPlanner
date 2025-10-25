@@ -7,7 +7,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>{% trans "My Packages" %}</h2>
-        <a href="{% url 'templates:template-create' %}" class="btn btn-primary">{% trans "Create New Package" %}</a>
+        <a href="{% url 'packages:template-create' %}" class="btn btn-primary">{% trans "Create New Package" %}</a>
     </div>
 
     {% if messages %}
@@ -22,7 +22,7 @@
     {% if templates %}
         <div class="list-group">
             {% for template in templates %}
-                <a href="{% url 'templates:template-detail' pk=template.pk %}" class="list-group-item list-group-item-action flex-column align-items-start mb-2">
+                <a href="{% url 'packages:template-detail' pk=template.pk %}" class="list-group-item list-group-item-action flex-column align-items-start mb-2">
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="mb-1">{{ template.title }}</h5>
                         <small class="text-muted">{% trans "Last updated" %}: {{ template.updated_at|date:"d M Y, H:i" }}</small>
@@ -47,7 +47,7 @@
         </div>
     {% else %}
         <div class="alert alert-info" role="alert">
-            {% trans "You haven't created any packages yet." %} <a href="{% url 'templates:template-create' %}" class="alert-link">{% trans "Create your first package now!" %}</a>
+            {% trans "You haven't created any packages yet." %} <a href="{% url 'packages:template-create' %}" class="alert-link">{% trans "Create your first package now!" %}</a>
         </div>
     {% endif %}
 </div>

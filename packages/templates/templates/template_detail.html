@@ -12,7 +12,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="mb-0">{{ template.title }}</h2>
                     {% if is_owner_or_superuser %}
-                        <a href="{% url 'templates:template-update' pk=template.pk %}" class="btn btn-outline-primary btn-sm">{% trans "Edit Template" %}</a>
+                        <a href="{% url 'packages:template-update' pk=template.pk %}" class="btn btn-outline-primary btn-sm">{% trans "Edit Template" %}</a>
                     {% endif %}
                 </div>
                 <div class="card-body">
@@ -154,7 +154,7 @@
     {% if is_owner_or_superuser %}
         <div class="row mt-3">
             <div class="col">
-                <a href="{% url 'templates:template-list' %}" class="btn btn-secondary">{% trans "Back to Templates" %}</a>
+                <a href="{% url 'packages:template-list' %}" class="btn btn-secondary">{% trans "Back to Templates" %}</a>
             </div>
         </div>
     {% endif %}

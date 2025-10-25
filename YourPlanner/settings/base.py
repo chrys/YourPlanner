@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'templates.apps.TemplatesConfig',
+    'packages.apps.PackagesConfig',
     'users.apps.UsersConfig',
     'services.apps.ServicesConfig',
     'orders.apps.OrdersConfig',
