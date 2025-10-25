@@ -3,7 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
 from core.models import TimeStampedModel
-
+from users.models import Agent 
 
 class Order(TimeStampedModel):
     """ Represents an order placed by a Customer. """
@@ -73,6 +73,16 @@ class Order(TimeStampedModel):
         related_name='orders',
         help_text="Optional labels to categorize this order"
     )
+    
+    assigned_agent = models.ForeignKey(  # CHANGE: Optional agent assigned to this order
+        Agent,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_orders',  # agent.assigned_orders.all()
+        help_text="Agent assigned to handle this order"
+    )
+    
     # created_at and updated_at are inherited from TimeStampedModel
 
     def __str__(self):

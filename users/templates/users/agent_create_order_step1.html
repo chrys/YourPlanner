@@ -1,0 +1,44 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ page_title|default:"Create New Order" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">{% trans "Select a professional to create an order" %}</p>  {# CHANGE: Removed "Step 1 of 2" text (now single-step) #}
+                    
+                    {% include "_messages.html" %}
+
+                    <form method="post" class="form">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_professional" class="form-label">{% trans "Select Professional" %}</label>
+                            {{ form.professional }}
+                            {% if form.professional.errors %}
+                                <small class="text-danger d-block mt-1">
+                                    {{ form.professional.errors }}
+                                </small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">{% trans "Create Order" %}</button>  {# CHANGE: Updated button text (no longer "Next: Select Customer") #}
+                            <a href="{% url 'users:agent_management' %}" class="btn btn-outline-secondary">
+                                {% trans "Cancel" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -271,3 +271,119 @@ class ProfessionalCustomerLink(TimeStampedModel):
             models.Index(fields=['relationship_start_date']),
             models.Index(fields=['last_interaction_date']),
         ]
+
+
+class Agent(TimeStampedModel):  # CHANGE: Agent user profile for order assignment
+    """ Represents an Agent user profile linked to a User account. """
+    
+    class StatusChoices(models.TextChoices):  # CHANGE: Agent status options
+        ACTIVE = 'ACTIVE', 'Active'
+        INACTIVE = 'INACTIVE', 'Inactive'
+        SUSPENDED = 'SUSPENDED', 'Suspended'
+    
+    user = models.OneToOneField(  # CHANGE: Link to User
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='agent_profile'  # user.agent_profile
+    )
+    
+    title = models.CharField(  # CHANGE: Agent title/role
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Agent title or role (e.g., Support Agent, Sales Agent)"
+    )
+    
+    bio = models.TextField(  # CHANGE: Agent bio/description
+        blank=True,
+        null=True,
+        help_text="Brief bio or description of the agent"
+    )
+    
+    department = models.CharField(  # CHANGE: Agent department
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Department or team the agent belongs to"
+    )
+    
+    status = models.CharField(  # CHANGE: Agent status
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.ACTIVE,
+        help_text="Current status of the agent"
+    )
+    
+    profile_image = models.ImageField(  # CHANGE: Agent profile photo
+        upload_to='agent_profiles/',
+        null=True,
+        blank=True,
+        help_text="Agent profile photo"
+    )
+    
+    contact_phone = models.CharField(  # CHANGE: Agent contact phone
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Agent contact phone number"
+    )
+    
+    notes = models.TextField(  # CHANGE: Admin notes about the agent
+        blank=True,
+        null=True,
+        help_text="Internal notes about this agent"
+    )
+    
+    labels = models.ManyToManyField(  # CHANGE: Labels for categorizing agents
+        'labels.Label',
+        blank=True,
+        related_name='agents',
+        help_text="Optional labels to categorize this agent"
+    )
+    
+    # created_at and updated_at are inherited from TimeStampedModel
+
+    def __str__(self):  # CHANGE: String representation
+        return f"Agent: {self.title or self.user.get_full_name() or self.user.username}"
+    
+    def clean(self):  # CHANGE: Validation
+        """Validate agent data."""
+        # Add custom validation if needed
+        pass
+    
+    def get_assigned_orders(self):  # CHANGE: Get all orders assigned to this agent
+        """
+        Get all orders assigned to this agent.
+        
+        Returns:
+            QuerySet: All orders assigned to this agent
+        """
+        from orders.models import Order  # CHANGE: Import here to avoid circular imports
+        return Order.objects.filter(assigned_agent=self)
+    
+    def get_active_orders(self):  # CHANGE: Get only pending/in-progress orders
+        """
+        Get all active (non-completed) orders assigned to this agent.
+        
+        Returns:
+            QuerySet: Active orders assigned to this agent
+        """
+        from orders.models import Order  # CHANGE: Import here to avoid circular imports
+        return Order.objects.filter(
+            assigned_agent=self,
+            status__in=['PENDING', 'CONFIRMED', 'IN_PROGRESS']
+        )
+
+    class Meta:  # CHANGE: Meta options
+        verbose_name = "Agent"
+        verbose_name_plural = "Agents"
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['department']),
+        ]
+        permissions = [  # CHANGE: Custom permissions (only for creation/editing by admins)
+            ('can_create_agent', 'Can create agent'),
+            ('can_edit_agent', 'Can edit agent'),
+            ('can_delete_agent', 'Can delete agent'),
+        ]

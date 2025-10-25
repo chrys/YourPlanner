@@ -14,6 +14,7 @@
 
         <form id="select-items-form" method="post">
             {% csrf_token %}
+            <!-- CHANGE: Services Section -->
             <div v-for="service in servicesData" :key="service.id" class="service-section card mb-4">
                 <div class="card-header bg-light d-flex align-items-center">
                     <input type="checkbox"
@@ -55,7 +56,7 @@
                                                min="0"
                                                class="form-control form-control-sm mx-auto"
                                                style="width: 80px;"
-                                               v.model.number="quantities[price.id]"
+                                               v-model.number="quantities[price.id]"
                                                :disabled="!selectedServices.includes(service.id)"
                                                @input="validateQuantity(price.id)">
                                     </td>
@@ -69,12 +70,107 @@
                 </div>
             </div>
 
+            <!-- CHANGE: Packages/Templates Section -->
+            <div v-for="template in templatesData" :key="template.id" class="template-section card mb-4" style="border-color: #d4a5c5;">
+                <div class="card-header bg-light d-flex align-items-center" style="background-color: #f8f0f5 !important;">
+                    <input type="checkbox"
+                        :id="'template_' + template.id"
+                        :value="template.id"
+                        v-model="selectedTemplates"
+                        class="form-check-input me-2"
+                        style="margin-top:0;">
+                    <h3 class="h5 mb-0">
+                        📦 [[ template.title ]]
+                        <small class="text-muted">by [[ template.professional_name ]]</small>
+                    </h3>
+                </div>
+                <div class="card-body" v-if="selectedTemplates.includes(template.id)">
+                    <p v-if="template.description" class="text-muted">[[ template.description ]]</p>
+                    
+                    <!-- CHANGE: Base pricing and guest adjustment -->
+                    <div class="template-info mb-4 p-3 border rounded bg-light">
+                        <p class="mb-2"><strong>{% trans "Base Package:" %}</strong> [[ template.base_price ]] [[ template.currency ]] (includes [[ template.default_guests ]] guests)</p>
+                        <p class="mb-3"><strong>{% trans "Per Additional Guest:" %}</strong> [[ template.price_per_additional_guest ]] [[ template.currency ]]</p>
+                        
+                        <!-- CHANGE: Guest count input with live price calculation -->
+                        <div class="mb-3">
+                            <label :for="'guest_count_' + template.id" class="form-label">{% trans "Number of Guests:" %}</label>
+                            <div class="input-group" style="max-width: 300px;">
+                                <input type="number"
+                                       :id="'guest_count_' + template.id"
+                                       :name="'guest_count_' + template.id"
+                                       :min="template.default_guests"
+                                       class="form-control"
+                                       v-model.number="templateGuests[template.id]"
+                                       @input="calculateTemplatePrice(template)">
+                                <span class="input-group-text">{% trans "guests" %}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- CHANGE: Display calculated price -->
+                        <div class="alert alert-info mb-0">
+                            <strong>{% trans "Package Total:" %}</strong> <span class="h5">[[ templatePrices[template.id] ]] [[ template.currency ]]</span>
+                        </div>
+                    </div>
+
+                    <!-- CHANGE: Item selection from package groups -->
+                    <div v-if="template.item_groups && template.item_groups.length > 0">
+                        <h5 class="mb-3">{% trans "Select items from package groups:" %}</h5>
+                        <div v-for="group in template.item_groups" :key="group.id" class="mb-4">
+                            <div class="alert alert-light" role="alert">
+                                <strong>[[ group.name ]]</strong>
+                                <span v-if="group.mandatory_count > 0" class="badge bg-warning text-dark ms-2">
+                                    {% trans "Select" %} [[ group.mandatory_count ]]
+                                </span>
+                            </div>
+                            <div class="row">
+                                <div v-for="item in group.items" :key="item.id" class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox"
+                                               :id="'template_item_' + template.id + '_' + item.id"
+                                               :value="item.id"
+                                               :name="'template_item_' + template.id"
+                                               class="form-check-input"
+                                               v-model="templateItemSelections[template.id + '_' + item.id]">
+                                        <label :for="'template_item_' + template.id + '_' + item.id" class="form-check-label">
+                                            <strong>[[ item.title ]]</strong><br/>
+                                            <small class="text-muted">[[ item.description ]]</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div v-if="group.items.length === 0" class="col-12">
+                                    <p class="text-muted">{% trans "No items available in this group." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHANGE: Add to order checkbox -->
+                    <div class="template-quantity-control mt-4">
+                        <label :for="'template_quantity_' + template.id" class="form-label">{% trans "Add this package to order:" %}</label>
+                        <input type="number"
+                               :id="'template_quantity_' + template.id"
+                               :name="'quantity_' + template.id"
+                               min="0"
+                               max="1"
+                               class="form-control"
+                               style="width: 100px;"
+                               v-model.number="quantities[template.id]"
+                               :disabled="!selectedTemplates.includes(template.id)"
+                               @input="validateTemplateQuantity(template.id)">
+                        <small class="text-muted">{% trans "(Check to add once)" %}</small>
+                        <!-- CHANGE: Hidden input to submit guest count with form -->
+                        <input type="hidden"
+                               :name="'guest_count_' + template.id"
+                               :value="templateGuests[template.id]">
+                    </div>
+                </div>
+            </div>
+
             <div class="text-end my-4">
                 <button type="button" class="btn btn-lg basket-btn-vue" @click="showDialog = true">{% trans "Update Order Items" %}</button>
                 <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-lg btn-secondary ms-2">{% trans "View Order Summary" %}</a>
-            </div>
-
-            <!-- Confirmation Dialog (Vue) -->
+            </div>            <!-- Confirmation Dialog (Vue) -->
             <div v-if="showDialog" class="dialog-overlay">
                 <div class="dialog-box">
                     <p>{% trans "Are you sure you want to update the items in your order?" %}</p>
@@ -96,6 +192,7 @@
 
 <script>
 window.__servicesData__ = {{ services_json|safe }};
+window.__templatesData__ = {{ templates_json|safe }};
 window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
 
@@ -106,12 +203,19 @@ createApp({
     delimiters: ['[[', ']]'],
     setup() {
         const servicesData = ref([]);
+        const templatesData = ref([]);  // CHANGE: Add templates data
         const quantities = ref({}); // Store quantities by price_id
+        const templateGuests = ref({});  // CHANGE: Store guest count per template
+        const templatePrices = ref({});  // CHANGE: Store calculated price per template
+        const templateItemSelections = ref({});  // CHANGE: Store selected items from template groups
         const showDialog = ref(false);
         const showSuccess = ref(false);
         const selectedServices = ref([]); 
+        const selectedTemplates = ref([]);  // CHANGE: Add selected templates
+        
         onMounted(() => {
             servicesData.value = window.__servicesData__;
+            templatesData.value = window.__templatesData__;  // CHANGE: Load templates
             // Optionally pre-select all services, or leave empty for user to choose
             // selectedServices.value = servicesData.value.map(s => s.id);
             const initialQuantities = window.__currentQuantities__;
@@ -122,12 +226,42 @@ createApp({
                     });
                 });
             });
+            
+            // CHANGE: Initialize template guest counts and prices
+            templatesData.value.forEach(template => {
+                templateGuests.value[template.id] = template.default_guests;
+                calculateTemplatePrice(template);
+            });
         });
 
         function validateQuantity(priceId) {
             if (quantities.value[priceId] < 0 || isNaN(quantities.value[priceId])) {
                 quantities.value[priceId] = 0;
             }
+        }
+
+        // CHANGE: Add template quantity validation
+        function validateTemplateQuantity(templateId) {
+            if (quantities.value[templateId] < 0 || isNaN(quantities.value[templateId])) {
+                quantities.value[templateId] = 0;
+            }
+            // Templates can only be added once (max 1)
+            if (quantities.value[templateId] > 1) {
+                quantities.value[templateId] = 1;
+            }
+        }
+
+        // CHANGE: Calculate template price with additional guests
+        function calculateTemplatePrice(template) {
+            const basePrice = parseFloat(template.base_price) || 0;
+            const pricePerGuest = parseFloat(template.price_per_additional_guest) || 0;
+            const defaultGuests = parseInt(template.default_guests) || 0;
+            const currentGuests = parseInt(templateGuests.value[template.id]) || defaultGuests;
+            const additionalGuests = Math.max(0, currentGuests - defaultGuests);
+            const totalPrice = basePrice + (additionalGuests * pricePerGuest);
+            
+            templatePrices.value[template.id] = totalPrice.toFixed(2);
+            // CHANGE: Hidden input will be updated automatically by Vue via v-bind
         }
 
         function confirmUpdate() {
@@ -148,17 +282,30 @@ createApp({
                     });
                 }
             });
+            // CHANGE: Remove quantities for unselected templates
+            templatesData.value.forEach(template => {
+                if (!selectedTemplates.value.includes(template.id)) {
+                    quantities.value[template.id] = 0;
+                }
+            });
             document.getElementById('select-items-form').submit();
         }
 
         // Expose to template
         return {
             servicesData,
+            templatesData,  // CHANGE: Expose templates
             quantities,
+            templateGuests,  // CHANGE: Expose guest counts
+            templatePrices,  // CHANGE: Expose calculated prices
+            templateItemSelections,  // CHANGE: Expose item selections
             selectedServices,
+            selectedTemplates,  // CHANGE: Expose selected templates
             showDialog,
             showSuccess,
             validateQuantity,
+            validateTemplateQuantity,  // CHANGE: Expose template validation
+            calculateTemplatePrice,  // CHANGE: Expose price calculation
             confirmUpdate,
         };
     }

@@ -1,0 +1,59 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:"Confirm Delete Order" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {% trans "This action cannot be undone!" %}
+                    </p>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <p><strong>{% trans "Order ID:" %}</strong> #{{ order.pk_formatted|default:order.pk }}</p>
+                            {% with prof=order.items.first.service.professional %}
+                                <p><strong>{% trans "Professional:" %}</strong> 
+                                    {% if prof %}
+                                        {{ prof.title|default:prof.user.get_full_name }}
+                                    {% else %}
+                                        <small class="text-muted">-</small>
+                                    {% endif %}
+                                </p>  {# CHANGE: Show professional from order items #}
+                            {% endwith %}
+                            <p><strong>{% trans "Customer:" %}</strong> 
+                                {% if order.customer %}
+                                    {{ order.customer.user.get_full_name }}
+                                {% else %}
+                                    <small class="text-muted">{% trans "Not assigned" %}</small>  {# CHANGE: Handle no customer #}
+                                {% endif %}
+                            </p>
+                            <p><strong>{% trans "Total:" %}</strong> {{ order.total_amount|floatformat:2 }} {{ order.currency }}</p>
+                        </div>
+                    </div>
+
+                    <p>{% trans "Are you sure you want to delete this order?" %}</p>
+
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> {% trans "Yes, Delete Order" %}
+                        </button>
+                    </form>
+                    <a href="{% url 'users:agent_order_detail' order_pk=order.pk %}" class="btn btn-secondary">
+                        {% trans "Cancel" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

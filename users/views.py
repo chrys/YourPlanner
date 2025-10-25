@@ -160,6 +160,16 @@ class UserRegistrationView(CreateView):
 class UserManagementView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user = request.user
+        
+        # CHANGE: Check if user is an agent first
+        try:
+            from .models import Agent  # CHANGE: Import Agent model
+            agent = user.agent_profile
+            if agent and agent.status == Agent.StatusChoices.ACTIVE:  # CHANGE: Redirect active agents to their dashboard
+                return redirect('users:agent_management')
+        except Agent.DoesNotExist:
+            pass
+        
         try:
             customer = user.customer_profile
         except Customer.DoesNotExist: # User is not a customer (could be Professional or Admin without CustomerProfile)
@@ -572,3 +582,152 @@ class DepositPaymentView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = "Deposit Payment"
         return context
+
+
+# CHANGE: Agent-specific views
+class AgentRequiredMixin(UserPassesTestMixin):  # CHANGE: New mixin for agents
+    """Ensures the logged-in user has an agent profile."""
+    def test_func(self):
+        try:
+            from .models import Agent  # CHANGE: Import Agent model
+            return hasattr(self.request.user, 'agent_profile') and self.request.user.agent_profile is not None
+        except Agent.DoesNotExist:
+            return False
+        except AttributeError:
+            return False
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You need an agent profile to access this page.")
+        return redirect('users:user_management')
+
+
+class AgentManagementView(LoginRequiredMixin, AgentRequiredMixin, TemplateView):  # CHANGE: New agent management view
+    """View for agents to manage their assigned orders and profile."""
+    template_name = 'users/agent_dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        # CHANGE: Get agent profile
+        context = super().get_context_data(**kwargs)
+        agent = self.request.user.agent_profile
+        
+        # CHANGE: Get all orders assigned to this agent
+        assigned_orders = Order.objects.filter(
+            assigned_agent=agent
+        ).select_related('customer__user').prefetch_related('items__price__item__service').order_by('-created_at')
+        
+        # CHANGE: Get count by status
+        pending_orders = assigned_orders.filter(status=Order.StatusChoices.PENDING).count()
+        confirmed_orders = assigned_orders.filter(status=Order.StatusChoices.CONFIRMED).count()
+        completed_orders = assigned_orders.filter(status=Order.StatusChoices.COMPLETED).count()
+        
+        context.update({
+            'agent': agent,
+            'assigned_orders': assigned_orders,
+            'pending_orders': pending_orders,
+            'confirmed_orders': confirmed_orders,
+            'completed_orders': completed_orders,
+            'page_title': f"Agent Dashboard - {agent.title or 'Management'}"
+        })
+        return context
+
+
+class AgentCreateOrderView(LoginRequiredMixin, AgentRequiredMixin, FormView):  # CHANGE: View for agents to create orders
+    """View for agents to select professional and create orders."""
+    template_name = 'users/agent_create_order_step1.html'
+    form_class = ProfessionalChoiceForm
+    
+    def get_context_data(self, **kwargs):
+        # CHANGE: Customize context
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Create New Order - Select Professional"
+        return context
+
+    def form_valid(self, form):
+        # CHANGE: Create order for the selected professional WITHOUT a customer
+        professional = form.cleaned_data['professional']
+        
+        try:
+            # CHANGE: Create a new pending order assigned to this agent
+            # CHANGE: Order has NO customer (customer=None)
+            # CHANGE: Note: professional is stored in session, will be used when adding items from select_items view
+            order = Order.objects.create(
+                status=Order.StatusChoices.PENDING,
+                assigned_agent=self.request.user.agent_profile,  # CHANGE: Assign to current agent
+                currency='EUR'  # CHANGE: Default currency
+            )
+            
+            # CHANGE: Store professional in session for use in select_items view
+            self.request.session['temp_professional_id'] = professional.pk
+            
+            messages.success(self.request, f"Order created for {professional.title or professional.user.get_full_name()}. Now add packages and services.")
+            
+            # CHANGE: Redirect to select items from this professional's services
+            return redirect('orders:select_items', order_pk=order.pk)
+        
+        except Exception as e:
+            messages.error(self.request, f"An error occurred while creating the order: {str(e)}")
+            return self.form_invalid(form)
+
+
+
+class AgentOrderDetailView(LoginRequiredMixin, AgentRequiredMixin, DetailView):  # CHANGE: View to view order details
+    """View for agents to view order details."""
+    model = Order
+    template_name = 'users/agent_order_detail.html'
+    context_object_name = 'order'
+    pk_url_kwarg = 'order_pk'
+
+    def get_queryset(self):
+        # CHANGE: Only show orders assigned to this agent
+        return Order.objects.filter(assigned_agent=self.request.user.agent_profile)
+
+    def get_context_data(self, **kwargs):
+        # CHANGE: Get order details
+        context = super().get_context_data(**kwargs)
+        order = self.object
+        
+        # CHANGE: Get order items
+        order_items = order.items.all().select_related(
+            'price__item__service__professional__user',
+            'price__item__service',
+            'price__item'
+        )
+        
+        # CHANGE: Handle orders with no customer (agent-created orders)
+        customer_name = order.customer.user.get_full_name() if order.customer else "Not assigned"
+        
+        context.update({
+            'order_items': order_items,
+            'page_title': f"Order #{order.pk_formatted if hasattr(order, 'pk_formatted') else order.pk} - {customer_name}"
+        })
+        return context
+
+
+class AgentDeleteOrderView(LoginRequiredMixin, AgentRequiredMixin, DetailView):  # CHANGE: New view to delete orders
+    """View for agents to delete orders."""
+    model = Order
+    template_name = 'users/agent_order_confirm_delete.html'
+    context_object_name = 'order'
+    pk_url_kwarg = 'order_pk'
+
+    def get_queryset(self):
+        # CHANGE: Only show orders assigned to this agent
+        return Order.objects.filter(assigned_agent=self.request.user.agent_profile)
+
+    def post(self, request, *args, **kwargs):
+        # CHANGE: Delete the order
+        order = self.get_object()
+        # CHANGE: Handle orders with no customer (agent-created orders)
+        customer_name = order.customer.user.get_full_name() if order.customer else "Not assigned"
+        order_pk = order.pk
+        
+        order.delete()
+        messages.success(request, f"Order #{order_pk} for {customer_name} has been deleted.")
+        return redirect('users:agent_management')
+
+    def get_context_data(self, **kwargs):
+        # CHANGE: Add context
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f"Delete Order #{self.object.pk_formatted if hasattr(self.object, 'pk_formatted') else self.object.pk}"
+        return context
+

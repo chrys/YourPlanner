@@ -1,0 +1,106 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:"Order Details" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% include "_messages.html" %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Order Details" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>{% trans "Order ID:" %}</strong> #{{ order.pk_formatted|default:order.pk }}</p>
+                            <p><strong>{% trans "Status:" %}</strong> 
+                                <span class="badge bg-{% if order.status == 'PENDING' %}warning{% elif order.status == 'CONFIRMED' %}info{% else %}success{% endif %} text-dark">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </p>
+                            <p><strong>{% trans "Created:" %}</strong> {{ order.created_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{% trans "Professional:" %}</strong> 
+                                {% if order.items.first and order.items.first.service.professional %}
+                                    {{ order.items.first.service.professional.title|default:order.items.first.service.professional.user.get_full_name }}
+                                {% else %}
+                                    <small class="text-muted">-</small>
+                                {% endif %}
+                            </p>  {# CHANGE: Handle orders with no items yet #}
+                            <p><strong>{% trans "Customer:" %}</strong> 
+                                {% if order.customer %}
+                                    {{ order.customer.user.get_full_name|default:order.customer.user.username }}
+                                {% else %}
+                                    <small class="text-muted">{% trans "Not assigned" %}</small>  {# CHANGE: Handle no customer (agent-created orders) #}
+                                {% endif %}
+                            </p>
+                            <p><strong>{% trans "Total:" %}</strong> {{ order.total_amount|floatformat:2 }} {{ order.currency }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if order_items %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Order Items" %}</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{% trans "Item" %}</th>
+                                        <th>{% trans "Service" %}</th>
+                                        <th class="text-center">{% trans "Quantity" %}</th>
+                                        <th class="text-end">{% trans "Unit Price" %}</th>
+                                        <th class="text-end">{% trans "Subtotal" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order_items %}
+                                        <tr>
+                                            <td>{{ item.item.title }}</td>
+                                            <td>{{ item.service.title }}</td>
+                                            <td class="text-center">{{ item.quantity }}</td>
+                                            <td class="text-end">{{ item.price_amount_at_order|floatformat:2 }} {{ item.price_currency_at_order }}</td>
+                                            <td class="text-end">{{ item.subtotal|floatformat:2 }} {{ item.price_currency_at_order }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Actions" %}</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn btn-success w-100 mb-2">  {# CHANGE: Add button to add/modify packages or services #}
+                        <i class="fas fa-plus"></i> {% trans "Add Packages/Services" %}
+                    </a>
+                    <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-primary w-100 mb-2" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> {% trans "View Full Order" %}
+                    </a>
+                    <a href="{% url 'users:agent_order_delete' order_pk=order.pk %}" class="btn btn-danger w-100 mb-2">
+                        <i class="fas fa-trash"></i> {% trans "Delete Order" %}
+                    </a>
+                    <a href="{% url 'users:agent_management' %}" class="btn btn-secondary w-100">
+                        <i class="fas fa-arrow-left"></i> {% trans "Back to Dashboard" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

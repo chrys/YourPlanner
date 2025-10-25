@@ -15,6 +15,7 @@ from decimal import Decimal
 from .models import Order, OrderItem
 from users.models import Customer, Professional, ProfessionalCustomerLink 
 from services.models import Service, Item, Price
+from packages.models import Template, TemplateItemGroup, TemplateItemGroupItem  # CHANGE: Import Template models (packages)
 from .forms import OrderForm, OrderStatusUpdateForm, OrderItemForm
 from .mixins import CustomerRequiredMixin, UserCanViewOrderMixin, AdminAccessMixin, CustomerOwnsOrderMixin, UserCanModifyOrderItemsMixin
 
@@ -456,10 +457,20 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
 
     def get_context_data(self, **kwargs):
         customer = self.order.customer
-        linked_professionals = Professional.objects.filter(
-            customer_links__customer=customer,  
-            customer_links__status=ProfessionalCustomerLink.StatusChoices.ACTIVE  
-        )
+        
+        # CHANGE: Support agent-created orders (no customer) using professional from session
+        if customer:
+            linked_professionals = Professional.objects.filter(
+                customer_links__customer=customer,  
+                customer_links__status=ProfessionalCustomerLink.StatusChoices.ACTIVE  
+            )
+        elif 'temp_professional_id' in self.request.session:
+            # CHANGE: For agent-created orders, use professional from session
+            linked_professionals = Professional.objects.filter(
+                pk=self.request.session['temp_professional_id']
+            )
+        else:
+            linked_professionals = Professional.objects.none()
         
         services_qs = Service.objects.filter(
             is_active=True,
@@ -502,6 +513,53 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                 service_dict['items'].append(item_dict)
             services_list.append(service_dict)
 
+        # CHANGE: Add templates/packages to the selection for agents
+        templates_qs = Template.objects.filter(
+            professional__in=linked_professionals
+        ).prefetch_related(
+            Prefetch('item_groups', 
+                queryset=TemplateItemGroup.objects.prefetch_related(
+                    Prefetch('items',
+                        queryset=TemplateItemGroupItem.objects.select_related('item')
+                    )
+                ).order_by('position')
+            )
+        ).order_by('title')
+
+        templates_list = []
+        for template in templates_qs:
+            # CHANGE: Include item groups in template for selection
+            item_groups = []
+            for group in template.item_groups.all():
+                group_dict = {
+                    'id': group.pk,
+                    'name': group.name,
+                    'mandatory_count': group.mandatory_count,
+                    'items': []
+                }
+                for group_item in group.items.all():
+                    item_dict = {
+                        'id': group_item.item.pk,
+                        'title': group_item.item.title,
+                        'description': group_item.item.description,
+                    }
+                    group_dict['items'].append(item_dict)
+                item_groups.append(group_dict)
+            
+            template_dict = {
+                'id': f'template_{template.pk}',  # Prefix to distinguish from service items
+                'title': template.title,
+                'description': template.description,
+                'professional_name': template.professional.title or template.professional.user.get_full_name(),
+                'base_price': str(template.base_price),
+                'currency': template.currency,
+                'default_guests': template.default_guests,
+                'price_per_additional_guest': str(template.price_per_additional_guest),
+                'is_template': True,  # Flag to identify as template
+                'item_groups': item_groups  # CHANGE: Include item groups for selection
+            }
+            templates_list.append(template_dict)
+
         current_quantities_dict = {
             item.price.pk: item.quantity
             for item in OrderItem.objects.filter(order=self.order)
@@ -510,6 +568,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
         context = {
             'order': self.order,
             'services_json': json.dumps(services_list),
+            'templates_json': json.dumps(templates_list),  # CHANGE: Add templates to context
             'current_quantities_json': json.dumps(current_quantities_dict),
             'page_title': f"Select Items for Order #{self.order.pk}",
         }
@@ -522,25 +581,75 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
     def post(self, request, *args, **kwargs):
         quantities = {}
         items_to_delete = []
+        templates_to_add = {}  # CHANGE: Store template selections
+        template_guest_counts = {}  # CHANGE: Store guest counts per template
+
+        import sys  # CHANGE: Debug logging
+        print(f"DEBUG: POST data keys: {list(request.POST.keys())}", file=sys.stderr)  # CHANGE: Log all keys
+        print(f"DEBUG: POST data: {dict(request.POST)}", file=sys.stderr)  # CHANGE: Log all data
 
         for key, value in request.POST.items():
-            if key.startswith('quantity_'):
+            # CHANGE: Handle guest count inputs (format: guest_count_template_<pk>)
+            if key.startswith('guest_count_'):
                 try:
-                    price_id = int(key.split('_')[1])
+                    id_part = key.replace('guest_count_', '')  # Remove prefix to get template_<pk> format
+                    if id_part.startswith('template_'):
+                        template_id = int(id_part.replace('template_', ''))
+                        guest_count = int(value)
+                        template_guest_counts[template_id] = guest_count
+                        print(f"DEBUG: Parsed guest_count for template {template_id}: {guest_count}", file=sys.stderr)  # CHANGE: Debug
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing guest_count {key}={value}: {e}", file=sys.stderr)  # CHANGE: Debug
+                    pass
+            elif key.startswith('quantity_'):
+                try:
+                    id_part = key.split('_', 1)[1]  # CHANGE: Split more carefully to handle 'template_' prefix
+                    print(f"DEBUG: Processing quantity key={key}, id_part={id_part}, value={value}", file=sys.stderr)  # CHANGE: Debug
                     quantity = int(value)
+                    
                     if quantity < 0:
-                        messages.error(request, f"Invalid quantity for price ID {price_id}. Quantity must be non-negative.")
+                        messages.error(request, f"Invalid quantity. Quantity must be non-negative.")
                         continue
 
-                    if quantity > 0:
-                        quantities[price_id] = quantity
-                    else:
-                        items_to_delete.append(price_id)
-                except (ValueError, IndexError):
-                    messages.error(request, "Invalid data submitted.")
+                    if id_part.startswith('template_'):  # CHANGE: Handle template IDs
+                        # CHANGE: Template ID format: template_<pk>
+                        template_id = int(id_part.replace('template_', ''))
+                        if quantity > 0:
+                            templates_to_add[template_id] = quantity
+                            print(f"DEBUG: Added template {template_id} with quantity {quantity}", file=sys.stderr)  # CHANGE: Debug
+                    else:  # CHANGE: Regular service price ID
+                        price_id = int(id_part)
+                        if quantity > 0:
+                            quantities[price_id] = quantity
+                        else:
+                            items_to_delete.append(price_id)
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing quantity {key}={value}: {e}", file=sys.stderr)  # CHANGE: Debug error
+                    messages.error(request, f"Invalid data submitted: {e}")
                     return render(request, self.template_name, self.get_context_data(error="Invalid data."))
 
         with transaction.atomic():
+            # CHANGE: Process templates first
+            for template_id, quantity in templates_to_add.items():
+                try:
+                    template = get_object_or_404(Template, pk=template_id)
+                    # CHANGE: Set template on order (only one template per order)
+                    self.order.template = template
+                    
+                    # CHANGE: Use guest count from form or default
+                    guest_count = template_guest_counts.get(template_id, template.default_guests)
+                    self.order.template_guest_count = guest_count
+                    
+                    # CHANGE: Calculate total = base_price + (additional_guests * price_per_additional_guest)
+                    additional_guests = max(0, guest_count - template.default_guests)
+                    calculated_total = template.base_price + (additional_guests * template.price_per_additional_guest)
+                    self.order.template_total_amount = calculated_total
+                    
+                    messages.success(request, f"Added package '{template.title}' ({guest_count} guests) to your order.")
+                except Template.DoesNotExist:
+                    messages.error(request, f"Package not found.")
+                    return render(request, self.template_name, self.get_context_data(error="Invalid package."))
+
             for price_id, quantity in quantities.items():
                 price = get_object_or_404(Price, pk=price_id, is_active=True, item__is_active=True, item__service__is_active=True)
                 order_item, created = OrderItem.objects.update_or_create(
@@ -578,7 +687,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
             else:  # CHANGE: No template, just sum items
                 self.order.calculate_total()
             
-            self.order.save(update_fields=['total_amount'])  # CHANGE: Persist updated total
+            self.order.save(update_fields=['total_amount', 'template', 'template_guest_count', 'template_total_amount'])  # CHANGE: Save template fields too
 
         return redirect('orders:order_detail', pk=self.order.pk)
 

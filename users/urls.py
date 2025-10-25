@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.contrib.auth import views as auth_views 
 from .views import (
     UserRegistrationView,
     UserManagementView,
@@ -7,7 +8,11 @@ from .views import (
     CustomerTemplateListView,
     CustomerTemplateDetailView,
     CustomerProfessionalServicesView,
-    DepositPaymentView
+    DepositPaymentView,
+    AgentManagementView,  # CHANGE: Added Agent views
+    AgentCreateOrderView,
+    AgentOrderDetailView,  # CHANGE: Removed AgentSelectCustomerView (no longer needed)
+    AgentDeleteOrderView,
 )
 from .views_professional import (
     CustomerManagementView,
@@ -26,6 +31,12 @@ urlpatterns = [
     path('change-professional/', ChangeProfessionalView.as_view(), name='change_professional'),
     path('deposit-payment/', DepositPaymentView.as_view(), name='deposit_payment'),
     
+    # CHANGE: Agent management routes
+    path('agent/dashboard/', AgentManagementView.as_view(), name='agent_management'),
+    path('agent/order/create/', AgentCreateOrderView.as_view(), name='agent_create_order'),  # CHANGE: Removed select-customer route (no longer needed)
+    path('agent/order/<int:order_pk>/', AgentOrderDetailView.as_view(), name='agent_order_detail'),
+    path('agent/order/<int:order_pk>/delete/', AgentDeleteOrderView.as_view(), name='agent_order_delete'),
+    
     # Professional customer management views
     path('customers/', CustomerManagementView.as_view(), name='customer_management'),
     path('customers/<int:customer_id>/', CustomerDetailView.as_view(), name='customer_detail'),
@@ -35,11 +46,12 @@ urlpatterns = [
     path('customer-templates/', CustomerTemplateListView.as_view(), name='customer_template_list'),
     path('customer-templates/<int:pk>/', CustomerTemplateDetailView.as_view(), name='customer_template_detail'),
     path('my-professional-services/', CustomerProfessionalServicesView.as_view(), name='customer_professional_services'),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),  # CHANGE: Explicit password change URL
+    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),  # CHANGE: Done page after password change
 
     
 ]
 
 
-urlpatterns += [
-    path('accounts/', include('django.contrib.auth.urls')),
-]
+

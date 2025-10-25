@@ -1,0 +1,67 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:"Select Customer" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">{% trans "Step 2 of 2: Select Customer" %}</p>
+                    
+                    {% include "_messages.html" %}
+
+                    {% if professional %}
+                        <p class="mb-3">
+                            {% blocktrans with prof_name=professional.title|default:professional.user.get_full_name %}
+                            You selected professional: <strong>{{ prof_name }}</strong>
+                            {% endblocktrans %}
+                        </p>
+
+                        {% if customers %}
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="list-group mb-3">
+                                    {% for customer in customers %}  <!-- CHANGE: List customers -->
+                                        <label class="list-group-item">
+                                            <input type="radio" name="customer_id" value="{{ customer.pk }}" required>
+                                            <strong>{{ customer.user.get_full_name|default:customer.user.username }}</strong>
+                                            {% if customer.company_name %}
+                                                <br><small class="text-muted">{{ customer.company_name }}</small>
+                                            {% endif %}
+                                            {% if customer.wedding_day %}
+                                                <br><small class="text-muted">{% trans "Wedding:" %} {{ customer.wedding_day|date:"Y-m-d" }}</small>
+                                            {% endif %}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success">{% trans "Create Order" %}</button>
+                                    <a href="{% url 'users:agent_create_order' %}" class="btn btn-outline-secondary">
+                                        {% trans "Back" %}
+                                    </a>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                {% trans "No customers linked to this professional." %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-danger">
+                            {% trans "Professional not found. Please start over." %}
+                            <a href="{% url 'users:agent_create_order' %}" class="alert-link">{% trans "Start Again" %}</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

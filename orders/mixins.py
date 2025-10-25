@@ -113,6 +113,11 @@ class UserCanViewOrderMixin(UserPassesTestMixin):
             if self.order.customer == self.request.user.customer_profile:
                 return True
 
+        # CHANGE: Support agent viewing their assigned orders
+        if hasattr(self.request.user, 'agent_profile') and self.request.user.agent_profile:
+            if self.order.assigned_agent == self.request.user.agent_profile:
+                return True
+
         # Check for professional management
         if hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile:
             professional = self.request.user.professional_profile
@@ -125,7 +130,9 @@ class UserCanViewOrderMixin(UserPassesTestMixin):
         messages.error(self.request, "You do not have permission to view this order.")
         if self.request.user.is_authenticated:
             # Determine a sensible redirect based on potential roles
-            if hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile:
+            if hasattr(self.request.user, 'agent_profile') and self.request.user.agent_profile:  # CHANGE: Support agent redirect
+                return redirect('users:agent_management')
+            elif hasattr(self.request.user, 'professional_profile') and self.request.user.professional_profile:
                  return redirect('services:service_list')
             elif hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile:
                  return redirect('orders:order_list')
@@ -140,6 +147,7 @@ class UserCanModifyOrderItemsMixin(UserPassesTestMixin):
     1. User is customer owning the order AND order is PENDING.
     2. User is an admin (staff).
     3. User is a Professional linked to the order's Customer.
+    4. User is an Agent assigned to this order AND order is PENDING.  # CHANGE: Support agent-created orders
     Loads self.order. Assumes 'pk' or 'order_pk' is in self.kwargs.
     """
     order_pk_url_kwarg = 'pk'
@@ -157,6 +165,11 @@ class UserCanModifyOrderItemsMixin(UserPassesTestMixin):
 
         if hasattr(self.request.user, 'customer_profile') and self.request.user.customer_profile:
             if self.order.customer == self.request.user.customer_profile and self.order.status == Order.StatusChoices.PENDING:
+                return True
+            
+        # CHANGE: Support agent-created orders (no customer) - agent assigned to this order
+        if hasattr(self.request.user, 'agent_profile') and self.request.user.agent_profile:
+            if self.order.assigned_agent == self.request.user.agent_profile and self.order.status == Order.StatusChoices.PENDING:
                 return True
             
          # Condition for a Professional linked to the order's customer and order is PENDING
