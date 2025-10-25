@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
-from django.views.generic import CreateView, UpdateView, DetailView, ListView
+from django.views.generic import CreateView, UpdateView, DetailView, ListView, DeleteView
+from django.shortcuts import get_object_or_404
+
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
@@ -8,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .models import Template, TemplateItemGroup, TemplateItemGroupItem
 from .forms import TemplateForm, TemplateImageFormSet, TemplateItemGroupFormSet
+from orders.models import Order
 from users.models import Professional
 
 try:
@@ -27,6 +30,48 @@ except ImportError:
             def handle_no_permission(self):
                 messages.error(self.request, "You are not registered as a professional.")
                 return redirect('users:profile_choice')
+
+class TemplateDeleteView(LoginRequiredMixin, ProfessionalRequiredMixin, DeleteView):  # CHANGE: New delete view
+    """
+    Delete view for Template with order usage check.
+    Prevents deletion if template is used in any customer orders.
+    """
+    model = Template
+    template_name = 'templates/template_confirm_delete.html'  # CHANGE: confirmation template
+    success_url = reverse_lazy('packages:template-list')  # CHANGE: redirect after deletion
+    context_object_name = 'template'
+
+    def get_queryset(self):  # CHANGE: Ensure professional owns the template
+        return Template.objects.filter(professional=self.request.user.professional_profile)
+
+    def get_context_data(self, **kwargs):  # CHANGE: Check for orders using this template
+        context = super().get_context_data(**kwargs)
+        template = self.get_object()
+        
+        # CHANGE: Find all orders using this template
+        orders_using_template = Order.objects.filter(template=template).select_related('customer__user')
+        context['orders_using_template'] = orders_using_template
+        context['page_title'] = f"Delete Package: {template.title}"
+        
+        return context
+
+    def delete(self, request, *args, **kwargs):  # CHANGE: Override to check for orders before deletion
+        template = self.get_object()
+        
+        # CHANGE: Check if template is used in any orders
+        orders_count = Order.objects.filter(template=template).count()
+        if orders_count > 0:
+            messages.error(
+                request,
+                f"Cannot delete package '{template.title}' because it is used in {orders_count} customer order(s). "
+                "Please cancel or complete these orders first."
+            )
+            return self.get(request, *args, **kwargs)
+        
+        # CHANGE: Proceed with deletion if no orders use this template
+        messages.success(request, f"Package '{template.title}' has been deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
 
 class TemplateCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateView):
     model = Template
