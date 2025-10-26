@@ -31,12 +31,12 @@
                                 {% else %}
                                     <small class="text-muted">-</small>
                                 {% endif %}
-                            </p>  {# CHANGE: Handle orders with no items yet #}
+                            </p>  {# Handle orders with no items yet #}
                             <p><strong>{% trans "Customer:" %}</strong> 
                                 {% if order.customer %}
                                     {{ order.customer.user.get_full_name|default:order.customer.user.username }}
                                 {% else %}
-                                    <small class="text-muted">{% trans "Not assigned" %}</small>  {# CHANGE: Handle no customer (agent-created orders) #}
+                                    <small class="text-muted">{% trans "Not assigned" %}</small>  {# Handle no customer (agent-created orders) #}
                                 {% endif %}
                             </p>
                             <p><strong>{% trans "Total:" %}</strong> {{ order.total_amount|floatformat:2 }} {{ order.currency }}</p>
@@ -86,7 +86,7 @@
                     <h5 class="mb-0">{% trans "Actions" %}</h5>
                 </div>
                 <div class="card-body">
-                    <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn btn-success w-100 mb-2">  {# CHANGE: Add button to add/modify packages or services #}
+                    <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn btn-success w-100 mb-2">  {# Add button to add/modify packages or services #}
                         <i class="fas fa-plus"></i> {% trans "Add Packages/Services" %}
                     </a>
                     <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-primary w-100 mb-2" target="_blank">

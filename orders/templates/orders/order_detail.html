@@ -24,7 +24,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <p><strong>{% trans "Order ID" %}:</strong> {{ order.pk_formatted }}</p>
-                    {# CHANGE: Handle agent-created orders without customer #}
+                    {# Handle agent-created orders without customer #}
                     <p><strong>{% trans "Customer" %}:</strong> 
                         {% if order.customer %}
                             {{ order.customer.user.get_full_name|default:order.customer.user.username }}

@@ -15,7 +15,7 @@ from decimal import Decimal
 from .models import Order, OrderItem
 from users.models import Customer, Professional, ProfessionalCustomerLink 
 from services.models import Service, Item, Price
-from packages.models import Template, TemplateItemGroup, TemplateItemGroupItem  # CHANGE: Import Template models (packages)
+from packages.models import Template, TemplateItemGroup, TemplateItemGroupItem  # Import Template models (packages)
 from .forms import OrderForm, OrderStatusUpdateForm, OrderItemForm
 from .mixins import CustomerRequiredMixin, UserCanViewOrderMixin, AdminAccessMixin, CustomerOwnsOrderMixin, UserCanModifyOrderItemsMixin
 
@@ -458,14 +458,14 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
     def get_context_data(self, **kwargs):
         customer = self.order.customer
         
-        # CHANGE: Support agent-created orders (no customer) using professional from session
+        # Support agent-created orders (no customer) using professional from session
         if customer:
             linked_professionals = Professional.objects.filter(
                 customer_links__customer=customer,  
                 customer_links__status=ProfessionalCustomerLink.StatusChoices.ACTIVE  
             )
         elif 'temp_professional_id' in self.request.session:
-            # CHANGE: For agent-created orders, use professional from session
+            # For agent-created orders, use professional from session
             linked_professionals = Professional.objects.filter(
                 pk=self.request.session['temp_professional_id']
             )
@@ -513,7 +513,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                 service_dict['items'].append(item_dict)
             services_list.append(service_dict)
 
-        # CHANGE: Add templates/packages to the selection for agents
+        # Add templates/packages to the selection for agents
         templates_qs = Template.objects.filter(
             professional__in=linked_professionals
         ).prefetch_related(
@@ -528,7 +528,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
 
         templates_list = []
         for template in templates_qs:
-            # CHANGE: Include item groups in template for selection
+            # Include item groups in template for selection
             item_groups = []
             for group in template.item_groups.all():
                 group_dict = {
@@ -556,7 +556,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                 'default_guests': template.default_guests,
                 'price_per_additional_guest': str(template.price_per_additional_guest),
                 'is_template': True,  # Flag to identify as template
-                'item_groups': item_groups  # CHANGE: Include item groups for selection
+                'item_groups': item_groups  # Include item groups for selection
             }
             templates_list.append(template_dict)
 
@@ -568,7 +568,7 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
         context = {
             'order': self.order,
             'services_json': json.dumps(services_list),
-            'templates_json': json.dumps(templates_list),  # CHANGE: Add templates to context
+            'templates_json': json.dumps(templates_list),  # Add templates to context
             'current_quantities_json': json.dumps(current_quantities_dict),
             'page_title': f"Select Items for Order #{self.order.pk}",
         }
@@ -581,15 +581,15 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
     def post(self, request, *args, **kwargs):
         quantities = {}
         items_to_delete = []
-        templates_to_add = {}  # CHANGE: Store template selections
-        template_guest_counts = {}  # CHANGE: Store guest counts per template
+        templates_to_add = {}  # Store template selections
+        template_guest_counts = {}  # Store guest counts per template
 
-        import sys  # CHANGE: Debug logging
-        print(f"DEBUG: POST data keys: {list(request.POST.keys())}", file=sys.stderr)  # CHANGE: Log all keys
-        print(f"DEBUG: POST data: {dict(request.POST)}", file=sys.stderr)  # CHANGE: Log all data
+        import sys  # Debug logging
+        print(f"DEBUG: POST data keys: {list(request.POST.keys())}", file=sys.stderr)  # Log all keys
+        print(f"DEBUG: POST data: {dict(request.POST)}", file=sys.stderr)  # Log all data
 
         for key, value in request.POST.items():
-            # CHANGE: Handle guest count inputs (format: guest_count_template_<pk>)
+            # Handle guest count inputs (format: guest_count_template_<pk>)
             if key.startswith('guest_count_'):
                 try:
                     id_part = key.replace('guest_count_', '')  # Remove prefix to get template_<pk> format
@@ -597,50 +597,50 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                         template_id = int(id_part.replace('template_', ''))
                         guest_count = int(value)
                         template_guest_counts[template_id] = guest_count
-                        print(f"DEBUG: Parsed guest_count for template {template_id}: {guest_count}", file=sys.stderr)  # CHANGE: Debug
+                        print(f"DEBUG: Parsed guest_count for template {template_id}: {guest_count}", file=sys.stderr)  # Debug
                 except (ValueError, IndexError) as e:
-                    print(f"DEBUG: Error parsing guest_count {key}={value}: {e}", file=sys.stderr)  # CHANGE: Debug
+                    print(f"DEBUG: Error parsing guest_count {key}={value}: {e}", file=sys.stderr)  # Debug
                     pass
             elif key.startswith('quantity_'):
                 try:
-                    id_part = key.split('_', 1)[1]  # CHANGE: Split more carefully to handle 'template_' prefix
-                    print(f"DEBUG: Processing quantity key={key}, id_part={id_part}, value={value}", file=sys.stderr)  # CHANGE: Debug
+                    id_part = key.split('_', 1)[1]  # Split more carefully to handle 'template_' prefix
+                    print(f"DEBUG: Processing quantity key={key}, id_part={id_part}, value={value}", file=sys.stderr)  # Debug
                     quantity = int(value)
                     
                     if quantity < 0:
                         messages.error(request, f"Invalid quantity. Quantity must be non-negative.")
                         continue
 
-                    if id_part.startswith('template_'):  # CHANGE: Handle template IDs
-                        # CHANGE: Template ID format: template_<pk>
+                    if id_part.startswith('template_'):  # Handle template IDs
+                        # Template ID format: template_<pk>
                         template_id = int(id_part.replace('template_', ''))
                         if quantity > 0:
                             templates_to_add[template_id] = quantity
-                            print(f"DEBUG: Added template {template_id} with quantity {quantity}", file=sys.stderr)  # CHANGE: Debug
-                    else:  # CHANGE: Regular service price ID
+                            print(f"DEBUG: Added template {template_id} with quantity {quantity}", file=sys.stderr)  # Debug
+                    else:  # Regular service price ID
                         price_id = int(id_part)
                         if quantity > 0:
                             quantities[price_id] = quantity
                         else:
                             items_to_delete.append(price_id)
                 except (ValueError, IndexError) as e:
-                    print(f"DEBUG: Error parsing quantity {key}={value}: {e}", file=sys.stderr)  # CHANGE: Debug error
+                    print(f"DEBUG: Error parsing quantity {key}={value}: {e}", file=sys.stderr)  # Debug error
                     messages.error(request, f"Invalid data submitted: {e}")
                     return render(request, self.template_name, self.get_context_data(error="Invalid data."))
 
         with transaction.atomic():
-            # CHANGE: Process templates first
+            # Process templates first
             for template_id, quantity in templates_to_add.items():
                 try:
                     template = get_object_or_404(Template, pk=template_id)
-                    # CHANGE: Set template on order (only one template per order)
+                    # Set template on order (only one template per order)
                     self.order.template = template
                     
-                    # CHANGE: Use guest count from form or default
+                    # Use guest count from form or default
                     guest_count = template_guest_counts.get(template_id, template.default_guests)
                     self.order.template_guest_count = guest_count
                     
-                    # CHANGE: Calculate total = base_price + (additional_guests * price_per_additional_guest)
+                    # Calculate total = base_price + (additional_guests * price_per_additional_guest)
                     additional_guests = max(0, guest_count - template.default_guests)
                     calculated_total = template.base_price + (additional_guests * template.price_per_additional_guest)
                     self.order.template_total_amount = calculated_total
@@ -675,19 +675,19 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                 if deleted_count > 0:
                     messages.info(request, f"Removed {deleted_count} item(s) from your order as quantity was set to 0.")
 
-            # CHANGE: Recalculate order total to include BOTH template and add-on items
-            if self.order.template:  # CHANGE: If order has template
-                # CHANGE: Calculate add-ons total from items
+            # Recalculate order total to include BOTH template and add-on items
+            if self.order.template:  # If order has template
+                # Calculate add-ons total from items
                 add_ons_total = Decimal('0.00')
                 for item in self.order.items.all():
                     add_ons_total += (item.price_amount_at_order or Decimal('0.00')) * (item.quantity or 0)
                 
-                # CHANGE: Grand total = template + add-ons
+                # Grand total = template + add-ons
                 self.order.total_amount = (self.order.template_total_amount or Decimal('0.00')) + add_ons_total
-            else:  # CHANGE: No template, just sum items
+            else:  # No template, just sum items
                 self.order.calculate_total()
             
-            self.order.save(update_fields=['total_amount', 'template', 'template_guest_count', 'template_total_amount'])  # CHANGE: Save template fields too
+            self.order.save(update_fields=['total_amount', 'template', 'template_guest_count', 'template_total_amount'])  # Save template fields too
 
         return redirect('orders:order_detail', pk=self.order.pk)
 

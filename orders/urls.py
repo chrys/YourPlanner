@@ -27,8 +27,8 @@ urlpatterns = [
     # Other Order related URLs
     path('<int:order_pk>/select-items/', SelectItemsView.as_view(), name='select_items'),
     path('basket/', BasketView.as_view(), name='basket'),
-    path('basket/remove-template/', views.remove_template, name='remove_template'),  # CHANGE: Keep this
-    path('<int:pk>/update-template-guests/', views.update_template_guests, name='update_template_guests'),  # CHANGE: New endpoint
+    path('basket/remove-template/', views.remove_template, name='remove_template'),  # Keep this
+    path('<int:pk>/update-template-guests/', views.update_template_guests, name='update_template_guests'),  # New endpoint
 
     path('service/<int:service_pk>/select-items/', CustomerServiceItemSelectionView.as_view(), name='customer_service_select_items'),
 

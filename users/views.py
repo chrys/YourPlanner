@@ -161,11 +161,11 @@ class UserManagementView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user = request.user
         
-        # CHANGE: Check if user is an agent first
+        # Check if user is an agent first
         try:
-            from .models import Agent  # CHANGE: Import Agent model
+            from .models import Agent  # Import Agent model
             agent = user.agent_profile
-            if agent and agent.status == Agent.StatusChoices.ACTIVE:  # CHANGE: Redirect active agents to their dashboard
+            if agent and agent.status == Agent.StatusChoices.ACTIVE:  # Redirect active agents to their dashboard
                 return redirect('users:agent_management')
         except Agent.DoesNotExist:
             pass
@@ -501,25 +501,25 @@ class CustomerTemplateDetailView(LoginRequiredMixin, CustomerRequiredMixin, User
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        template = self.get_object() # CHANGE: Get template object
+        template = self.get_object() # Get template object
         customer = request.user.customer_profile
 
         if not template.services.exists():
             messages.warning(request, "This template has no services to add to the basket.")
             return redirect(request.path_info)
 
-        # CHANGE: Parse guest count from form
+        # Parse guest count from form
         try:
             guest_count_raw = request.POST.get('guest_count')
             guest_count = int(guest_count_raw) if guest_count_raw is not None else template.default_guests
         except (ValueError, TypeError):
             guest_count = template.default_guests
 
-        # CHANGE: Compute template total price
+        # Compute template total price
         additional_guests = max(0, guest_count - (template.default_guests or 0))
         template_total = (template.base_price or Decimal('0.00')) + (template.price_per_additional_guest or Decimal('0.00')) * Decimal(additional_guests)
 
-        # CHANGE: Fetch or create pending order
+        # Fetch or create pending order
         pending_orders = Order.objects.filter(
             customer=customer,
             status=Order.StatusChoices.PENDING
@@ -538,15 +538,15 @@ class CustomerTemplateDetailView(LoginRequiredMixin, CustomerRequiredMixin, User
             order = Order.objects.create(
                 customer=customer,
                 status=Order.StatusChoices.PENDING,
-                currency=template.currency  # CHANGE: Set currency from template
+                currency=template.currency  # Set currency from template
             )
 
-        # CHANGE: Set template snapshot on order (do NOT create OrderItem rows)
+        # Set template snapshot on order (do NOT create OrderItem rows)
         order.template = template
         order.template_guest_count = guest_count
         order.template_total_amount = template_total
-        order.total_amount = template_total  # CHANGE: Start with template price
-        order.currency = template.currency  # CHANGE: Enforce template currency
+        order.total_amount = template_total  # Start with template price
+        order.currency = template.currency  # Enforce template currency
         order.save()
 
         messages.success(
@@ -584,12 +584,12 @@ class DepositPaymentView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
         return context
 
 
-# CHANGE: Agent-specific views
-class AgentRequiredMixin(UserPassesTestMixin):  # CHANGE: New mixin for agents
+# Agent-specific views
+class AgentRequiredMixin(UserPassesTestMixin):  # New mixin for agents
     """Ensures the logged-in user has an agent profile."""
     def test_func(self):
         try:
-            from .models import Agent  # CHANGE: Import Agent model
+            from .models import Agent  # Import Agent model
             return hasattr(self.request.user, 'agent_profile') and self.request.user.agent_profile is not None
         except Agent.DoesNotExist:
             return False
@@ -601,21 +601,21 @@ class AgentRequiredMixin(UserPassesTestMixin):  # CHANGE: New mixin for agents
         return redirect('users:user_management')
 
 
-class AgentManagementView(LoginRequiredMixin, AgentRequiredMixin, TemplateView):  # CHANGE: New agent management view
+class AgentManagementView(LoginRequiredMixin, AgentRequiredMixin, TemplateView):  # New agent management view
     """View for agents to manage their assigned orders and profile."""
     template_name = 'users/agent_dashboard.html'
 
     def get_context_data(self, **kwargs):
-        # CHANGE: Get agent profile
+        # Get agent profile
         context = super().get_context_data(**kwargs)
         agent = self.request.user.agent_profile
         
-        # CHANGE: Get all orders assigned to this agent
+        # Get all orders assigned to this agent
         assigned_orders = Order.objects.filter(
             assigned_agent=agent
         ).select_related('customer__user').prefetch_related('items__price__item__service').order_by('-created_at')
         
-        # CHANGE: Get count by status
+        # Get count by status
         pending_orders = assigned_orders.filter(status=Order.StatusChoices.PENDING).count()
         confirmed_orders = assigned_orders.filter(status=Order.StatusChoices.CONFIRMED).count()
         completed_orders = assigned_orders.filter(status=Order.StatusChoices.COMPLETED).count()
@@ -631,37 +631,37 @@ class AgentManagementView(LoginRequiredMixin, AgentRequiredMixin, TemplateView):
         return context
 
 
-class AgentCreateOrderView(LoginRequiredMixin, AgentRequiredMixin, FormView):  # CHANGE: View for agents to create orders
+class AgentCreateOrderView(LoginRequiredMixin, AgentRequiredMixin, FormView):  # View for agents to create orders
     """View for agents to select professional and create orders."""
     template_name = 'users/agent_create_order_step1.html'
     form_class = ProfessionalChoiceForm
     
     def get_context_data(self, **kwargs):
-        # CHANGE: Customize context
+        # Customize context
         context = super().get_context_data(**kwargs)
         context['page_title'] = "Create New Order - Select Professional"
         return context
 
     def form_valid(self, form):
-        # CHANGE: Create order for the selected professional WITHOUT a customer
+        # Create order for the selected professional WITHOUT a customer
         professional = form.cleaned_data['professional']
         
         try:
-            # CHANGE: Create a new pending order assigned to this agent
-            # CHANGE: Order has NO customer (customer=None)
-            # CHANGE: Note: professional is stored in session, will be used when adding items from select_items view
+            # Create a new pending order assigned to this agent
+            # Order has NO customer (customer=None)
+            # Note: professional is stored in session, will be used when adding items from select_items view
             order = Order.objects.create(
                 status=Order.StatusChoices.PENDING,
-                assigned_agent=self.request.user.agent_profile,  # CHANGE: Assign to current agent
-                currency='EUR'  # CHANGE: Default currency
+                assigned_agent=self.request.user.agent_profile,  # Assign to current agent
+                currency='EUR'  # Default currency
             )
             
-            # CHANGE: Store professional in session for use in select_items view
+            # Store professional in session for use in select_items view
             self.request.session['temp_professional_id'] = professional.pk
             
             messages.success(self.request, f"Order created for {professional.title or professional.user.get_full_name()}. Now add packages and services.")
             
-            # CHANGE: Redirect to select items from this professional's services
+            # Redirect to select items from this professional's services
             return redirect('orders:select_items', order_pk=order.pk)
         
         except Exception as e:
@@ -670,7 +670,7 @@ class AgentCreateOrderView(LoginRequiredMixin, AgentRequiredMixin, FormView):  #
 
 
 
-class AgentOrderDetailView(LoginRequiredMixin, AgentRequiredMixin, DetailView):  # CHANGE: View to view order details
+class AgentOrderDetailView(LoginRequiredMixin, AgentRequiredMixin, DetailView):  # View to view order details
     """View for agents to view order details."""
     model = Order
     template_name = 'users/agent_order_detail.html'
@@ -678,22 +678,22 @@ class AgentOrderDetailView(LoginRequiredMixin, AgentRequiredMixin, DetailView): 
     pk_url_kwarg = 'order_pk'
 
     def get_queryset(self):
-        # CHANGE: Only show orders assigned to this agent
+        # Only show orders assigned to this agent
         return Order.objects.filter(assigned_agent=self.request.user.agent_profile)
 
     def get_context_data(self, **kwargs):
-        # CHANGE: Get order details
+        # Get order details
         context = super().get_context_data(**kwargs)
         order = self.object
         
-        # CHANGE: Get order items
+        # Get order items
         order_items = order.items.all().select_related(
             'price__item__service__professional__user',
             'price__item__service',
             'price__item'
         )
         
-        # CHANGE: Handle orders with no customer (agent-created orders)
+        # Handle orders with no customer (agent-created orders)
         customer_name = order.customer.user.get_full_name() if order.customer else "Not assigned"
         
         context.update({
@@ -703,7 +703,7 @@ class AgentOrderDetailView(LoginRequiredMixin, AgentRequiredMixin, DetailView): 
         return context
 
 
-class AgentDeleteOrderView(LoginRequiredMixin, AgentRequiredMixin, DetailView):  # CHANGE: New view to delete orders
+class AgentDeleteOrderView(LoginRequiredMixin, AgentRequiredMixin, DetailView):  # New view to delete orders
     """View for agents to delete orders."""
     model = Order
     template_name = 'users/agent_order_confirm_delete.html'
@@ -711,13 +711,13 @@ class AgentDeleteOrderView(LoginRequiredMixin, AgentRequiredMixin, DetailView): 
     pk_url_kwarg = 'order_pk'
 
     def get_queryset(self):
-        # CHANGE: Only show orders assigned to this agent
+        # Only show orders assigned to this agent
         return Order.objects.filter(assigned_agent=self.request.user.agent_profile)
 
     def post(self, request, *args, **kwargs):
-        # CHANGE: Delete the order
+        # Delete the order
         order = self.get_object()
-        # CHANGE: Handle orders with no customer (agent-created orders)
+        # Handle orders with no customer (agent-created orders)
         customer_name = order.customer.user.get_full_name() if order.customer else "Not assigned"
         order_pk = order.pk
         
@@ -726,7 +726,7 @@ class AgentDeleteOrderView(LoginRequiredMixin, AgentRequiredMixin, DetailView): 
         return redirect('users:agent_management')
 
     def get_context_data(self, **kwargs):
-        # CHANGE: Add context
+        # Add context
         context = super().get_context_data(**kwargs)
         context['page_title'] = f"Delete Order #{self.object.pk_formatted if hasattr(self.object, 'pk_formatted') else self.object.pk}"
         return context

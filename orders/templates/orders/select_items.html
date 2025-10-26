@@ -14,7 +14,7 @@
 
         <form id="select-items-form" method="post">
             {% csrf_token %}
-            <!-- CHANGE: Services Section -->
+            <!-- Services Section -->
             <div v-for="service in servicesData" :key="service.id" class="service-section card mb-4">
                 <div class="card-header bg-light d-flex align-items-center">
                     <input type="checkbox"
@@ -70,7 +70,7 @@
                 </div>
             </div>
 
-            <!-- CHANGE: Packages/Templates Section -->
+            <!-- Packages/Templates Section -->
             <div v-for="template in templatesData" :key="template.id" class="template-section card mb-4" style="border-color: #d4a5c5;">
                 <div class="card-header bg-light d-flex align-items-center" style="background-color: #f8f0f5 !important;">
                     <input type="checkbox"
@@ -87,12 +87,12 @@
                 <div class="card-body" v-if="selectedTemplates.includes(template.id)">
                     <p v-if="template.description" class="text-muted">[[ template.description ]]</p>
                     
-                    <!-- CHANGE: Base pricing and guest adjustment -->
+                    <!-- Base pricing and guest adjustment -->
                     <div class="template-info mb-4 p-3 border rounded bg-light">
                         <p class="mb-2"><strong>{% trans "Base Package:" %}</strong> [[ template.base_price ]] [[ template.currency ]] (includes [[ template.default_guests ]] guests)</p>
                         <p class="mb-3"><strong>{% trans "Per Additional Guest:" %}</strong> [[ template.price_per_additional_guest ]] [[ template.currency ]]</p>
                         
-                        <!-- CHANGE: Guest count input with live price calculation -->
+                        <!-- Guest count input with live price calculation -->
                         <div class="mb-3">
                             <label :for="'guest_count_' + template.id" class="form-label">{% trans "Number of Guests:" %}</label>
                             <div class="input-group" style="max-width: 300px;">
@@ -107,13 +107,13 @@
                             </div>
                         </div>
                         
-                        <!-- CHANGE: Display calculated price -->
+                        <!-- Display calculated price -->
                         <div class="alert alert-info mb-0">
                             <strong>{% trans "Package Total:" %}</strong> <span class="h5">[[ templatePrices[template.id] ]] [[ template.currency ]]</span>
                         </div>
                     </div>
 
-                    <!-- CHANGE: Item selection from package groups -->
+                    <!-- Item selection from package groups -->
                     <div v-if="template.item_groups && template.item_groups.length > 0">
                         <h5 class="mb-3">{% trans "Select items from package groups:" %}</h5>
                         <div v-for="group in template.item_groups" :key="group.id" class="mb-4">
@@ -145,13 +145,13 @@
                         </div>
                     </div>
 
-                    <!-- CHANGE: Add to order checkbox -->
+                    <!-- Add to order checkbox -->
                     <div class="template-quantity-control mt-4">
-                        <!-- CHANGE: Hidden input set to 1 for automatic package selection -->
+                        <!-- Hidden input set to 1 for automatic package selection -->
                         <input type="hidden"
                                :name="'quantity_' + template.id"
                                value="1">
-                        <!-- CHANGE: Hidden input to submit guest count with form -->
+                        <!-- Hidden input to submit guest count with form -->
                         <input type="hidden"
                                :name="'guest_count_' + template.id"
                                :value="templateGuests[template.id]">
@@ -189,25 +189,25 @@ window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
 
 <script>
-const { createApp, ref, onMounted, watch } = Vue;  // CHANGE: Import watch function
+const { createApp, ref, onMounted, watch } = Vue;  // Import watch function
 
 createApp({
     delimiters: ['[[', ']]'],
     setup() {
         const servicesData = ref([]);
-        const templatesData = ref([]);  // CHANGE: Add templates data
+        const templatesData = ref([]);  // Add templates data
         const quantities = ref({}); // Store quantities by price_id
-        const templateGuests = ref({});  // CHANGE: Store guest count per template
-        const templatePrices = ref({});  // CHANGE: Store calculated price per template
-        const templateItemSelections = ref({});  // CHANGE: Store selected items from template groups
+        const templateGuests = ref({});  // Store guest count per template
+        const templatePrices = ref({});  // Store calculated price per template
+        const templateItemSelections = ref({});  // Store selected items from template groups
         const showDialog = ref(false);
         const showSuccess = ref(false);
         const selectedServices = ref([]); 
-        const selectedTemplates = ref([]);  // CHANGE: Add selected templates
+        const selectedTemplates = ref([]);  // Add selected templates
         
         onMounted(() => {
             servicesData.value = window.__servicesData__;
-            templatesData.value = window.__templatesData__;  // CHANGE: Load templates
+            templatesData.value = window.__templatesData__;  // Load templates
             // Optionally pre-select all services, or leave empty for user to choose
             // selectedServices.value = servicesData.value.map(s => s.id);
             const initialQuantities = window.__currentQuantities__;
@@ -219,16 +219,16 @@ createApp({
                 });
             });
             
-            // CHANGE: Initialize template guest counts and prices
+            // Initialize template guest counts and prices
             templatesData.value.forEach(template => {
                 templateGuests.value[template.id] = template.default_guests;
                 calculateTemplatePrice(template);
-                // CHANGE: Initialize quantity to 0, will be set to 1 when checkbox is checked
+                // Initialize quantity to 0, will be set to 1 when checkbox is checked
                 quantities.value[template.id] = 0;
             });
         });
         
-        // CHANGE: Watch for template selection changes and auto-set quantity to 1
+        // Watch for template selection changes and auto-set quantity to 1
         watch(selectedTemplates, (newSelected) => {
             templatesData.value.forEach(template => {
                 if (newSelected.includes(template.id)) {
@@ -245,7 +245,7 @@ createApp({
             }
         }
 
-        // CHANGE: Add template quantity validation
+        // Add template quantity validation
         function validateTemplateQuantity(templateId) {
             if (quantities.value[templateId] < 0 || isNaN(quantities.value[templateId])) {
                 quantities.value[templateId] = 0;
@@ -256,7 +256,7 @@ createApp({
             }
         }
 
-        // CHANGE: Calculate template price with additional guests
+        // Calculate template price with additional guests
         function calculateTemplatePrice(template) {
             const basePrice = parseFloat(template.base_price) || 0;
             const pricePerGuest = parseFloat(template.price_per_additional_guest) || 0;
@@ -266,7 +266,7 @@ createApp({
             const totalPrice = basePrice + (additionalGuests * pricePerGuest);
             
             templatePrices.value[template.id] = totalPrice.toFixed(2);
-            // CHANGE: Hidden input will be updated automatically by Vue via v-bind
+            // Hidden input will be updated automatically by Vue via v-bind
         }
 
         function confirmUpdate() {
@@ -287,7 +287,7 @@ createApp({
                     });
                 }
             });
-            // CHANGE: Remove quantities for unselected templates
+            // Remove quantities for unselected templates
             templatesData.value.forEach(template => {
                 if (!selectedTemplates.value.includes(template.id)) {
                     quantities.value[template.id] = 0;
@@ -299,18 +299,18 @@ createApp({
         // Expose to template
         return {
             servicesData,
-            templatesData,  // CHANGE: Expose templates
+            templatesData,  // Expose templates
             quantities,
-            templateGuests,  // CHANGE: Expose guest counts
-            templatePrices,  // CHANGE: Expose calculated prices
-            templateItemSelections,  // CHANGE: Expose item selections
+            templateGuests,  // Expose guest counts
+            templatePrices,  // Expose calculated prices
+            templateItemSelections,  // Expose item selections
             selectedServices,
-            selectedTemplates,  // CHANGE: Expose selected templates
+            selectedTemplates,  // Expose selected templates
             showDialog,
             showSuccess,
             validateQuantity,
-            validateTemplateQuantity,  // CHANGE: Expose template validation
-            calculateTemplatePrice,  // CHANGE: Expose price calculation
+            validateTemplateQuantity,  // Expose template validation
+            calculateTemplatePrice,  // Expose price calculation
             confirmUpdate,
         };
     }

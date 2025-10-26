@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from users.models import Professional 
-from services.models import Service, Item  # CHANGE: Added Item import
+from services.models import Service, Item  # Added Item import
 from decimal import Decimal 
 from django.core.validators import MinValueValidator 
 
@@ -53,7 +53,7 @@ class Template(models.Model):
         return self.title
 
 
-class TemplateItemGroup(models.Model):  # CHANGE: New model for item groups
+class TemplateItemGroup(models.Model):  # New model for item groups
     """
     Represents a group of items within a template.
     Professional defines how many items from this group are mandatory.
@@ -92,7 +92,7 @@ class TemplateItemGroup(models.Model):  # CHANGE: New model for item groups
 
     def clean(self):
         # Only validate if the group has been saved and has items
-        if self.pk and self.mandatory_count > self.items.count():  # CHANGE: Only check items if pk exists
+        if self.pk and self.mandatory_count > self.items.count():  # Only check items if pk exists
             raise ValidationError({
                 'mandatory_count': _(
                     "Mandatory count (%(count)d) cannot exceed the number of items in the group (%(total)d)."
@@ -100,7 +100,7 @@ class TemplateItemGroup(models.Model):  # CHANGE: New model for item groups
             })
 
 
-class TemplateItemGroupItem(models.Model):  # CHANGE: New model for items in groups
+class TemplateItemGroupItem(models.Model):  # New model for items in groups
     """
     Links specific items to a template item group.
     """
@@ -122,13 +122,13 @@ class TemplateItemGroupItem(models.Model):  # CHANGE: New model for items in gro
         help_text=_("Display order within the group")
     )
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
-    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)  # CHANGE: Added missing updated_at field
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)  # Added missing updated_at field
     
     class Meta:
         verbose_name = _("Template Group Item")
         verbose_name_plural = _("Template Group Items")
         ordering = ['group', 'position', 'item__title']
-        unique_together = ['group', 'item']  # CHANGE: prevent duplicate items in same group
+        unique_together = ['group', 'item']  # prevent duplicate items in same group
 
     def __str__(self):
         return f"{self.group.name} - {self.item.title}"

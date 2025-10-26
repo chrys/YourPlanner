@@ -9,9 +9,9 @@ from .views import (
     CustomerTemplateDetailView,
     CustomerProfessionalServicesView,
     DepositPaymentView,
-    AgentManagementView,  # CHANGE: Added Agent views
+    AgentManagementView,  # Added Agent views
     AgentCreateOrderView,
-    AgentOrderDetailView,  # CHANGE: Removed AgentSelectCustomerView (no longer needed)
+    AgentOrderDetailView,  # Removed AgentSelectCustomerView (no longer needed)
     AgentDeleteOrderView,
 )
 from .views_professional import (
@@ -31,9 +31,9 @@ urlpatterns = [
     path('change-professional/', ChangeProfessionalView.as_view(), name='change_professional'),
     path('deposit-payment/', DepositPaymentView.as_view(), name='deposit_payment'),
     
-    # CHANGE: Agent management routes
+    # Agent management routes
     path('agent/dashboard/', AgentManagementView.as_view(), name='agent_management'),
-    path('agent/order/create/', AgentCreateOrderView.as_view(), name='agent_create_order'),  # CHANGE: Removed select-customer route (no longer needed)
+    path('agent/order/create/', AgentCreateOrderView.as_view(), name='agent_create_order'),  # Removed select-customer route (no longer needed)
     path('agent/order/<int:order_pk>/', AgentOrderDetailView.as_view(), name='agent_order_detail'),
     path('agent/order/<int:order_pk>/delete/', AgentDeleteOrderView.as_view(), name='agent_order_delete'),
     
@@ -47,8 +47,8 @@ urlpatterns = [
     path('customer-templates/<int:pk>/', CustomerTemplateDetailView.as_view(), name='customer_template_detail'),
     path('my-professional-services/', CustomerProfessionalServicesView.as_view(), name='customer_professional_services'),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),  # CHANGE: Explicit password change URL
-    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),  # CHANGE: Done page after password change
+    path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),  # Explicit password change URL
+    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),  # Done page after password change
 
     
 ]

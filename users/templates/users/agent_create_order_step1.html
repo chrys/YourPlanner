@@ -13,7 +13,7 @@
                     <h5 class="mb-0">{{ page_title }}</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-3">{% trans "Select a professional to create an order" %}</p>  {# CHANGE: Removed "Step 1 of 2" text (now single-step) #}
+                    <p class="text-muted mb-3">{% trans "Select a professional to create an order" %}</p>  {# Removed "Step 1 of 2" text (now single-step) #}
                     
                     {% include "_messages.html" %}
 
@@ -30,7 +30,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">{% trans "Create Order" %}</button>  {# CHANGE: Updated button text (no longer "Next: Select Customer") #}
+                            <button type="submit" class="btn btn-primary">{% trans "Create Order" %}</button>  {# Updated button text (no longer "Next: Select Customer") #}
                             <a href="{% url 'users:agent_management' %}" class="btn btn-outline-secondary">
                                 {% trans "Cancel" %}
                             </a>

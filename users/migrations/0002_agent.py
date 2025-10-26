@@ -3,7 +3,7 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
-class Migration(migrations.Migration):  # CHANGE: New migration for Agent
+class Migration(migrations.Migration):  # New migration for Agent
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -11,7 +11,7 @@ class Migration(migrations.Migration):  # CHANGE: New migration for Agent
     ]
 
     operations = [
-        migrations.CreateModel(  # CHANGE: Add Agent model
+        migrations.CreateModel(  # Add Agent model
             name='Agent',
             fields=[
                 ('created_at', models.DateTimeField(auto_now_add=True)),
@@ -31,7 +31,7 @@ class Migration(migrations.Migration):  # CHANGE: New migration for Agent
                 'verbose_name_plural': 'Agents',
             },
         ),
-        migrations.AddIndex(  # CHANGE: Add database indexes
+        migrations.AddIndex(  # Add database indexes
             model_name='agent',
             index=models.Index(fields=['status'], name='users_agent_status_idx'),
         ),

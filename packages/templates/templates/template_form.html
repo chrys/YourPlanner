@@ -6,26 +6,26 @@
 {% block extra_head %}
     {{ form.media }}
     {{ image_formset.media }}
-    {{ group_formset.media }}  <!-- CHANGE: Added group formset media -->
+    {{ group_formset.media }}  <!-- Added group formset media -->
 {% endblock extra_head %}
 
 {% block content %}
 <div class="container mt-4">
     <h2>{% if object %}{% trans "Edit Template" %}: {{ object.title }}{% else %}{% trans "Create New Template" %}{% endif %}</h2>
 
-    {% if form.errors or image_formset.errors or group_formset.errors %}  <!-- CHANGE: Added group_formset.errors -->
+    {% if form.errors or image_formset.errors or group_formset.errors %}  <!-- Added group_formset.errors -->
         <div class="alert alert-danger">
             <p>{% trans "Please correct the errors below:" %}</p>
             {{ form.non_field_errors }}
             {{ image_formset.non_form_errors }}
-            {{ group_formset.non_form_errors }}  <!-- CHANGE: Show group formset errors -->
+            {{ group_formset.non_form_errors }}  <!-- Show group formset errors -->
         </div>
     {% endif %}
 
     <form method="post" enctype="multipart/form-data" id="template-form">
         {% csrf_token %}
 
-        <!-- CHANGE: Basic Template Information -->
+        <!-- Basic Template Information -->
         <div class="card mb-3">
             <div class="card-header">{% trans "Package Details" %}</div>
             <div class="card-body">
@@ -39,7 +39,7 @@
             </div>
         </div>
 
-        <!-- CHANGE: Item Groups Section -->
+        <!-- Item Groups Section -->
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>{% trans "Item Groups" %}</span>
@@ -105,9 +105,9 @@
                             </div>
                         </div>
                     {% endfor %}
-                    <!-- CHANGE: Hidden container with all available items as checkboxes for JS cloning -->
+                    <!-- Hidden container with all available items as checkboxes for JS cloning -->
                     <div id="all-items-checkboxes" class="d-none">
-                        {# CHANGE: Use all_items context variable, which must be provided by the view #}
+                        {# Use all_items context variable, which must be provided by the view #}
                         {% for item in all_items %}
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" name="items" value="{{ item.pk }}" id="item-checkbox-{{ item.pk }}">
@@ -115,29 +115,29 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <!-- CHANGE: Add a hidden template for new groups -->
+                    <!-- Add a hidden template for new groups -->
                     <div class="item-group-form card mb-3 d-none" id="group-form-template">
                         <div class="card-header">
                             <strong>Group X</strong>
                         </div>
                         <div class="card-body">
                             <!-- Add empty fields as in your real group form -->
-                            <div class="mb-3">  <!-- CHANGE: group name field stays in hidden template -->
+                            <div class="mb-3">  <!-- group name field stays in hidden template -->
                                 <label class="form-label">Group Name</label>
-                                <input type="text" class="form-control" name="name" value="" />  <!-- CHANGE: JS will rename to groups-{index}-name -->
+                                <input type="text" class="form-control" name="name" value="" />  <!-- JS will rename to groups-{index}-name -->
                             </div>
-                            <div class="mb-3">  <!-- CHANGE: mandatory count field stays in hidden template -->
+                            <div class="mb-3">  <!-- mandatory count field stays in hidden template -->
                                 <label class="form-label">Mandatory Items Count</label>
-                                <input type="number" class="form-control" name="mandatory_count" value="0" min="0" />  <!-- CHANGE: JS will rename to groups-{index}-mandatory_count -->
+                                <input type="number" class="form-control" name="mandatory_count" value="0" min="0" />  <!-- JS will rename to groups-{index}-mandatory_count -->
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Items</label>
                                 <div class="row items-checkboxes-row">
-                                    <!-- CHANGE: JS will populate checkboxes here from #all-items-checkboxes -->
+                                    <!-- JS will populate checkboxes here from #all-items-checkboxes -->
                                 </div>
                                 <div class="form-text">Select items for this group</div>
                             </div>
-                            <input type="checkbox" name="DELETE" style="display:none;" />  <!-- CHANGE: JS will rename to groups-{index}-DELETE -->
+                            <input type="checkbox" name="DELETE" style="display:none;" />  <!-- JS will rename to groups-{index}-DELETE -->
                         </div>
                     </div>
                 </div>
@@ -192,18 +192,18 @@
     </form>
 </div>
 
-<!-- CHANGE: JavaScript to handle dynamic group forms -->
+<!-- JavaScript to handle dynamic group forms -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const numberInput = document.getElementById('id_number_of_groups');
     const groupsContainer = document.getElementById('item-groups-container');
     const managementForm = document.querySelector('input[name="groups-TOTAL_FORMS"]');
-    const generateBtn = document.getElementById('generate-groups-btn'); // CHANGE: Get the button
-    const allItemsContainer = document.getElementById('all-items-checkboxes'); // CHANGE: Get the items container
+    const generateBtn = document.getElementById('generate-groups-btn'); // Get the button
+    const allItemsContainer = document.getElementById('all-items-checkboxes'); // Get the items container
     
-    if (!numberInput || !groupsContainer || !managementForm || !generateBtn) return;  // CHANGE: guard required elements
+    if (!numberInput || !groupsContainer || !managementForm || !generateBtn) return;  // guard required elements
 
-    // CHANGE: Get the first existing group form as a template (if it exists)
+    // Get the first existing group form as a template (if it exists)
     let templateForm = groupsContainer.querySelector('.item-group-form:not(#group-form-template)');
     
     function updateGroupForms() {
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const existingForms = Array.from(groupsContainer.querySelectorAll('.item-group-form:not(#group-form-template)'));
         const currentCount = existingForms.length;
 
-        // CHANGE: Show/hide existing forms based on target
+        // Show/hide existing forms based on target
         existingForms.forEach((form, index) => {
             if (index < targetCount) {
                 form.style.display = '';
@@ -225,23 +225,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // CHANGE: Add new forms if needed
+        // Add new forms if needed
         if (targetCount > currentCount) {
             for (let i = currentCount; i < targetCount; i++) {
                 addNewGroupForm(i);
             }
         }
         
-        // CHANGE: Update management form count to match requested number
-        managementForm.value = targetCount;  // CHANGE: keep TOTAL_FORMS in sync with visible count
+        // Update management form count to match requested number
+        managementForm.value = targetCount;  // keep TOTAL_FORMS in sync with visible count
     }
 
-    // CHANGE: Populate items into a group's items container from the hidden all-items list
+    // Populate items into a group's items container from the hidden all-items list
     function populateItemsCheckboxes(targetForm, index) {
-        const itemsRow = targetForm.querySelector('.items-checkboxes-row');  // CHANGE: container inside group form
-        if (!itemsRow || !allItemsContainer) return;  // CHANGE: nothing to populate if missing
+        const itemsRow = targetForm.querySelector('.items-checkboxes-row');  // container inside group form
+        if (!itemsRow || !allItemsContainer) return;  // nothing to populate if missing
 
-        itemsRow.innerHTML = '';  // CHANGE: clear before inserting
+        itemsRow.innerHTML = '';  // clear before inserting
 
         const sources = allItemsContainer.querySelectorAll('.form-check');
         sources.forEach((srcDiv) => {
@@ -258,8 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
             input.type = 'checkbox';
             input.className = 'form-check-input';
             input.value = srcInput.value;
-            input.name = `groups-${index}-items`;  // CHANGE: formset-compliant name
-            input.id = `id_groups-${index}-items_${srcInput.value}`;  // CHANGE: unique id per item
+            input.name = `groups-${index}-items`;  // formset-compliant name
+            input.id = `id_groups-${index}-items_${srcInput.value}`;  // unique id per item
 
             const label = document.createElement('label');
             label.className = 'form-check-label';
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function addNewGroupForm(index) {
-        // CHANGE: Use the first form as template, or create from scratch
+        // Use the first form as template, or create from scratch
         if (!templateForm && !allItemsContainer) {
             console.error('No template form or items found');
             return;
@@ -289,9 +289,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const hiddenTemplate = document.getElementById('group-form-template');
             if (!hiddenTemplate) return;
             newForm = hiddenTemplate.cloneNode(true);
-            newForm.classList.remove('d-none');  // CHANGE: make visible
-            newForm.removeAttribute('id');  // CHANGE: remove template id
-            // CHANGE: explicitly set names/ids for hidden-template fields to formset names
+            newForm.classList.remove('d-none');  // make visible
+            newForm.removeAttribute('id');  // remove template id
+            // explicitly set names/ids for hidden-template fields to formset names
             const nameInput = newForm.querySelector('input[name="name"]');
             if (nameInput) {
                 nameInput.name = `groups-${index}-name`;  // CHANGE
@@ -311,15 +311,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 deleteInput.name = `groups-${index}-DELETE`;  // CHANGE
                 deleteInput.id = `id_groups-${index}-DELETE`;  // CHANGE
             }
-            // CHANGE: populate items checkboxes from hidden source
+            // populate items checkboxes from hidden source
             populateItemsCheckboxes(newForm, index);
         }
         
         newForm.setAttribute('data-group-index', index);
-        newForm.setAttribute('data-generated', 'true'); // CHANGE: Mark as generated
+        newForm.setAttribute('data-generated', 'true'); // Mark as generated
         newForm.style.display = '';
         
-        // CHANGE: Update all field names and IDs to use the new index
+        // Update all field names and IDs to use the new index
         const fields = newForm.querySelectorAll('input, select, textarea, label');
         fields.forEach(field => {
             // Update name attribute
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.setAttribute('for', forAttr.replace(/groups-\d+/, `groups-${index}`));
             }
             
-            // CHANGE: Clear values for input fields
+            // Clear values for input fields
             if (field.tagName === 'INPUT') {
                 if (field.type === 'checkbox') {
                     field.checked = false;
@@ -356,20 +356,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // CHANGE: Update the group header
+        // Update the group header
         const header = newForm.querySelector('.card-header strong');
         if (header) {
             header.textContent = `{% trans "Group" %} ${index + 1}`;
         }
 
-        // CHANGE: Remove the delete button if it exists (new forms shouldn't have delete for existing items)
+        // Remove the delete button if it exists (new forms shouldn't have delete for existing items)
         const deleteBtn = newForm.querySelector('.delete-group-btn');
         const idField = newForm.querySelector('input[name$="-id"]');
         if (deleteBtn && (!idField || !idField.value)) {
             deleteBtn.remove();
         }
 
-        // CHANGE: Append the new form to the container (before hidden template if it exists)
+        // Append the new form to the container (before hidden template if it exists)
         const hiddenTemplate = document.getElementById('group-form-template');
         if (hiddenTemplate) {
             groupsContainer.insertBefore(newForm, hiddenTemplate);
@@ -378,10 +378,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // CHANGE: Only update groups when button is clicked
+    // Only update groups when button is clicked
     generateBtn.addEventListener('click', updateGroupForms);
 
-    // CHANGE: Handle delete buttons
+    // Handle delete buttons
     groupsContainer.addEventListener('click', function(e) {
         if (e.target.classList.contains('delete-group-btn')) {
             const form = e.target.closest('.item-group-form');

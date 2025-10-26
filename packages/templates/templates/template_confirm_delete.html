@@ -16,7 +16,7 @@
 
     {% include "_messages.html" %}
 
-    <!-- CHANGE: Show deletion confirmation with package details -->
+    <!-- Show deletion confirmation with package details -->
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">{{ template.title }}</h5>
@@ -27,7 +27,7 @@
                 {% trans "This action cannot be undone." %}
             </div>
 
-            <!-- CHANGE: Check if template is used in orders -->
+            <!-- Check if template is used in orders -->
             {% if orders_using_template %}
                 <div class="alert alert-danger mt-3">
                     <h6>{% trans "Cannot Delete Package" %}</h6>
@@ -54,7 +54,7 @@
                     {% trans "Back to Package" %}
                 </a>
             {% else %}
-                <!-- CHANGE: Show delete form only if no orders use the template -->
+                <!-- Show delete form only if no orders use the template -->
                 <p class="mt-3">
                     {% blocktrans with title=template.title %}
                         Are you sure you want to delete the package "<strong>{{ title }}</strong>"?

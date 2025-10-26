@@ -32,27 +32,27 @@ class ProfessionalCustomerLinkAdmin(admin.ModelAdmin):
     list_filter = ['status']
     search_fields = ['professional__user__username', 'customer__user__username']
     
-@admin.register(Agent)  # CHANGE: Register Agent admin
-class AgentAdmin(admin.ModelAdmin):  # CHANGE: Simplified AgentAdmin (no permissions management)
+@admin.register(Agent)  # Register Agent admin
+class AgentAdmin(admin.ModelAdmin):  # Simplified AgentAdmin (no permissions management)
     """Admin interface for managing Agents. Only admins can create/edit agents."""
     
-    list_display = [  # CHANGE: Display these columns in list view
+    list_display = [  # Display these columns in list view
         'user', 'title', 'department', 'status', 'get_assigned_orders_count'
     ]
     
-    list_filter = [  # CHANGE: Add filters
+    list_filter = [  # Add filters
         'status', 'department', 'created_at'
     ]
     
-    search_fields = [  # CHANGE: Enable search
+    search_fields = [  # Enable search
         'title', 'user__email', 'user__username', 'department', 'bio'
     ]
     
-    readonly_fields = [  # CHANGE: Read-only fields
+    readonly_fields = [  # Read-only fields
         'created_at', 'updated_at', 'get_assigned_orders_count'
     ]
     
-    fieldsets = (  # CHANGE: Organize fields in sections
+    fieldsets = (  # Organize fields in sections
         ('User Information', {
             'fields': ('user',)
         }),
@@ -61,11 +61,11 @@ class AgentAdmin(admin.ModelAdmin):  # CHANGE: Simplified AgentAdmin (no permiss
         }),
         ('Status', {
             'fields': ('status',),
-            'description': 'Set agent status (Active/Inactive/Suspended)'  # CHANGE: Simplified description
+            'description': 'Set agent status (Active/Inactive/Suspended)'  # Simplified description
         }),
         ('Additional Information', {
             'fields': ('notes', 'labels'),
-            'classes': ('collapse',)  # CHANGE: Collapsible section
+            'classes': ('collapse',)  # Collapsible section
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
@@ -73,40 +73,40 @@ class AgentAdmin(admin.ModelAdmin):  # CHANGE: Simplified AgentAdmin (no permiss
         }),
     )
     
-    filter_horizontal = ['labels']  # CHANGE: Better UI for M2M field
+    filter_horizontal = ['labels']  # Better UI for M2M field
     
-    def get_readonly_fields(self, request, obj=None):  # CHANGE: Additional read-only logic
+    def get_readonly_fields(self, request, obj=None):  # Additional read-only logic
         """Prevent non-superusers from modifying certain fields."""
         readonly = list(self.readonly_fields)
         
-        # CHANGE: Non-superusers cannot change user or status
+        # Non-superusers cannot change user or status
         if not request.user.is_superuser:
             readonly.extend(['user', 'status'])
         
         return readonly
     
-    def get_assigned_orders_count(self, obj):  # CHANGE: Display number of assigned orders
+    def get_assigned_orders_count(self, obj):  # Display number of assigned orders
         """Show count of orders assigned to this agent."""
-        count = obj.assigned_orders.count() if obj else 0  # CHANGE: Use assigned_orders relation
+        count = obj.assigned_orders.count() if obj else 0  # Use assigned_orders relation
         return f"{count} orders"
     
-    get_assigned_orders_count.short_description = "Assigned Orders"  # CHANGE: Column header
+    get_assigned_orders_count.short_description = "Assigned Orders"  # Column header
     
-    def save_model(self, request, obj, form, change):  # CHANGE: Log admin actions
+    def save_model(self, request, obj, form, change):  # Log admin actions
         """Override save to log admin actions."""
-        if change:  # CHANGE: If updating
+        if change:  # If updating
             # You could add logging here if needed
             pass
         super().save_model(request, obj, form, change)
     
-    def has_add_permission(self, request):  # CHANGE: Only superusers can create agents
+    def has_add_permission(self, request):  # Only superusers can create agents
         """Only superusers can create new agents."""
         return request.user.is_superuser
     
-    def has_delete_permission(self, request, obj=None):  # CHANGE: Only superusers can delete agents
+    def has_delete_permission(self, request, obj=None):  # Only superusers can delete agents
         """Only superusers can delete agents."""
         return request.user.is_superuser
     
-    def has_change_permission(self, request, obj=None):  # CHANGE: Only staff can edit agents
+    def has_change_permission(self, request, obj=None):  # Only staff can edit agents
         """Only superusers or staff can edit agents."""
         return request.user.is_staff

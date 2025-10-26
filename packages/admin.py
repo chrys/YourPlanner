@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from .models import Template, TemplateImage, TemplateItemGroup, TemplateItemGroupItem  # CHANGE: Added new models
+from .models import Template, TemplateImage, TemplateItemGroup, TemplateItemGroupItem  # Added new models
 
 class TemplateImageInline(admin.TabularInline):
     model = TemplateImage
@@ -10,7 +10,7 @@ class TemplateImageInline(admin.TabularInline):
     verbose_name_plural = _("Images")
 
 
-class TemplateItemGroupItemInline(admin.TabularInline):  # CHANGE: New inline for group items
+class TemplateItemGroupItemInline(admin.TabularInline):  # New inline for group items
     model = TemplateItemGroupItem
     extra = 1
     fields = ('item', 'position')
@@ -19,7 +19,7 @@ class TemplateItemGroupItemInline(admin.TabularInline):  # CHANGE: New inline fo
     autocomplete_fields = ['item']
 
 
-class TemplateItemGroupInline(admin.StackedInline):  # CHANGE: New inline for groups
+class TemplateItemGroupInline(admin.StackedInline):  # New inline for groups
     model = TemplateItemGroup
     extra = 0
     fields = ('name', 'position', 'mandatory_count')
@@ -30,10 +30,10 @@ class TemplateItemGroupInline(admin.StackedInline):  # CHANGE: New inline for gr
 
 @admin.register(Template)
 class TemplateAdmin(admin.ModelAdmin):
-    list_display = ('title', 'professional', 'base_price', 'currency', 'default_guests', 'created_at', 'updated_at')  # CHANGE: Added pricing fields
-    list_filter = ('professional', 'currency', 'created_at')  # CHANGE: Added currency filter
+    list_display = ('title', 'professional', 'base_price', 'currency', 'default_guests', 'created_at', 'updated_at')  # Added pricing fields
+    list_filter = ('professional', 'currency', 'created_at')  # Added currency filter
     search_fields = ('title', 'description', 'professional__user__username')
-    inlines = [TemplateImageInline, TemplateItemGroupInline]  # CHANGE: Added TemplateItemGroupInline
+    inlines = [TemplateImageInline, TemplateItemGroupInline]  # Added TemplateItemGroupInline
     fieldsets = (
         (None, {
             'fields': ('professional', 'title', 'description')
@@ -41,14 +41,14 @@ class TemplateAdmin(admin.ModelAdmin):
         (_('Services'), {
             'fields': ('services',)
         }),
-        (_('Pricing'), {  # CHANGE: New pricing section
+        (_('Pricing'), {  # New pricing section
             'fields': ('base_price', 'currency', 'default_guests', 'price_per_additional_guest')
         }),
     )
     filter_horizontal = ('services',)
 
 
-@admin.register(TemplateItemGroup)  # CHANGE: New admin for item groups
+@admin.register(TemplateItemGroup)  # New admin for item groups
 class TemplateItemGroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'template', 'position', 'mandatory_count', 'item_count')
     list_filter = ('template__professional',)

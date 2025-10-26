@@ -74,7 +74,7 @@ class Order(TimeStampedModel):
         help_text="Optional labels to categorize this order"
     )
     
-    assigned_agent = models.ForeignKey(  # CHANGE: Optional agent assigned to this order
+    assigned_agent = models.ForeignKey(  # Optional agent assigned to this order
         Agent,
         on_delete=models.SET_NULL,
         null=True,

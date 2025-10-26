@@ -14,7 +14,7 @@
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         
-        <!-- CHANGE: Replace form.as_p with manual field rendering to ensure all fields are displayed -->
+        <!-- Replace form.as_p with manual field rendering to ensure all fields are displayed -->
         <div class="mb-3">
             <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
             {{ form.title }}

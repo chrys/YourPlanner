@@ -1,7 +1,7 @@
 from django import forms
 from django.forms.models import inlineformset_factory
-from .models import Template, TemplateImage, TemplateItemGroup, TemplateItemGroupItem  # CHANGE: Added new models
-from services.models import Service, Item  # CHANGE: Added Item import
+from .models import Template, TemplateImage, TemplateItemGroup, TemplateItemGroupItem  # Added new models
+from services.models import Service, Item  # Added Item import
 from django.utils.translation import gettext_lazy as _
 
 class TemplateForm(forms.ModelForm):
@@ -11,7 +11,7 @@ class TemplateForm(forms.ModelForm):
         help_text=_("Hold down 'Ctrl' (or 'Cmd' on Mac) to select more than one.")
     )
     
-    number_of_groups = forms.IntegerField(  # CHANGE: New field for number of groups
+    number_of_groups = forms.IntegerField(  # New field for number of groups
         min_value=0,
         max_value=20,
         initial=0,
@@ -28,7 +28,7 @@ class TemplateForm(forms.ModelForm):
         fields = [
             'title', 'description', 'services',
             'base_price', 'currency', 'default_guests', 'price_per_additional_guest',
-            'number_of_groups'  # CHANGE: Added to fields
+            'number_of_groups'  # Added to fields
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -45,12 +45,12 @@ class TemplateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # CHANGE: Set initial value for number_of_groups if editing existing template
+        # Set initial value for number_of_groups if editing existing template
         if self.instance and self.instance.pk:
             self.fields['number_of_groups'].initial = self.instance.item_groups.count()
 
 
-class TemplateItemGroupForm(forms.ModelForm):  # CHANGE: New form for item groups
+class TemplateItemGroupForm(forms.ModelForm):  # New form for item groups
     """Form for creating/editing a template item group."""
     items = forms.ModelMultipleChoiceField(
         queryset=Item.objects.filter(is_active=True),
@@ -76,7 +76,7 @@ class TemplateItemGroupForm(forms.ModelForm):  # CHANGE: New form for item group
                 is_active=True
             ).select_related('service').order_by('service__title', 'title')
         # Only set initial if instance exists and has a pk
-        if self.instance and self.instance.pk:  # CHANGE: Only access items if pk exists
+        if self.instance and self.instance.pk:  # Only access items if pk exists
             self.fields['items'].initial = self.instance.items.values_list('item_id', flat=True)
 
     def clean(self):
@@ -92,7 +92,7 @@ class TemplateItemGroupForm(forms.ModelForm):  # CHANGE: New form for item group
         return cleaned_data
 
 
-# CHANGE: Formset for handling multiple item groups
+# Formset for handling multiple item groups
 TemplateItemGroupFormSet = inlineformset_factory(
     Template,
     TemplateItemGroup,

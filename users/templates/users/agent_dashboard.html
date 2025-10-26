@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    <!-- CHANGE: Order Statistics Cards -->
+    <!-- Order Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card text-center">
@@ -51,7 +51,7 @@
         </div>
     </div>
 
-    <!-- CHANGE: Quick Action Buttons -->
+    <!-- Quick Action Buttons -->
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card">
@@ -68,7 +68,7 @@
         </div>
     </div>
 
-    <!-- CHANGE: Assigned Orders Table -->
+    <!-- Assigned Orders Table -->
     <div class="card">
         <div class="card-header">
             <h5 class="mb-0">{% trans "My Assigned Orders" %}</h5>
@@ -88,18 +88,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for order in assigned_orders %}  <!-- CHANGE: Loop through assigned orders -->
+                            {% for order in assigned_orders %}  <!-- Loop through assigned orders -->
                                 <tr>
                                     <td>
                                         <strong>#{{ order.pk_formatted|default:order.pk }}</strong>
                                     </td>
                                     <td>
-                                        {% if order.customer %}  {# CHANGE: Handle orders without customer (agent-created orders) #}
+                                        {% if order.customer %}  {# Handle orders without customer (agent-created orders) #}
                                             {{ order.customer.user.get_full_name|default:order.customer.user.username }}
                                             {% if order.customer.company_name %}
                                                 <br><small class="text-muted">{{ order.customer.company_name }}</small>
                                             {% endif %}
-                                        {% else %}  {# CHANGE: Show professional from first order item if no customer #}
+                                        {% else %}  {# Show professional from first order item if no customer #}
                                             {% with prof=order.items.first.service.professional %}
                                                 {% if prof %}
                                                     <small class="text-muted">{{ prof.title|default:prof.user.get_full_name }}</small>

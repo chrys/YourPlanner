@@ -27,13 +27,13 @@
                                     {% else %}
                                         <small class="text-muted">-</small>
                                     {% endif %}
-                                </p>  {# CHANGE: Show professional from order items #}
+                                </p>  {# Show professional from order items #}
                             {% endwith %}
                             <p><strong>{% trans "Customer:" %}</strong> 
                                 {% if order.customer %}
                                     {{ order.customer.user.get_full_name }}
                                 {% else %}
-                                    <small class="text-muted">{% trans "Not assigned" %}</small>  {# CHANGE: Handle no customer #}
+                                    <small class="text-muted">{% trans "Not assigned" %}</small>  {# Handle no customer #}
                                 {% endif %}
                             </p>
                             <p><strong>{% trans "Total:" %}</strong> {{ order.total_amount|floatformat:2 }} {{ order.currency }}</p>

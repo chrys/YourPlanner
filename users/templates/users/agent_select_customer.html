@@ -27,7 +27,7 @@
                             <form method="post">
                                 {% csrf_token %}
                                 <div class="list-group mb-3">
-                                    {% for customer in customers %}  <!-- CHANGE: List customers -->
+                                    {% for customer in customers %}  <!-- List customers -->
                                         <label class="list-group-item">
                                             <input type="radio" name="customer_id" value="{{ customer.pk }}" required>
                                             <strong>{{ customer.user.get_full_name|default:customer.user.username }}</strong>
