@@ -1,18 +1,50 @@
-
-{% extends "core/base.html" %}
-{% load static %}
-{% block title %}Login{% endblock %}
-{% block content %}
-<header>
-</header>
-<main>
-    <h2 class="welcome-title">Login</h2>
-    <div class="form-container">
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Login</button>
-        </form>
-    </div>
-</main>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'users/css/login.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <title>Login</title>
+</head>
+<body style="background-image: url({% static 'users/images/background.png' %}); background-size: cover;">
+    <main class="main">
+        <div class="container">
+            <h2 class="welcome-title">Welcome to V planner!</h2>
+            <h3 class="subtitle">Plan your dream wedding with us.</h3>
+            <div class="form-container">
+               <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="text-danger small">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="form-row">
+                        {{ form.username }}
+                        <script>
+                            document.getElementById('id_username').placeholder = 'Username';
+                        </script>
+                        {% for error in form.username.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-row">
+                        {{ form.password }}
+                        <script>
+                            document.getElementById('id_password').placeholder = 'Password';
+                        </script>
+                        {% for error in form.password.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="login-btn">Login</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

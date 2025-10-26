@@ -4,7 +4,6 @@ from .models import Professional, Customer
 from labels.models import Label
 from django.utils import timezone 
 
-
 class RegistrationForm(forms.ModelForm):
     ROLE_CHOICES = (
         ('customer', 'Customer'),

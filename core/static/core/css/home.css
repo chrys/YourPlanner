@@ -1,6 +1,6 @@
 body {
     margin: 0;
-    font-family: 'Open Sans', Arial, sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     background: #fff;
     color: #222;
 }
@@ -110,77 +110,89 @@ header {
 
 .side-menu {
     position: fixed;
-    top: 0;
     left: 0;
-    width: 270px;
-    height: 100%;
+    top: 0;
+    bottom: 0;
+    width: 300px;
+    overflow-y: auto;
     background: #fff;
-    border-right: 2px solid #e88ea1;
-    box-shadow: 2px 0 16px rgba(232, 142, 161, 0.07);
-    z-index: 2000;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    padding-top: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.side-menu.open {
-    transform: translateX(0);
-}
-
-.close-btn {
-    background: none;
+    z-index: 1000;
     border: none;
-    font-size: 2em;
-    color: #e88ea1;
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    cursor: pointer;
+    box-shadow: 2px 0 6px rgba(0,0,0,0.06);
 }
 
-.menu-item {
-    display: block;
+.main-content {
+    margin-left: 300px;
+}
+
+@media (max-width: 768px) {
+    .side-menu {
+        position: fixed;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+    }
+    .side-menu.open { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+    .overlay { display: none; }
+    .overlay.active { display: block; position: fixed; inset:0; background: rgba(0,0,0,0.4); z-index:900; }
+}
+
+
+#logo67 {
+    width: 80%;
+}
+
+.menu-item,
+.menu-item.special {
+    display: flex;           
+    align-items: center;
+    width: calc(100% - 40px);
+    gap: 8px;
     margin: 0 20px;
     padding: 10px 0;
-    border: 2px solid #e88ea1;
+    border: none;
     border-radius: 8px;
     background: #fff;
-    color: #222; /* changed from #e88ea1 to black */
-    font-family: 'Open Sans', Arial, sans-serif;
+    color: #222;
     font-size: 1.05em;
     font-weight: 600;
-    text-align: center;
+    text-align: left;
     text-decoration: none;
     transition: background 0.2s, color 0.2s, border 0.2s;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
+.menu-item svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+    margin-left: 3px;
+}
 
 .menu-item:hover {
-    background: #e88ea1;
-    color: #fff;
+    background: #A8D497;
+    color: #000;
+    text-decoration: none;
 }
 
 .menu-item.special {
-    background: #e88ea1;
-    color: #fff;
-    border: 2px solid #e88ea1;
-    margin-bottom: 5px;
+    background: #fff;
+    color: #000;
 }
 
 .menu-item.special:hover {
-    background: #222;
-    color: #fff;
-    border: 2px solid #222;
+    background: #A8D497;
+    color: #000;
 }
 
-.menu-item.special .icon {
-    margin-right: 8px;
-    font-size: 1.1em;
-    vertical-align: middle;
+.menu-item.image {
+    margin-left: 30px;
+    align-items: center;
+}
+
+.menu-item.image:hover {
+    background: #ffffff;
 }
 
 .overlay {
