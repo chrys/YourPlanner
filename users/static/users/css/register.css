@@ -52,12 +52,22 @@ body::before {
     align-items: center;
 }
 
-.form-container form {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.form {
     width: 100%;
-    box-sizing: border-box;
+    max-width: 420px;        /* adjust to taste */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* two equal columns */
+    justify-items: center;   /* center items in each cell */
+    align-items: center;
+    justify-content: center; /* center grid contents */
+}
+
+/* center the submit button block */
+.d-grid {
+    width: 100%;
+    max-width: 420px;
+    display: grid;
+    justify-content: center;
 }
 
 .welcome-title {
@@ -65,7 +75,7 @@ body::before {
     font-style: bold;
     font-size: 40px;
     color: #F4F6F3;
-    margin: 0;
+    margin-bottom: 20px;
 }
 
 .subtitle {
@@ -76,14 +86,23 @@ body::before {
     color: #F4F6F3;
 }
 
-#id_first_name, #id_last_name, #id_email, #id_username, #id_password, #id_title, .btn.btn-primary {
+#id_first_name, #id_last_name, #id_email, #id_password, #id_title, .btn.btn-primary, #id_role {
     background-color: #F4F6F3;
     border: 1px solid #C9C9C9;
-    width: 250px;
+    width: 200px;
+    margin: 5px;
     border-radius: 8px;
-    margin-bottom: 20px;
-    padding: 12px;
+    padding: 10px;
     color: #000000;
+}
+
+#hint_id_title {
+    margin: 8px;
+}
+
+#id_role {
+    width: 200px;
+    padding: 10px;
 }
 
 .btn.btn-primary {

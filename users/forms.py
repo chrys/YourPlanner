@@ -9,20 +9,22 @@ class RegistrationForm(forms.ModelForm):
         ('customer', 'Customer'),
         ('professional', 'Professional'),
     )
-    first_name = forms.CharField(max_length=30, required=True)
-    last_name = forms.CharField(max_length=30, required=True)
-    email = forms.EmailField(required=True)
-    password = forms.CharField(widget=forms.PasswordInput)
+    first_name = forms.CharField(max_length=30, required=True, label='')
+    last_name = forms.CharField(max_length=30, required=True, label='')
+    email = forms.EmailField(required=True, label='')
+    password = forms.CharField(widget=forms.PasswordInput, label='')
     role = forms.ChoiceField(
         choices=ROLE_CHOICES, 
         required=True,
         widget=forms.HiddenInput(),  # Hide this field
-        initial='customer'  # Set default value
+        initial='customer',  # Set default value
+        label=''
     )
     title = forms.CharField(  # Add title field
         max_length=200,
         required=False,
-        help_text="Required for professionals"
+        help_text="Required for professionals",
+        label=''
     )
     
     wedding_day = forms.DateField(
@@ -43,7 +45,8 @@ class RegistrationForm(forms.ModelForm):
             self.fields['role'] = forms.ChoiceField(
                 choices=self.ROLE_CHOICES,
                 required=True,
-                widget=forms.Select(attrs={'class': 'form-control'})
+                widget=forms.Select(attrs={'class': 'form-control'}),
+                label=''
             )
             # Make wedding_day not required initially
             self.fields['wedding_day'].required = False
