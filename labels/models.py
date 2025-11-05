@@ -1,17 +1,24 @@
 from django.db import models
 from core.models import TimeStampedModel
 
-# Placeholder: Replace with your actual models
-# from customers.models import Customer
-# from professionals.models import Professional
-# etc.
-class CustomerPlaceholder: pass
-class ProfessionalPlaceholder: pass
-class ServicePlaceholder: pass
-class ItemPlaceholder: pass
-class PricePlaceholder: pass
-class OrderPlaceholder: pass
-
+# Changed: Import actual model classes for LABEL_TYPES_ASSOCIATIONS
+def get_label_type_associations():
+    """
+    Lazy-loaded associations to avoid circular imports.
+    Maps label type strings to their corresponding model classes.
+    """
+    from users.models import Customer, Professional
+    from services.models import Service, Item, Price
+    from orders.models import Order
+    
+    return {
+        'CUSTOMER': Customer,
+        'PROFESSIONAL': Professional,
+        'SERVICE': Service,
+        'ITEM': Item,
+        'PRICE': Price,
+        'ORDER': Order,
+    }
 
 LABEL_TYPES = (
     ('CUSTOMER', 'Customer'),
@@ -24,14 +31,8 @@ LABEL_TYPES = (
 
 # This dictionary maps the string identifiers from LABEL_TYPES
 # to the actual Django model classes.
-LABEL_TYPES_ASSOCIATIONS = {
-    'CUSTOMER': CustomerPlaceholder,
-    'PROFESSIONAL': ProfessionalPlaceholder,
-    'SERVICE': ServicePlaceholder,
-    'ITEM': ItemPlaceholder,
-    'PRICE': PricePlaceholder,
-    'ORDER': OrderPlaceholder,
-}
+# Changed: Use lazy loading to avoid circular imports at module load time
+LABEL_TYPES_ASSOCIATIONS = {}
 
 class Label(TimeStampedModel):
     """

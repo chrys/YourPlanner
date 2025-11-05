@@ -39,11 +39,12 @@ class RuleCondition(models.Model):
         return f"Condition for {self.rule}: {self.entity} {self.operator} {self.label}"
 
     def entity_class_for_label_type(self):
-        from labels.models import LABEL_TYPES_ASSOCIATIONS # Ensure this import is correct
+        from labels.models import get_label_type_associations  # Changed: Use lazy-loaded associations
         # This method assumes LABEL_TYPES_ASSOCIATIONS maps the string codes
         # from LABEL_TYPES to actual model classes.
         # e.g., {'CUSTOMER': CustomerModel, 'PROFESSIONAL': ProfessionalModel}
-        klass = LABEL_TYPES_ASSOCIATIONS.get(self.entity)
+        associations = get_label_type_associations()  # Changed: Call function to get associations
+        klass = associations.get(self.entity)
         if not klass:
             # Fallback or error handling if the entity string doesn't map to a known class
             # This could involve trying to use django.apps.apps.get_model if self.entity

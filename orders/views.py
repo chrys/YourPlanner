@@ -270,6 +270,23 @@ class OrderDetailView(LoginRequiredMixin, UserCanViewOrderMixin, DetailView):
         if context['can_update_status']:
             context['status_update_form'] = OrderStatusUpdateForm(instance=self.object, user=self.request.user)
 
+        # CHANGED: Calculate discount on the fly from rule engine instead of database
+        discount_percentage = Decimal('0.00')
+        discount_amount = Decimal('0.00')
+        discount_description = ''
+        
+        from rules.engine import process_rules
+        discount_info = process_rules(target_entity=self.object, event_code='discount_vip')
+        
+        if discount_info:
+            discount_percentage = discount_info.get('discount_percentage', Decimal('0.00'))
+            discount_amount = discount_info.get('discount_amount', Decimal('0.00'))
+            discount_description = discount_info.get('discount_description', '')
+        
+        context['discount_percentage'] = discount_percentage
+        context['discount_amount'] = discount_amount
+        context['discount_description'] = discount_description
+
         return context
 
 
@@ -723,6 +740,26 @@ class BasketView(LoginRequiredMixin, CustomerRequiredMixin, TemplateView):
         
         context['add_ons_total'] = add_ons_total
         
+        # Changed: Calculate discount on the fly from rule engine instead of database
+        discount_percentage = Decimal('0.00')
+        discount_amount = Decimal('0.00')
+        discount_description = ''
+        grand_total = current_order.total_amount if current_order else Decimal('0.00')
+        
+        if current_order:
+            from rules.engine import process_rules
+            discount_info = process_rules(target_entity=current_order, event_code='discount_vip')
+            
+            if discount_info:
+                discount_percentage = discount_info.get('discount_percentage', Decimal('0.00'))
+                discount_amount = discount_info.get('discount_amount', Decimal('0.00'))
+                discount_description = discount_info.get('discount_description', '')
+                grand_total = discount_info.get('final_total', current_order.total_amount)
+        
+        context['discount_percentage'] = discount_percentage
+        context['discount_amount'] = discount_amount
+        context['discount_description'] = discount_description
+        context['grand_total'] = grand_total
         
         context['page_title'] = "My Basket"
         return context

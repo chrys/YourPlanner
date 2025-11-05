@@ -217,6 +217,13 @@
                     {% endif %}
                 </div>
                 <div class="col-md-6 text-md-end">
+                    <!-- CHANGED: Display discount information if applicable -->
+                    {% if discount_percentage > 0 %}
+                        <div class="alert alert-success mb-3 py-2 px-3">
+                            <strong>🎉 {% trans "VIP Discount Applied!" %}</strong><br>
+                            <small>{{ discount_description }}: -{{ discount_percentage|floatformat:0 }}% ({{ discount_amount|floatformat:2 }} {{ order.currency }})</small>
+                        </div>
+                    {% endif %}
                     <h4>{% trans "Grand Total:" %} <span class="text-primary">{{ order.total_amount|floatformat:2 }} {{ order.currency }}</span></h4>
                 </div>
             </div>
