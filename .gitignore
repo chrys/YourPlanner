@@ -477,3 +477,4 @@ YourPlanner/media/template_images/*
 .github/instructions/Ask Context.instructions.md
 requirements.txt
 specs/
+/Documentation
