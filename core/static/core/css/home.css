@@ -22,7 +22,7 @@ header {
 }
 
 .hook {
-    height: 60vh;
+    height: 50vh;
 }
 
 .menu-icon {
@@ -261,15 +261,6 @@ select {
     border-bottom: 1px solid #eee;
 }
 
-a {
-    color: #e88ea1;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
 .user-menu-link {
     margin-left: 10px;
     color: #e88ea1;
@@ -303,4 +294,44 @@ a:hover {
     background-color: #79976E;
     padding: 12px 40px;
     margin: 40px 40px 20px 40px;
+}
+
+.quick-link {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    gap: 1.5rem;
+    justify-items: center;
+}
+
+#quick-access {
+    display: flex;
+    flex-direction: column;
+    width: 500px;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #e8f0e8, #dbe7d9);
+    border-radius: 20px;
+    padding: 2rem 1rem;
+    text-decoration: none;
+    color: #111;
+    font-weight: 500;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+#quick-access:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+
+.icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0.75rem;
+    stroke: #111;
+}
+
+
+.aaaaa {
+    margin-left: 100px;
 }
