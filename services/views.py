@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
@@ -148,13 +149,8 @@ class ServiceListView(LoginRequiredMixin, ListView):
         try:
             professional = self.request.user.professional_profile
             # Professionals see only their services
-            return Service.objects.filter(professional=professional).order_by('-created_at')
+            return Service.objects.owned_by(professional).order_by('-created_at')
         except Professional.DoesNotExist:
-            # Non-professionals (e.g., customers, admin if not also a prof) might see all active services
-            # For now, let's stick to the plan: only professionals see this list.
-            # If others should see it, ProfessionalRequiredMixin would be needed here too,
-            # or logic to differentiate user types.
-            # Based on the original professional_account, this list is for the professional.
             return Service.objects.none() # Or raise Http404 or redirect
 
     def get_context_data(self, **kwargs):
@@ -238,7 +234,6 @@ class ServiceDeleteView(LoginRequiredMixin, ProfessionalRequiredMixin, Professio
         return context
 
 
-# TODO: Implement Item CBVs (Create, List, Detail, Update, Delete) with appropriate mixins
 
 class ItemCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsParentServiceMixin, CreateView):
     model = Item
@@ -279,7 +274,7 @@ class ItemListView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsParent
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['service'] = self.service
-        context['page_title'] = f"Items for {self.service.title}"
+        context['page_title'] = f"Items for {self.service.title}" # type: ignore
         return context
 
 class ItemDetailView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsParentServiceMixin, DetailView):
@@ -361,7 +356,6 @@ class ItemDeleteView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsPare
         context['page_title'] = f"Delete Item: {self.object.title}"
         return context
 
-# TODO: Implement Price CBVs (Create, List, Detail, Update, Delete) with appropriate mixins
 
 class PriceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsGrandparentServiceViaItemMixin, CreateView):
     model = Price

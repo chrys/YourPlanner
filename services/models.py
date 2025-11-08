@@ -7,6 +7,16 @@ from django.core.validators import MinValueValidator
 from core.models import TimeStampedModel, ActiveManager
 from django.utils.text import slugify
 
+
+class ServiceQuerySet(models.QuerySet):
+    def owned_by(self, professional):
+        """Return services owned by the given professional."""
+        return self.filter(professional=professional)  #moved repeated query here
+
+    def active(self):
+        """Return only active services."""
+        return self.filter(is_active=True)  #moved repeated query here
+    
 class ServiceCategory(TimeStampedModel):
     """
     Categories for organizing services.
@@ -35,6 +45,8 @@ class ServiceCategory(TimeStampedModel):
 
 class Service(TimeStampedModel):
     """ A service offered by a Professional. """
+    objects = ServiceQuerySet.as_manager()  # use custom manager
+    active = ActiveManager()  # Custom manager for active services only
     professional = models.ForeignKey(
         'users.Professional', # Use string notation for cross-app relations
         on_delete=models.CASCADE, # If professional deleted, delete their services
@@ -63,9 +75,6 @@ class Service(TimeStampedModel):
     )
     # created_at and updated_at are inherited from TimeStampedModel
     
-    # Add custom managers
-    objects = models.Manager()  # The default manager
-    active = ActiveManager()  # Custom manager for active services only
 
     def __str__(self):
         return f"{self.title} (by {self.professional})"
@@ -92,12 +101,6 @@ class Service(TimeStampedModel):
                 title=self.title
             ).exclude(pk=self.pk).exists():
                 raise ValidationError({'title': 'You already have a service with this title'})
-    def calculate_average_rating(self):
-        """
-        Calculate the average rating for this service from reviews.
-        """
-        # This is a placeholder - would need a Review model to implement fully
-        return 0.0
 
     class Meta(TimeStampedModel.Meta):  # CHANGED: Explicitly inherit from parent Meta
         verbose_name = "Service"
@@ -309,3 +312,5 @@ class Price(TimeStampedModel):
             models.Index(fields=['is_active']),
             models.Index(fields=['valid_from', 'valid_until']),
         ]
+
+
