@@ -1,3 +1,7 @@
+* {
+    font-family: "Plus Jakarta Sans", sans-serif;
+}
+
 body {
     margin: 0;
     font-family: "Plus Jakarta Sans", sans-serif;
@@ -15,6 +19,10 @@ header {
     align-items: center;
     padding: 10px 20px;
     border-bottom: 1px solid #f3c6c6;
+}
+
+.hook {
+    height: 60vh;
 }
 
 .menu-icon {
@@ -42,11 +50,9 @@ header {
 }
 
 .welcome-title {
-    font-family: 'Pacifico', cursive;
     font-size: 2.5em;
-    text-align: center;
-    margin-top: 40px;
-    margin-bottom: 10px;
+    margin: 0;
+    padding: 40px 40px 0 40px;
 }
 
 .v-planner {
@@ -54,11 +60,8 @@ header {
 }
 
 .intro {
-    max-width: 700px;
-    margin: 0 auto 40px auto;
-    text-align: center;
-    font-size: 1.1em;
-    line-height: 1.5;
+    font-size: 1em;
+    margin: 10px 40px 40px 40px;
 }
 
 .circle-grid {
@@ -178,7 +181,9 @@ header {
 
 .menu-item.special {
     background: #fff;
-    color: #000;
+    font-weight: 600;
+    font-style: normal;
+    color: #222;
 }
 
 .menu-item.special:hover {
@@ -217,13 +222,6 @@ header {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-}
-
-form {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 button[type="submit"] {
@@ -295,4 +293,14 @@ a:hover {
 .menu-icon {
     font-size: 2rem;
     cursor: pointer;
+}
+
+.start-planning {
+    color: #FFFFFF;
+    width: 220px;
+    border-radius: 8px;
+    border: none;
+    background-color: #79976E;
+    padding: 12px 40px;
+    margin: 40px 40px 20px 40px;
 }
