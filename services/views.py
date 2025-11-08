@@ -3,18 +3,17 @@ from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from django.http import Http404 # HttpResponseForbidden removed as not used
+from django.http import Http404 
 from django.contrib import messages
-# from django.views.decorators.csrf import csrf_protect # Not typically used with CBVs
-# from django.db import transaction # Removed as not currently used
-# from django.db.models import Prefetch # May be needed later for optimization
-# from django.core.cache import cache # Caching will be addressed later if necessary
 from users.models import Professional
 from .models import Service, Item, Price
 from .forms import ServiceForm, ItemForm, PriceForm
-# from orders.models import OrderItem # For checking if items are in basket before delete, handle later if needed
+from typing import TYPE_CHECKING
 
-# Mixins for Authorization
+if TYPE_CHECKING:
+    # CHANGED: Import for type checking only
+    pass
+
 
 class ProfessionalRequiredMixin(UserPassesTestMixin):
     """
@@ -386,18 +385,23 @@ class PriceListView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsGrand
     model = Price
     template_name = 'services/price_list.html' # Or integrate into item_detail
     context_object_name = 'prices'
+    service: Service
+    item: Item
 
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        # self.item is set by UserOwnsGrandparentServiceViaItemMixin
-        return Price.objects.filter(item=self.item).order_by('-created_at')
+        # Use custom queryset method instead of filter()
+        return Price.objects.for_item(self.item).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # CHANGED: Add active prices and valid prices for display
         context['service'] = self.service
         context['item'] = self.item
+        context['active_prices'] = self.item.get_active_prices()
+        context['valid_prices'] = self.item.get_valid_prices()
         context['page_title'] = f"Prices for {self.item.title}"
         return context
 

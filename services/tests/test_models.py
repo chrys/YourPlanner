@@ -1041,3 +1041,75 @@ class PriceModelTests(TestCase):
         self.assertEqual(active_prices.count(), 1)
         self.assertEqual(active_prices.first(), active_price)
 
+class ItemPricingTests(TestCase):
+    # CHANGED: Added test class for Item pricing relationships
+    
+    def setUp(self):
+        self.professional = Professional.objects.create_user(
+            email='pro@test.com',
+            password='testpass123',
+            title='Test Professional'
+        )
+        self.service = Service.objects.create(
+            professional=self.professional,
+            title='Test Service'
+        )
+        self.item = Item.objects.create(
+            service=self.service,
+            title='Test Item'
+        )
+    
+    def test_item_has_multiple_prices(self):
+        # CHANGED: Test that items can have multiple prices
+        price1 = Price.objects.create(
+            item=self.item,
+            amount=Decimal('100.00'),
+            frequency='ONCE'
+        )
+        price2 = Price.objects.create(
+            item=self.item,
+            amount=Decimal('150.00'),
+            frequency='HOURLY'
+        )
+        
+        self.assertEqual(self.item.prices.count(), 2)
+        self.assertIn(price1, self.item.prices.all())
+        self.assertIn(price2, self.item.prices.all())
+    
+    def test_get_active_prices(self):
+        # CHANGED: Test get_active_prices helper method
+        active_price = Price.objects.create(
+            item=self.item,
+            amount=Decimal('100.00'),
+            is_active=True
+        )
+        inactive_price = Price.objects.create(
+            item=self.item,
+            amount=Decimal('150.00'),
+            is_active=False
+        )
+        
+        active = self.item.get_active_prices()
+        self.assertIn(active_price, active)
+        self.assertNotIn(inactive_price, active)
+    
+    def test_get_price_for_quantity(self):
+        # CHANGED: Test quantity-based price selection
+        Price.objects.create(
+            item=self.item,
+            amount=Decimal('100.00'),
+            min_quantity=1,
+            max_quantity=10
+        )
+        Price.objects.create(
+            item=self.item,
+            amount=Decimal('80.00'),
+            min_quantity=11,
+            max_quantity=None  # Unlimited
+        )
+        
+        price_for_5 = self.item.get_price_for_quantity(5)
+        price_for_15 = self.item.get_price_for_quantity(15)
+        
+        self.assertEqual(price_for_5.amount, Decimal('100.00'))
+        self.assertEqual(price_for_15.amount, Decimal('80.00'))

@@ -56,6 +56,15 @@
                     currency: "{{ price.currency }}",
                     frequency: "{{ price.get_frequency_display }}",
                     is_active: {% if price.is_active %}true{% else %}false{% endif %},
+                    labels: [
+                        {% for label in price.labels.all %}
+                        {
+                            id: {{ label.pk }},
+                            name: "{{ label.name|escapejs }}",
+                            color: "{{ label.color|escapejs }}"
+                        }{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    ],
                     detail_url: "{% url 'services:price_detail' service_pk=service.pk item_pk=item.pk pk=price.pk %}",
                     update_url: "{% url 'services:price_update' service_pk=service.pk item_pk=item.pk pk=price.pk %}"
                 }{% if not forloop.last %},{% endif %}
@@ -103,10 +112,15 @@
                     <td>
                         <ul class="list-unstyled mb-0">
                             <li v-for="price in item.prices" :key="price.id">
-                                [[ price.amount ]] [[ price.currency ]] ([[ price.frequency ]])
-                                <span class="badge" :class="price.is_active ? 'bg-success' : 'bg-secondary'">
-                                    [[ price.is_active ? 'Active' : 'Inactive' ]]
+                                <!-- CHANGED: Display price amount + labels with Details and Edit buttons -->
+                                <strong>[[ price.amount ]] [[ price.currency ]]</strong>
+                                <span v-if="price.labels && price.labels.length">
+                                    <span v-for="label in price.labels" :key="label.id" class="badge me-1"
+                                          :style="{ backgroundColor: label.color, color: '#fff' }">
+                                        [[ label.name ]]
+                                    </span>
                                 </span>
+                                <span v-else class="text-muted">(No labels)</span>
                                 <a :href="price.detail_url" class="btn btn-sm btn-outline-info ms-1">Details</a>
                                 <a v-if="userOwnsService" :href="price.update_url" class="btn btn-sm btn-outline-warning ms-1">Edit</a>
                             </li>

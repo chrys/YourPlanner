@@ -44,7 +44,7 @@ class ItemForm(forms.ModelForm):
 
 class PriceForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.all(),
+        queryset=Label.objects.filter(label_type='PRICE').order_by('name'),
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
         help_text="Optional labels to categorize this price"

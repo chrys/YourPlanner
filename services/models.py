@@ -1,11 +1,45 @@
 from django.db import models
-from django.db.models import DecimalField, ImageField, IntegerField
+from django.db.models import DecimalField, ImageField, IntegerField, QuerySet
 from django.conf import settings
 from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from core.models import TimeStampedModel, ActiveManager
 from django.utils.text import slugify
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from services.models import Price as PriceModel
+    
+
+class PriceQuerySet(models.QuerySet):
+    # CHANGED: Moved PriceQuerySet before Item class for proper ordering
+    """Custom QuerySet for Price model with filtering methods."""
+    def for_item(self, item):
+        """Return prices for a specific item."""
+        return self.filter(item=item)
+    
+    def active(self):
+        """Return only active prices."""
+        return self.filter(is_active=True)
+    
+    def valid_now(self):
+        """Return prices that are currently valid based on date range."""
+        from django.utils import timezone
+        now = timezone.now()
+        return self.filter(
+            is_active=True,
+            valid_from__lte=now,
+            valid_until__isnull=True
+        ) | self.filter(
+            is_active=True,
+            valid_from__isnull=True,
+            valid_until__gte=now
+        ) | self.filter(
+            is_active=True,
+            valid_from__lte=now,
+            valid_until__gte=now
+        )
 
 
 class ServiceQuerySet(models.QuerySet):
@@ -121,6 +155,8 @@ class Service(TimeStampedModel):
 
 class Item(TimeStampedModel):
     """ An individual item or component within a Service. """
+    prices: 'PriceQuerySet'  # type: ignore
+    
     service = models.ForeignKey(
         Service,
         on_delete=models.CASCADE, # If service deleted, delete its items
@@ -163,6 +199,25 @@ class Item(TimeStampedModel):
     def __str__(self):
         return f"{self.title} (in Service: {self.service.title})"
     
+    def get_active_prices(self):
+        # Added method to get active prices for this item
+        """Return all active prices for this item."""
+        return self.prices.filter(is_active=True).order_by('amount')
+    
+    def get_valid_prices(self):
+        # Added method to get currently valid prices (date-aware)
+        """Return prices that are currently valid based on date range."""
+        return self.prices.valid_now()
+    
+    def get_price_for_quantity(self, quantity):
+        # CHANGED: Added method to find applicable price for a quantity
+        """Find the best price for a given quantity."""
+        return self.prices.active().filter(
+            min_quantity__lte=quantity
+        ).filter(
+            models.Q(max_quantity__isnull=True) | models.Q(max_quantity__gte=quantity)
+        ).order_by('-min_quantity').first()
+    
     def save(self, *args, **kwargs):
         if not hasattr(self, 'service') or self.service is None:
             raise ValidationError("Item must have a service.")
@@ -202,6 +257,9 @@ class Item(TimeStampedModel):
                 name='unique_service_item_slug'
             )
         ]
+
+
+
 
 
 class Price(TimeStampedModel):
@@ -257,8 +315,8 @@ class Price(TimeStampedModel):
     )
     # created_at and updated_at are inherited from TimeStampedModel
     
-    # Add custom managers
-    objects = models.Manager()  # The default manager
+    # Use custom manager with queryset
+    objects = PriceQuerySet.as_manager()
     active = ActiveManager()  # Custom manager for active prices only
 
     def __str__(self):
@@ -312,5 +370,6 @@ class Price(TimeStampedModel):
             models.Index(fields=['is_active']),
             models.Index(fields=['valid_from', 'valid_until']),
         ]
+        
 
 
