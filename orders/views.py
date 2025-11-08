@@ -18,8 +18,9 @@ from services.models import Service, Item, Price
 from packages.models import Template, TemplateItemGroup, TemplateItemGroupItem  # Import Template models (packages)
 from .forms import OrderForm, OrderStatusUpdateForm, OrderItemForm
 from .mixins import CustomerRequiredMixin, UserCanViewOrderMixin, AdminAccessMixin, CustomerOwnsOrderMixin, UserCanModifyOrderItemsMixin
+from services.mixins import PriceFilterByWeddingDateMixin  # CHANGED: Import price filtering mixin
 
-class CustomerServiceItemSelectionView(LoginRequiredMixin, CustomerRequiredMixin, View):
+class CustomerServiceItemSelectionView(LoginRequiredMixin, CustomerRequiredMixin, PriceFilterByWeddingDateMixin, View):  # CHANGED: Added mixin
     template_name = 'orders/customer_service_item_selection.html'
 
     def get_service_and_check_permission(self, request, service_pk):
@@ -77,6 +78,16 @@ class CustomerServiceItemSelectionView(LoginRequiredMixin, CustomerRequiredMixin
                 currency=service.professional.preferred_currency if hasattr(service.professional, 'preferred_currency') and service.professional.preferred_currency else settings.DEFAULT_CURRENCY
             )
 
+        # CHANGED: Filter prices based on customer's wedding date and user type
+        items_list = list(service.items.all())  # CHANGED: Convert to list to set attributes
+        for item in items_list:
+            item.applicable_prices = self.get_filtered_prices_for_customer(
+                item.prices.all(),
+                customer_profile,
+                user=self.request.user,  # CHANGED: Pass user for agent detection
+                wedding_date=order.wedding_day if not customer_profile and order.wedding_day else None  # CHANGED: Use order's wedding_day if no customer
+            )
+
         current_quantities = {
             oi.price.pk: oi.quantity
             for oi in OrderItem.objects.filter(order=order)
@@ -84,9 +95,12 @@ class CustomerServiceItemSelectionView(LoginRequiredMixin, CustomerRequiredMixin
 
         context = {
             'service': service,
+            'items': items_list,  # CHANGED: Pass filtered items list to template
             'order': order,
             'current_quantities': current_quantities,
             'page_title': f"Select from: {service.title}",
+            'customer': customer_profile,  # CHANGED: Add customer to context for template
+
         }
         return render(request, self.template_name, context)
 
@@ -464,7 +478,7 @@ class OrderItemDeleteView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Dele
 
 # --- Other CBVs (select_items, basket) ---
 
-class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
+class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, PriceFilterByWeddingDateMixin, View):  # CHANGED: Added mixin
     template_name = 'orders/select_items.html'
     order_pk_url_kwarg = 'order_pk'
 
@@ -512,6 +526,15 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                 'items': []
             }
             for item in service.items.all():
+                # CHANGED: Filter prices by customer's wedding date and user type (agent or customer)
+                # CHANGED: For agent-created orders (no customer), use order.wedding_day
+                filtered_prices = self.get_filtered_prices_for_customer(
+                    item.prices.all(),
+                    customer,
+                    user=self.request.user,  # CHANGED: Pass user for agent detection
+                    wedding_date=self.order.wedding_day if not customer and self.order.wedding_day else None  # CHANGED: Use order's wedding_day for agent orders
+                )
+                
                 item_dict = {
                     'id': item.pk,
                     'title': item.title,
@@ -519,7 +542,8 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, View):
                     'image_url': item.image.url if item.image else None,
                     'prices': []
                 }
-                for price in item.prices.all():
+                # CHANGED: Only include filtered prices
+                for price in filtered_prices:
                     item_dict['prices'].append({
                         'id': price.pk,
                         'amount': str(price.amount),

@@ -28,6 +28,14 @@
         </div>
     {% endif %}
 
+    <!-- CHANGED: Added wedding date display if available -->
+    {% if customer.wedding_day %}
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-calendar-alt me-2"></i>
+            {% blocktrans with date=customer.wedding_day|date:"Y-m-d" %}Wedding date: {{ date }}{% endblocktrans %}
+        </div>
+    {% endif %}
+
     {% include "_messages.html" %}
 
     <form method="post">
@@ -37,7 +45,8 @@
                 <h4 class="mb-0">{% trans "Select Items & Quantities" %}</h4>
             </div>
             <div class="card-body p-0">
-                {% if service.items.all %} {# service.items.all contains items pre-filtered by is_active=True in the view #}
+                <!-- CHANGED: Use items from context instead of service.items.all -->
+                {% if items %} {# items contains pre-filtered items with applicable_prices from context #}
                     <div class="table-responsive">
                         <table class="table table-hover mb-0 align-middle">
                             <thead class="table-light">
@@ -49,11 +58,13 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in service.items.all %} {# Loop through active items provided by the view #}
+                                <!-- CHANGED: Use items from context instead of service.items.all -->
+                                {% for item in items %} {# items contains pre-filtered items with applicable_prices #}
                                     {# Each 'item' here is an active item for the service #}
-                                    {% if item.prices.all %} {# item.prices.all contains prices pre-filtered by is_active=True for this item #}
-                                        {# This item has active prices, display each price #}
-                                        {% for price in item.prices.all %}
+                                    <!-- CHANGED: Use applicable_prices instead of item.prices.all for wedding date filtering -->
+                                    {% if item.applicable_prices %} {# item.applicable_prices contains prices filtered by wedding date #}
+                                        {# This item has applicable prices, display each price #}
+                                        {% for price in item.applicable_prices %}
                                             <tr>
                                                 <td>
                                                     {% if item.image %}
@@ -70,7 +81,18 @@
                                                 </td>
                                                 <td>
                                                     {{ price.amount|floatformat:2 }} {{ price.currency }}
-                                                    <small class="d-block text-muted">({{ price.get_frequency_display }})</small>
+                                                    <!-- CHANGED: Display price labels instead of frequency -->
+                                                    {% if price.labels.all %}
+                                                        <div class="mt-1">
+                                                            {% for label in price.labels.all %}
+                                                                <span class="badge" style="background-color: {{ label.color }}; font-size: 0.75em;">
+                                                                    {{ label.name }}
+                                                                </span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% else %}
+                                                        <small class="d-block text-muted">({{ price.get_frequency_display }})</small>
+                                                    {% endif %}
                                                     {% if price.description %}
                                                         <small class="d-block text-muted fst-italic">{{ price.description }}</small>
                                                     {% endif %}
@@ -86,7 +108,7 @@
                                             </tr>
                                         {% endfor %}
                                     {% else %}
-                                        {# This active item has no active prices. Display the item row with a message. #}
+                                        <!-- CHANGED: Show message if no applicable prices for this wedding date -->
                                         <tr>
                                             <td>
                                                 {% if item.image %}
@@ -102,20 +124,25 @@
                                                 {% endif %}
                                             </td>
                                             <td colspan="2" class="text-center text-muted fst-italic py-3">
-                                                {% trans "No price options currently available for this item." %}
+                                                <!-- CHANGED: Show wedding date specific message -->
+                                                {% if customer.wedding_day %}
+                                                    {% trans "No prices available for your wedding date" %} ({{ customer.wedding_day|date:"Y" }})
+                                                {% else %}
+                                                    {% trans "No price options currently available for this item." %}
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endif %}
-                                {% endfor %} {# End of loop for item in service.items.all #}
+                                {% endfor %} {# End of loop for item in items #}
                             </tbody>
                         </table>
                     </div>
                 {% else %}
-                     {# This means service.items.all was empty (no active items for the service passed from the view) #}
+                     <!-- CHANGED: Check items context variable instead of service.items.all -->
                     <div class="p-3 text-center text-muted">
                         {% trans "This service currently has no items defined or active." %}
                     </div>
-                {% endif %} {# End of if service.items.all #}
+                {% endif %} {# End of if items #}
             </div>
         </div>
 

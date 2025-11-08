@@ -13,14 +13,36 @@
                     <h5 class="mb-0">{{ page_title }}</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-3">{% trans "Select a professional to create an order" %}</p>  {# Removed "Step 1 of 2" text (now single-step) #}
+                    <p class="text-muted mb-3">{% trans "Fill in the couple's details and select a professional" %}</p>
                     
                     {% include "_messages.html" %}
 
                     <form method="post" class="form">
                         {% csrf_token %}
+                        <!-- CHANGED: Added couple_name field -->
                         <div class="mb-3">
-                            <label for="id_professional" class="form-label">{% trans "Select Professional" %}</label>
+                            <label for="id_couple_name" class="form-label">{% trans "Couple's Name" %} <span class="text-danger">*</span></label>
+                            {{ form.couple_name }}
+                            {% if form.couple_name.errors %}
+                                <small class="text-danger d-block mt-1">
+                                    {{ form.couple_name.errors }}
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <!-- CHANGED: Added wedding_day field -->
+                        <div class="mb-3">
+                            <label for="id_wedding_day" class="form-label">{% trans "Wedding Day" %} <span class="text-danger">*</span></label>
+                            {{ form.wedding_day }}
+                            {% if form.wedding_day.errors %}
+                                <small class="text-danger d-block mt-1">
+                                    {{ form.wedding_day.errors }}
+                                </small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_professional" class="form-label">{% trans "Select Professional" %} <span class="text-danger">*</span></label>
                             {{ form.professional }}
                             {% if form.professional.errors %}
                                 <small class="text-danger d-block mt-1">
@@ -30,7 +52,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">{% trans "Create Order" %}</button>  {# Updated button text (no longer "Next: Select Customer") #}
+                            <button type="submit" class="btn btn-primary">{% trans "Create Order" %}</button>
                             <a href="{% url 'users:agent_management' %}" class="btn btn-outline-secondary">
                                 {% trans "Cancel" %}
                             </a>

@@ -12,7 +12,46 @@ def get_entity_labels(entity_instance):
     Placeholder function to get labels associated with an entity instance.
     This needs to be implemented based on your project's structure.
     Example: if your entity has a 'labels' ManyToManyField.
+    CHANGED: Added support for Price entity
     """
+    # CHANGED: Handle Price entity
+    from services.models import Price
+    from orders.models import Order
+    from users.models import Customer, Professional
+    from packages.models import Template
+    
+    if isinstance(entity_instance, Price):
+        # CHANGED: For Price entities, get labels directly
+        if hasattr(entity_instance, 'labels') and hasattr(entity_instance.labels, 'all'):
+            return list(entity_instance.labels.all())
+        return []
+    
+    # CHANGED: Handle Order entity
+    elif isinstance(entity_instance, Order):
+        # For Order, check customer labels
+        if hasattr(entity_instance, 'customer') and entity_instance.customer:
+            return get_entity_labels(entity_instance.customer)
+        return []
+    
+    # CHANGED: Handle Customer entity
+    elif isinstance(entity_instance, Customer):
+        if hasattr(entity_instance, 'labels') and hasattr(entity_instance.labels, 'all'):
+            return list(entity_instance.labels.all())
+        return []
+    
+    # CHANGED: Handle Professional entity
+    elif isinstance(entity_instance, Professional):
+        if hasattr(entity_instance, 'labels') and hasattr(entity_instance.labels, 'all'):
+            return list(entity_instance.labels.all())
+        return []
+    
+    # CHANGED: Handle Template entity
+    elif isinstance(entity_instance, Template):
+        if hasattr(entity_instance, 'labels') and hasattr(entity_instance.labels, 'all'):
+            return list(entity_instance.labels.all())
+        return []
+    
+    # CHANGED: Generic fallback
     if hasattr(entity_instance, 'labels') and hasattr(entity_instance.labels, 'all'):
         return list(entity_instance.labels.all())
     return []
@@ -20,6 +59,7 @@ def get_entity_labels(entity_instance):
 def check_condition(condition, target_entity):
     """
     Evaluates a single rule condition against a target entity.
+    CHANGED: Added support for checking Price entity conditions
     """
     entity_labels = get_entity_labels(target_entity)
     entity_label_ids = [label.id for label in entity_labels]
@@ -32,11 +72,15 @@ def check_condition(condition, target_entity):
          # then this condition is not met.
          return False
 
+    # CHANGED: Get the condition label ID
+    condition_label_id = condition.label_id if condition.label_id else None
 
     if condition.operator == 'HAS_LABEL':
-        return condition.label_id in entity_label_ids
+        # CHANGED: Check if entity has the condition label
+        return condition_label_id in entity_label_ids if condition_label_id else False
     elif condition.operator == 'NOT_LABEL':
-        return condition.label_id not in entity_label_ids
+        # CHANGED: Check if entity does NOT have the condition label
+        return condition_label_id not in entity_label_ids if condition_label_id else True
 
     # Potentially add more operators here
     # elif condition.operator == 'EQUALS':
@@ -105,6 +149,7 @@ def process_rules(target_entity, event_code):
     Processes all active rules for a given target entity and event.
     Changed: Returns discount info if applicable, None otherwise
     Changed: For Order entities, extracts customer and checks customer labels
+    CHANGED: For Price entities, returns True if price matches pricing rules, False otherwise
     """
     try:
         trigger = RuleTrigger.objects.get(code=event_code)
@@ -115,15 +160,22 @@ def process_rules(target_entity, event_code):
     # CHANGED: Extract customer from order if target_entity is an Order
     entity_to_check = target_entity
     from orders.models import Order
+    from services.models import Price  # CHANGED: Import Price model
+    
     if isinstance(target_entity, Order) and target_entity.customer:
         entity_to_check = target_entity.customer
         print(f"[DEBUG] Order detected. Using Customer {target_entity.customer} for rule evaluation.")
+    
+    # CHANGED: For Price entities, check the price's labels directly
+    if isinstance(target_entity, Price):
+        entity_to_check = target_entity
+        print(f"[DEBUG] Price detected. Checking price labels directly.")
     
     # Initial filter for rules: active, matching trigger
     # Q objects for complex queries
     query = Q(status='ENABLED') & Q(trigger=trigger)
 
-    # CHANGED: Get labels of the entity to check (customer, not order)
+    # CHANGED: Get labels of the entity to check (customer, not order, or price for pricing rules)
     target_entity_labels = get_entity_labels(entity_to_check)
     target_entity_label_ids = [label.id for label in target_entity_labels]
     print(f"[DEBUG] Entity labels: {[label.name for label in target_entity_labels]}")
@@ -143,7 +195,35 @@ def process_rules(target_entity, event_code):
 
     print(f"Found {len(applicable_rules)} applicable rules for event '{event_code}' and entity '{entity_to_check}'.")
 
-    # Changed: Collect all discount info from actions
+    # CHANGED: For pricing rules (Price entities), return True if rule matches, False otherwise
+    if isinstance(target_entity, Price):
+        for rule in applicable_rules:
+            all_conditions_met = True
+            if not rule.conditions.exists(): # If a rule has no conditions, it's considered met
+                pass
+            else:
+                # CHANGED: For pricing rules, we use OR logic - any condition match means the price is applicable
+                # This allows prices with ANY of the year labels to be shown
+                any_condition_met = False
+                for condition in rule.conditions.all():
+                    # CHANGED: Check condition against the price entity
+                    if check_condition(condition, entity_to_check):
+                        any_condition_met = True
+                        break  # One condition met is enough for pricing rules
+                
+                all_conditions_met = any_condition_met
+
+            if all_conditions_met:
+                print(f"All conditions met for pricing rule: '{rule.name}'. Price is applicable!")
+                # CHANGED: Return True to indicate this price matches the rule
+                return True
+            else:
+                print(f"Not all conditions met for rule: '{rule.name}'.")
+        
+        # CHANGED: No matching rules found for price, return False
+        return False
+
+    # Changed: Collect all discount info from actions (for Order entities)
     discount_info = None
     for rule in applicable_rules:
         all_conditions_met = True

@@ -83,6 +83,21 @@ class Order(TimeStampedModel):
         help_text="Agent assigned to handle this order"
     )
     
+    # CHANGED: Added couple_name field (mandatory for agent-created orders)
+    couple_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Full names of the couple getting married"
+    )
+    
+    # CHANGED: Added wedding_day field (mandatory for agent-created orders)
+    wedding_day = models.DateField(
+        blank=True,
+        null=True,
+        help_text="The couple's wedding day"
+    )
+    
     # created_at and updated_at are inherited from TimeStampedModel
 
     def __str__(self):

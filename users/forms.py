@@ -67,16 +67,47 @@ class RegistrationForm(forms.ModelForm):
         return cleaned_data
     
 class ProfessionalChoiceForm(forms.Form):
+    # CHANGED: Added couple_name field (mandatory)
+    couple_name = forms.CharField(
+        label="Couple's Name",
+        max_length=255,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., John & Jane Smith'
+        }),
+        help_text="Full names of the couple"
+    )
+    
+    # CHANGED: Added wedding_day field (mandatory, must be in future)
+    wedding_day = forms.DateField(
+        label="Wedding Day",
+        required=True,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'min': timezone.now().date()  # CHANGED: Enforce future date
+        }),
+        help_text="The couple's wedding day (must be in the future)"
+    )
+    
     professional = forms.ModelChoiceField(
         queryset=Professional.objects.all(),
         required=True,
         label="Choose your Professional",
-        widget=forms.Select(),
+        widget=forms.Select(attrs={'class': 'form-select'}),  # CHANGED: Added Bootstrap class
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['professional'].label_from_instance = lambda obj: obj.title or obj.user.get_full_name() or obj.user.username
+
+    # CHANGED: Added validation for wedding_day
+    def clean_wedding_day(self):
+        wedding_day = self.cleaned_data.get('wedding_day')
+        if wedding_day and wedding_day <= timezone.now().date():
+            raise forms.ValidationError("The wedding day must be in the future.")
+        return wedding_day
 
 class ProfessionalForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(

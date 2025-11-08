@@ -80,11 +80,13 @@
                         <thead class="table-light">
                             <tr>
                                 <th>{% trans "Order ID" %}</th>
-                                <th>{% trans "Customer" %}</th>
-                                <th>{% trans "Status" %}</th>
+                                <!-- CHANGED: Added Couple's Name column -->
+                                <th>{% trans "Couple's Name" %}</th>
+                                <!-- CHANGED: Added Wedding Day column -->
+                                <th>{% trans "Wedding Day" %}</th>
+                                <!-- CHANGED: Removed Status, Total, and Actions columns -->
+                                <!-- CHANGED: Renamed Created to Total -->
                                 <th>{% trans "Total" %}</th>
-                                <th>{% trans "Created" %}</th>
-                                <th class="text-center">{% trans "Actions" %}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -93,40 +95,18 @@
                                     <td>
                                         <strong>#{{ order.pk_formatted|default:order.pk }}</strong>
                                     </td>
+                                    <!-- CHANGED: Added couple_name display column -->
                                     <td>
-                                        {% if order.customer %}  {# Handle orders without customer (agent-created orders) #}
-                                            {{ order.customer.user.get_full_name|default:order.customer.user.username }}
-                                            {% if order.customer.company_name %}
-                                                <br><small class="text-muted">{{ order.customer.company_name }}</small>
-                                            {% endif %}
-                                        {% else %}  {# Show professional from first order item if no customer #}
-                                            {% with prof=order.items.first.service.professional %}
-                                                {% if prof %}
-                                                    <small class="text-muted">{{ prof.title|default:prof.user.get_full_name }}</small>
-                                                {% else %}
-                                                    <small class="text-muted">-</small>
-                                                {% endif %}
-                                            {% endwith %}
-                                        {% endif %}
+                                        {{ order.couple_name|default:"—" }}
                                     </td>
+                                    <!-- CHANGED: Added wedding_day display column -->
                                     <td>
-                                        <span class="badge bg-{% if order.status == 'PENDING' %}warning{% elif order.status == 'CONFIRMED' %}info{% elif order.status == 'COMPLETED' %}success{% else %}secondary{% endif %} text-dark">
-                                            {{ order.get_status_display }}
-                                        </span>
+                                        {{ order.wedding_day|date:"Y-m-d"|default:"—" }}
                                     </td>
+                                    <!-- CHANGED: Removed Status, Total (old), and Actions columns -->
+                                    <!-- CHANGED: Renamed Created to Total - now shows total_amount -->
                                     <td>
                                         <strong>{{ order.total_amount|floatformat:2 }} {{ order.currency }}</strong>
-                                    </td>
-                                    <td>
-                                        {{ order.created_at|date:"Y-m-d H:i" }}
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="{% url 'users:agent_order_detail' order_pk=order.pk %}" class="btn btn-sm btn-info" title="{% trans 'View Details' %}">
-                                            <i class="fas fa-eye"></i> {% trans "View" %}
-                                        </a>
-                                        <a href="{% url 'users:agent_order_delete' order_pk=order.pk %}" class="btn btn-sm btn-danger" title="{% trans 'Delete Order' %}">
-                                            <i class="fas fa-trash"></i> {% trans "Delete" %}
-                                        </a>
                                     </td>
                                 </tr>
                             {% endfor %}

@@ -643,8 +643,10 @@ class AgentCreateOrderView(LoginRequiredMixin, AgentRequiredMixin, FormView):  #
         return context
 
     def form_valid(self, form):
-        # Create order for the selected professional WITHOUT a customer
+        # CHANGED: Extract couple_name and wedding_day from form
         professional = form.cleaned_data['professional']
+        couple_name = form.cleaned_data['couple_name']
+        wedding_day = form.cleaned_data['wedding_day']
         
         try:
             # Create a new pending order assigned to this agent
@@ -653,7 +655,10 @@ class AgentCreateOrderView(LoginRequiredMixin, AgentRequiredMixin, FormView):  #
             order = Order.objects.create(
                 status=Order.StatusChoices.PENDING,
                 assigned_agent=self.request.user.agent_profile,  # Assign to current agent
-                currency='EUR'  # Default currency
+                currency='EUR',  # Default currency
+                # CHANGED: Set couple_name and wedding_day on order creation
+                couple_name=couple_name,
+                wedding_day=wedding_day
             )
             
             # Store professional in session for use in select_items view
