@@ -468,7 +468,7 @@ node_modules/playwright-core/types/structs.d.ts
 node_modules/playwright-core/types/types.d.ts
 test-results/.last-run.json
 .gitignore
-.gitignore
+.vscode/
 tests-UI/register-customer.spec.ts
 package-lock.json
 .gitignore
