@@ -27,8 +27,9 @@ class ServiceAdmin(admin.ModelAdmin):
     list_display = ['title', 'professional', 'created_at']
     list_filter = ['professional']
     search_fields = ['title', 'professional__user__email', 'professional__title']
-    inlines = [ItemInline]
-    filter_horizontal = ['labels']  # Add the labels field
+    # CHANGED: Added PriceInline to show service-level prices
+    inlines = [ItemInline, PriceInline]
+    filter_horizontal = ['labels']
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
@@ -39,8 +40,18 @@ class ItemAdmin(admin.ModelAdmin):
 
 @admin.register(Price)
 class PriceAdmin(admin.ModelAdmin):
-    list_display = ['item', 'amount', 'currency', 'frequency', 'is_active']
-    list_filter = ['currency', 'frequency', 'is_active']
-    search_fields = ['item__title', 'description']
-    filter_horizontal = ['labels']  # Add the labels field
+    # CHANGED: Updated to show both service and item relationships
+    list_display = ['get_price_target', 'amount', 'currency', 'frequency', 'is_active']
+    list_filter = ['currency', 'frequency', 'is_active', 'service', 'item']
+    search_fields = ['item__title', 'service__title', 'description']
+    filter_horizontal = ['labels']
+    
+    # CHANGED: Added method to display whether price is for service or item
+    def get_price_target(self, obj):
+        if obj.service:
+            return f"Service: {obj.service.title}"
+        elif obj.item:
+            return f"Item: {obj.item.title}"
+        return "Unlinked"
+    get_price_target.short_description = "Target"
 

@@ -7,7 +7,7 @@ from django.http import Http404
 from django.contrib import messages
 from users.models import Professional
 from .models import Service, Item, Price
-from .forms import ServiceForm, ItemForm, PriceForm
+from .forms import ServiceForm, ItemForm, PriceForm, ServicePriceFormSet
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -123,6 +123,24 @@ class ServiceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVie
     template_name = 'services/service_form.html'
     success_url = reverse_lazy('services:service_list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # CHANGED: Added formset for multiple service-level prices
+        if self.request.POST:
+            # CHANGED: Pass POST data but only use instance if it exists
+            if self.object and self.object.pk:
+                context['formset'] = ServicePriceFormSet(self.request.POST, instance=self.object)
+            else:
+                context['formset'] = ServicePriceFormSet(self.request.POST)
+        else:
+            # CHANGED: Only pass instance if creating with existing data
+            if hasattr(self, 'object') and self.object and self.object.pk:
+                context['formset'] = ServicePriceFormSet(instance=self.object)
+            else:
+                context['formset'] = ServicePriceFormSet()
+        context['page_title'] = "Create New Service"
+        return context
+
     def form_valid(self, form):
         try:
             professional = self.request.user.professional_profile
@@ -131,13 +149,28 @@ class ServiceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVie
             messages.error(self.request, "You must have a professional profile to create a service.")
             return self.form_invalid(form)
         form.instance.professional = professional
-        messages.success(self.request, "Service created successfully.")
-        return super().form_valid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = "Create New Service"
-        return context
+        
+        # CHANGED: Handle price formset - save service first, then prices
+        self.object = form.save()  # Save the service first
+        
+        # Now get the formset with the saved object
+        context = self.get_context_data()
+        formset = context['formset']
+        
+        # Re-bind formset with POST data and instance
+        if self.request.POST:
+            formset = ServicePriceFormSet(self.request.POST, instance=self.object)
+        
+        if formset.is_valid():
+            formset.save()
+            messages.success(self.request, "Service created successfully with prices.")
+            return super().form_valid(form)
+        else:
+            # If formset is invalid, delete the service and show errors
+            self.object.delete()
+            # Re-attach formset errors to context
+            context['formset'] = formset
+            return self.render_to_response(context)
 
 class ServiceListView(LoginRequiredMixin, ListView):
     model = Service
@@ -185,6 +218,8 @@ class ServiceDetailView(LoginRequiredMixin, DetailView): # Potentially add permi
         # Example of how items might be passed if not handled by template relations directly
         # context['items'] = Item.objects.filter(service=service).prefetch_related('prices')
         context['page_title'] = service.title
+        # CHANGED: Add service prices to context
+        context['service_prices'] = service.get_service_prices().prefetch_related('labels')
         # Check if the current user owns this service to show/hide edit/delete buttons in template
         try:
             context['user_owns_service'] = (self.request.user.professional_profile == service.professional)
@@ -201,14 +236,35 @@ class ServiceUpdateView(LoginRequiredMixin, ProfessionalRequiredMixin, Professio
     def get_success_url(self):
         return reverse_lazy('services:service_detail', kwargs={'pk': self.object.pk})
 
-    def form_valid(self, form):
-        messages.success(self.request, "Service updated successfully.")
-        return super().form_valid(form)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # CHANGED: Added formset for multiple service-level prices
+        if self.request.POST:
+            context['formset'] = ServicePriceFormSet(self.request.POST, instance=self.object)
+        else:
+            context['formset'] = ServicePriceFormSet(instance=self.object)
         context['page_title'] = f"Edit Service: {self.object.title}"
         return context
+
+    def form_valid(self, form):
+        # CHANGED: Handle price formset - save form first, then formset
+        self.object = form.save()
+        
+        # Re-bind formset with POST data and updated instance
+        if self.request.POST:
+            formset = ServicePriceFormSet(self.request.POST, instance=self.object)
+        else:
+            formset = ServicePriceFormSet(instance=self.object)
+        
+        if formset.is_valid():
+            formset.save()
+            messages.success(self.request, "Service updated successfully with prices.")
+            return super().form_valid(form)
+        else:
+            # If formset is invalid, show errors
+            context = self.get_context_data()
+            context['formset'] = formset
+            return self.render_to_response(context)
 
 class ServiceDeleteView(LoginRequiredMixin, ProfessionalRequiredMixin, ProfessionalOwnsObjectMixin, DeleteView):
     model = Service

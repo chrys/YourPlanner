@@ -1,4 +1,5 @@
 from django import forms
+from django.forms import inlineformset_factory
 from .models import Service, Item, Price
 from labels.models import Label
 from django_summernote.widgets import SummernoteWidget
@@ -15,11 +16,11 @@ class ServiceForm(forms.ModelForm):
 
     class Meta:
         model = Service
-        fields = ['title', 'description', 'is_active', 'labels', 'image', 'price']
+        # CHANGED: Removed 'price' field since we'll use formset for multiple prices
+        fields = ['title', 'description', 'is_active', 'labels', 'image']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': SummernoteWidget(), 
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             # Note: widget for labels is now part of the field definition above
         }
@@ -74,3 +75,51 @@ class PriceForm(forms.ModelForm):
         # Set initial only if not editing an instance and not POST
         if not self.instance.pk and not self.data.get('currency'):
             self.initial['currency'] = 'EUR'
+
+
+# CHANGED: Added ServicePriceForm for managing service-level prices
+class ServicePriceForm(forms.ModelForm):
+    """Form for creating prices directly linked to a Service."""
+    labels = forms.ModelMultipleChoiceField(
+        queryset=Label.objects.filter(label_type='PRICE').order_by('name'),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        help_text="Optional labels to categorize this price"
+    )
+    
+    class Meta:
+        model = Price
+        # CHANGED: Exclude service field - it's set by the formset
+        fields = ['amount', 'currency', 'frequency', 'description', 'is_active', 'labels']
+        widgets = {
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'currency': forms.Select(attrs={'class': 'form-select'}),
+            'frequency': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'amount': 'Price',
+            'currency': 'Currency',
+            'frequency': 'Frequency',
+            'is_active': 'Active',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['currency'].choices = Price.CURRENCY_CHOICES
+        if not self.instance.pk and not self.data.get('currency'):
+            self.initial['currency'] = 'EUR'
+
+
+# CHANGED: Created formset for managing multiple service prices
+ServicePriceFormSet = inlineformset_factory(
+    Service,
+    Price,
+    form=ServicePriceForm,
+    fields=['amount', 'currency', 'frequency', 'description', 'is_active', 'labels'],
+    extra=1,  # CHANGED: Show 1 empty form by default
+    can_delete=True,  # CHANGED: Allow deleting prices
+    # CHANGED: Use fk_name to specify service as the FK (Price has both item and service)
+    fk_name='service'
+)

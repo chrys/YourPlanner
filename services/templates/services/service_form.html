@@ -13,6 +13,64 @@
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
+        
+        {# CHANGED: Added formset for multiple service-level prices #}
+        <div class="mt-4">
+            <h4>Service Prices</h4>
+            <p class="text-muted small">Add prices directly to this service. Each price can have different labels.</p>
+            
+            {{ formset.management_form }}
+            {% for price_form in formset %}
+                {# CHANGED: Added hidden id field for formset #}
+                {% if price_form.instance.pk %}
+                    {{ price_form.id }}
+                {% endif %}
+                <div class="card mb-3 p-3">
+                    <div class="row">
+                        <div class="col-md-2">
+                            {{ price_form.amount }}
+                            <small>Amount</small>
+                        </div>
+                        <div class="col-md-2">
+                            {{ price_form.currency }}
+                            <small>Currency</small>
+                        </div>
+                        <div class="col-md-2">
+                            {{ price_form.frequency }}
+                            <small>Frequency</small>
+                        </div>
+                        <div class="col-md-3">
+                            {{ price_form.labels }}
+                            <small>Labels</small>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-check-label">
+                                {{ price_form.is_active }}
+                                Active
+                            </label>
+                        </div>
+                        <div class="col-md-1">
+                            {% if price_form.instance.pk %}
+                                <label class="form-check-label">
+                                    {{ price_form.DELETE }}
+                                    Delete
+                                </label>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        {{ price_form.description }}
+                        <small>Description (optional)</small>
+                    </div>
+                    {% if price_form.errors %}
+                        <div class="alert alert-danger mt-2">
+                            {{ price_form.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        
         <button type="submit" class="btn btn-primary">
             {% if object %}Save Changes{% else %}Create Service{% endif %}
         </button>

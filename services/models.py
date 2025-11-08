@@ -113,6 +113,20 @@ class Service(TimeStampedModel):
     def __str__(self):
         return f"{self.title} (by {self.professional})"
     
+    # CHANGED: Added method to get service-level prices
+    def get_service_prices(self):
+        """Return all active prices directly linked to this service."""
+        return self.prices.filter(is_active=True).order_by('amount')
+    
+    # CHANGED: Added method to get active prices (service or items)
+    def get_all_prices(self):
+        """Return all active prices (both service-level and item-level)."""
+        # CHANGED: Fixed to avoid ORDER BY in union queries
+        service_prices = list(self.prices.filter(is_active=True))
+        item_prices = list(Price.objects.filter(item__service=self, is_active=True))
+        all_prices = service_prices + item_prices
+        return sorted(all_prices, key=lambda p: (p.amount, p.created_at))
+    
     def save(self, *args, **kwargs):
         if not hasattr(self, 'professional') or self.professional is None:
             raise ValidationError("Service must have a professional.")
@@ -263,7 +277,8 @@ class Item(TimeStampedModel):
 
 
 class Price(TimeStampedModel):
-    """ Represents a price point for a specific Item. """
+    """ Represents a price point for a specific Item or Service. """
+    # CHANGED: Updated docstring to reflect service pricing support
     class FrequencyChoices(models.TextChoices):
         ONE_TIME = 'ONCE', 'One-Time'
         HOURLY = 'HOURLY', 'Hourly'
@@ -273,10 +288,22 @@ class Price(TimeStampedModel):
         ANNUALLY = 'ANNUALLY', 'Annually'
         # Add other frequencies as needed
 
+    # CHANGED: Make item optional to support service-level pricing
     item = models.ForeignKey(
         Item,
-        on_delete=models.CASCADE, # If item deleted, delete its prices
-        related_name='prices' # item.prices.all()
+        on_delete=models.CASCADE,
+        related_name='prices',
+        null=True,  # CHANGED: Now optional to support service-level pricing
+        blank=True  # CHANGED: Now optional
+    )
+    # CHANGED: Added optional service relationship for direct service pricing
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.CASCADE,
+        related_name='prices',
+        null=True,
+        blank=True,
+        help_text="Optional: Link price directly to service (bypasses item level)"
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     CURRENCY_CHOICES = [
@@ -319,13 +346,25 @@ class Price(TimeStampedModel):
     objects = PriceQuerySet.as_manager()
     active = ActiveManager()  # Custom manager for active prices only
 
+    # CHANGED: Updated __str__ to handle both service and item pricing
     def __str__(self):
-        return f"{self.amount} {self.currency} ({self.frequency}) for {self.item.title}"
+        if self.service:
+            return f"{self.amount} {self.currency} ({self.frequency}) for Service: {self.service.title}"
+        elif self.item:
+            return f"{self.amount} {self.currency} ({self.frequency}) for {self.item.title}"
+        return f"{self.amount} {self.currency} ({self.frequency})"
     
     def clean(self):
         """
         Validate the price data.
+        CHANGED: Added validation that price must link to item OR service, not both or neither
         """
+        # CHANGED: Enforce item or service relationship
+        if not self.item and not self.service:
+            raise ValidationError("Price must be linked to either an Item or a Service.")
+        if self.item and self.service:
+            raise ValidationError("Price cannot be linked to both an Item and a Service. Choose one.")
+        
         if self.amount < 0:
             raise ValidationError({'amount': 'Price amount cannot be negative'})
         
@@ -365,10 +404,13 @@ class Price(TimeStampedModel):
     class Meta(TimeStampedModel.Meta):  # CHANGED: Explicitly inherit from parent Meta
         verbose_name = "Price"
         verbose_name_plural = "Prices"
-        ordering = ['item', 'amount']
+        # CHANGED: Updated ordering to handle both item and service prices
+        ordering = ['amount']
         indexes = [
             models.Index(fields=['is_active']),
             models.Index(fields=['valid_from', 'valid_until']),
+            models.Index(fields=['item']),  # CHANGED: Added index for item queries
+            models.Index(fields=['service']),  # CHANGED: Added index for service queries
         ]
         
 
