@@ -88,6 +88,14 @@ class CustomerServiceItemSelectionView(LoginRequiredMixin, CustomerRequiredMixin
                 wedding_date=order.wedding_day if not customer_profile and order.wedding_day else None  # CHANGED: Use order's wedding_day if no customer
             )
 
+        # CHANGED: Filter service-level prices
+        service_prices = self.get_filtered_service_prices(
+            service,
+            customer_profile,
+            user=self.request.user,
+            wedding_date=order.wedding_day if not customer_profile and order.wedding_day else None
+        )
+
         current_quantities = {
             oi.price.pk: oi.quantity
             for oi in OrderItem.objects.filter(order=order)
@@ -96,6 +104,7 @@ class CustomerServiceItemSelectionView(LoginRequiredMixin, CustomerRequiredMixin
         context = {
             'service': service,
             'items': items_list,  # CHANGED: Pass filtered items list to template
+            'service_prices': service_prices,  # CHANGED: Add filtered service prices to context
             'order': order,
             'current_quantities': current_quantities,
             'page_title': f"Select from: {service.title}",
@@ -551,7 +560,25 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, PriceFil
                         'frequency': price.get_frequency_display(),
                         'description': price.description,
                     })
+                # CHANGED: Always append item, even if it has no prices (they may be filtered by pricing rules)
                 service_dict['items'].append(item_dict)
+            
+            # CHANGED: Add service-level prices filtered by pricing rules
+            service_prices = self.get_filtered_service_prices(
+                service,
+                customer,
+                user=self.request.user,
+                wedding_date=self.order.wedding_day if not customer and self.order.wedding_day else None
+            )
+            service_dict['service_prices'] = []
+            for price in service_prices:
+                service_dict['service_prices'].append({
+                    'id': price.pk,
+                    'amount': str(price.amount),
+                    'currency': price.currency,
+                    'frequency': price.get_frequency_display(),
+                    'description': price.description,
+                })
             services_list.append(service_dict)
 
         # Add templates/packages to the selection for agents
@@ -692,24 +719,56 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, PriceFil
                     return render(request, self.template_name, self.get_context_data(error="Invalid package."))
 
             for price_id, quantity in quantities.items():
-                price = get_object_or_404(Price, pk=price_id, is_active=True, item__is_active=True, item__service__is_active=True)
-                order_item, created = OrderItem.objects.update_or_create(
-                    order=self.order,
-                    price=price,
-                    defaults={
-                        'quantity': quantity,
-                        'item': price.item,
-                        'service': price.item.service,
-                        'professional': price.item.service.professional,
-                        'price_amount_at_order': price.amount,
-                        'price_currency_at_order': price.currency,
-                        'price_frequency_at_order': price.frequency,
-                    }
-                )
-                if created:
-                    messages.success(request, f"Added '{price.item.title}' (x{quantity}) to your order.")
-                elif order_item.quantity != quantity:
-                    messages.info(request, f"Updated quantity for '{price.item.title}' to {quantity}.")
+                # CHANGED: Handle both item-level and service-level prices
+                price = get_object_or_404(Price, pk=price_id, is_active=True)
+                
+                # Determine if this is an item price or service price
+                if price.item:
+                    # Item-level price
+                    if not price.item.is_active or not price.item.service.is_active:
+                        messages.error(request, f"Item or service is not available.")
+                        continue
+                    
+                    order_item, created = OrderItem.objects.update_or_create(
+                        order=self.order,
+                        price=price,
+                        defaults={
+                            'quantity': quantity,
+                            'item': price.item,
+                            'service': price.item.service,
+                            'professional': price.item.service.professional,
+                            'price_amount_at_order': price.amount,
+                            'price_currency_at_order': price.currency,
+                            'price_frequency_at_order': price.frequency,
+                        }
+                    )
+                    if created:
+                        messages.success(request, f"Added '{price.item.title}' (x{quantity}) to your order.")
+                    elif order_item.quantity != quantity:
+                        messages.info(request, f"Updated quantity for '{price.item.title}' to {quantity}.")
+                else:
+                    # Service-level price (no item)
+                    if not price.service.is_active:
+                        messages.error(request, f"Service is not available.")
+                        continue
+                    
+                    order_item, created = OrderItem.objects.update_or_create(
+                        order=self.order,
+                        price=price,
+                        defaults={
+                            'quantity': quantity,
+                            'item': None,  # CHANGED: Service prices have no item
+                            'service': price.service,
+                            'professional': price.service.professional,
+                            'price_amount_at_order': price.amount,
+                            'price_currency_at_order': price.currency,
+                            'price_frequency_at_order': price.frequency,
+                        }
+                    )
+                    if created:
+                        messages.success(request, f"Added '{price.service.title}' (x{quantity}) to your order.")
+                    elif order_item.quantity != quantity:
+                        messages.info(request, f"Updated quantity for '{price.service.title}' to {quantity}.")
             
             if items_to_delete:
                 deleted_count, _ = OrderItem.objects.filter(order=self.order, price_id__in=items_to_delete).delete()

@@ -103,3 +103,24 @@ class PriceFilterByWeddingDateMixin:
         
         # CHANGED: Return queryset filtered by applicable price IDs
         return prices_queryset.filter(pk__in=applicable_prices)
+
+    def get_filtered_service_prices(self, service, customer, user=None, wedding_date=None):
+        """
+        CHANGED: Filter service-level prices based on customer's wedding date and pricing rules.
+        
+        Args:
+            service: Service object
+            customer: Customer object with wedding_day (optional for agent-created orders)
+            user: The current user (optional, used to determine if agent)
+            wedding_date: Wedding date to use (optional, for agent-created orders without customer)
+            
+        Returns:
+            Filtered QuerySet of applicable service-level prices
+        """
+        service_prices = service.get_service_prices()
+        return self.get_filtered_prices_for_customer(
+            service_prices,
+            customer,
+            user=user,
+            wedding_date=wedding_date
+        )

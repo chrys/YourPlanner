@@ -39,8 +39,16 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <!-- Item-level prices -->
                             <template v-for="item in service.items" :key="item.id">
-                                <tr v-for="price in item.prices" :key="price.id">
+                                <!-- CHANGED: Show row for each price, or one row if no prices -->
+                                <tr v-if="item.prices.length === 0">
+                                    <td><strong>[[ item.title ]]</strong></td>
+                                    <td>[[ item.description ]]</td>
+                                    <td><span class="text-muted">(No prices available)</span></td>
+                                    <td class="text-center"><span class="text-muted">-</span></td>
+                                </tr>
+                                <tr v-for="price in item.prices" :key="price.id" v-else>
                                     <td><strong>[[ item.title ]]</strong></td>
                                     <td>[[ item.description ]]</td>
                                     <td>
@@ -62,7 +70,27 @@
                                     </td>
                                 </tr>
                             </template>
-                            <tr v-if="service.items.length === 0">
+                            <!-- CHANGED: Service-level prices - show all available service prices -->
+                            <tr v-for="price in (service.service_prices || [])" :key="'service_price_' + price.id">
+                                <td><strong>[[ service.title ]]</strong></td>
+                                <td>[[ price.description ]]</td>
+                                <td>
+                                    <span style="color:#e88ea1;">[[ price.amount ]] [[ price.currency ]]</span>
+                                    <small class="d-block text-muted">([[ price.frequency ]])</small>
+                                </td>
+                                <td class="text-center">
+                                    <input type="number"
+                                           :name="'quantity_' + price.id"
+                                           min="0"
+                                           class="form-control form-control-sm mx-auto"
+                                           style="width: 80px;"
+                                           v-model.number="quantities[price.id]"
+                                           :disabled="!selectedServices.includes(service.id)"
+                                           @input="validateQuantity(price.id)">
+                                </td>
+                            </tr>
+                            <!-- CHANGED: Show message only if service has no items and no service prices -->
+                            <tr v-if="service.items.length === 0 && (!service.service_prices || service.service_prices.length === 0)">
                                 <td colspan="4" class="text-center text-muted py-3">{% trans "No items available for this service." %}</td>
                             </tr>
                         </tbody>
@@ -212,11 +240,18 @@ createApp({
             // selectedServices.value = servicesData.value.map(s => s.id);
             const initialQuantities = window.__currentQuantities__;
             servicesData.value.forEach(service => {
+                // CHANGED: Initialize quantities for item prices
                 service.items.forEach(item => {
                     item.prices.forEach(price => {
                         quantities.value[price.id] = initialQuantities[price.id] || 0;
                     });
                 });
+                // CHANGED: Also initialize quantities for service-level prices
+                if (service.service_prices && service.service_prices.length > 0) {
+                    service.service_prices.forEach(price => {
+                        quantities.value[price.id] = initialQuantities[price.id] || 0;
+                    });
+                }
             });
             
             // Initialize template guest counts and prices
@@ -280,11 +315,17 @@ createApp({
             // Remove quantities for unselected services
             servicesData.value.forEach(service => {
                 if (!selectedServices.value.includes(service.id)) {
+                    // CHANGED: Also zero out service-level prices for unselected services
                     service.items.forEach(item => {
                         item.prices.forEach(price => {
                             quantities.value[price.id] = 0;
                         });
                     });
+                    if (service.service_prices && service.service_prices.length > 0) {
+                        service.service_prices.forEach(price => {
+                            quantities.value[price.id] = 0;
+                        });
+                    }
                 }
             });
             // Remove quantities for unselected templates
