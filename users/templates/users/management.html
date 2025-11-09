@@ -37,39 +37,8 @@
                 <li class="list-group-item">
                     <a href="{% url 'users:password_change' %}">{% trans "Change Password" %}</a>
                 </li>
-                {# Add more links as needed, e.g., for admins #}
             </ul>
-
-            {# Vue part for help can be kept if desired, or simplified #}
-            <div class="mt-3" v-if="showHelp">
-                <a href="#" @click.prevent="showHelpMessage = !showHelpMessage" class="text-decoration-none">
-                    <i class="fas fa-question-circle"></i> {% trans "Help" %}
-                </a>
-                <div v-if="showHelpMessage" class="alert alert-info mt-2" role="alert">
-                    {% blocktrans %}
-                    From this page, professionals can manage their services and customers. All users can view their profile and change their password.
-                    {% endblocktrans %}
-                </div>
-            </div>
-            <button @click="showHelp = !showHelp" class="btn btn-sm btn-outline-secondary mt-3">
-                [[ showHelp ? '{% trans "Hide Help" %}' : '{% trans "Show Help" %}' ]]
-            </button>
         </div>
     </div>
 </div>
-<script>
-const { createApp, ref } = Vue; // Using ref for Vue 3 Composition API style
-createApp({
-    delimiters: ['[[', ']]'],
-    setup() {
-        const showHelp = ref(false);
-        const showHelpMessage = ref(false);
-        // You might need to watch showHelp to reset showHelpMessage if showHelp becomes false
-        return {
-            showHelp,
-            showHelpMessage
-        };
-    }
-}).mount('#management-app');
-</script>
 {% endblock %}

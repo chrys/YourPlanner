@@ -1,10 +1,11 @@
 # pyright: reportAttributeAccessIssue=false
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
+from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django.http import Http404 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from users.models import Professional
 from .models import Service, Item, Price
 from .forms import ServiceForm, ItemForm, PriceForm, ServicePriceFormSet
@@ -423,6 +424,7 @@ class PriceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsGra
 
     def form_valid(self, form):
         form.instance.item = self.item # self.item is set by the mixin
+        # CHANGED: Simply save the form - item has been set by the view
         messages.success(self.request, f"Price created for item '{self.item.title}'.")
         return super().form_valid(form)
 
@@ -534,4 +536,41 @@ class PriceDeleteView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsGra
         context['service'] = self.service
         context['item'] = self.item
         context['page_title'] = f"Delete Price for {self.item.title}"
+        return context
+
+
+# CHANGED: Added Food & Drinks page view for customers
+class FoodDrinksView(LoginRequiredMixin, TemplateView):
+    """View to display Food & Drinks items organized by category labels."""
+    template_name = 'services/food_drinks.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # CHANGED: Map section names to label names
+        sections = {
+            'Getting Ready': 'Getting Ready',
+            'On Arrival Drinks': 'Drink On Arrival',
+            'Reception Drinks & Canapes': 'On Reception',
+            'Drinks During Dinner': 'On Dinner',
+            'Pre Wedding BBQ': 'Pre Wedding BBQ',
+            'Country Menu': 'On Country Menu',
+            'Village BBQ': 'On Village BBQ',
+            'Mediterranean Flavors': 'On Mediterranean Flavors',
+            'Kids Menu': 'Kids Menu',
+            'Evening Buffet Menu': 'Evening Buffet',
+            'Supplier Meal': 'Supplier Meal',
+        }
+        
+        # CHANGED: Get items by label for each section (not tied to a service)
+        food_drinks_sections = {}
+        for section_name, label_name in sections.items():
+            items = Item.objects.filter(
+                labels__name=label_name,
+                is_active=True
+            ).distinct()
+            food_drinks_sections[section_name] = items
+        
+        context['food_drinks_sections'] = food_drinks_sections
+        context['page_title'] = "Food & Drinks"
         return context

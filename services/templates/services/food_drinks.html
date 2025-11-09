@@ -1,0 +1,129 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Food & Drinks{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Food & Drinks</h1>
+
+    {% for section_name, items in food_drinks_sections.items %}
+        {% if items %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h3 class="h5 mb-0">{{ section_name }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item.title }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if item.description %}
+                                                {{ item.description|truncatewords:10 }}
+                                            {% else %}
+                                                <span class="text-muted">No description</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.prices.all %}
+                                                {% for price in item.prices.all|slice:":1" %}
+                                                    {{ price.amount }} {{ price.currency }}
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">No price</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control quantity-input" 
+                                                   data-item-id="{{ item.pk }}" 
+                                                   value="0" 
+                                                   min="0" 
+                                                   style="width: 80px;">
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary add-to-order-btn" 
+                                                    data-item-id="{{ item.pk }}"
+                                                    data-item-title="{{ item.title }}">
+                                                Add to Order
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <div class="alert alert-info mt-4">
+        <p><strong>Note:</strong> Select items and quantities above to add them to your order.</p>
+    </div>
+
+    <div class="row mt-4 mb-4">
+        <div class="col-md-12">
+            <a href="{% url 'core:home' %}" class="btn btn-secondary">Back to Home</a>
+        </div>
+    </div>
+</div>
+
+<!-- CHANGED: Added JavaScript for quantity and order functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addToOrderButtons = document.querySelectorAll('.add-to-order-btn');
+    
+    addToOrderButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const itemTitle = this.getAttribute('data-item-title');
+            const quantityInput = document.querySelector(`input[data-item-id="${itemId}"]`);
+            const quantity = parseInt(quantityInput.value) || 0;
+            
+            if (quantity > 0) {
+                alert(`Added ${quantity} of "${itemTitle}" to your order`);
+                quantityInput.value = 0; // Reset quantity
+            } else {
+                alert('Please enter a quantity greater than 0');
+            }
+        });
+    });
+});
+</script>
+
+<style>
+    .quantity-input {
+        font-size: 14px;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+</style>
+
+{% endblock %}

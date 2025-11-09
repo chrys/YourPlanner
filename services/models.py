@@ -359,19 +359,19 @@ class Price(TimeStampedModel):
         Validate the price data.
         CHANGED: Added validation that price must link to item OR service, not both or neither
         """
-        # CHANGED: Enforce item or service relationship
-        if not self.item and not self.service:
-            raise ValidationError("Price must be linked to either an Item or a Service.")
+        # CHANGED: Only prevent linking to BOTH item and service at the same time
+        # Allow None for either one (will be set by the view)
         if self.item and self.service:
             raise ValidationError("Price cannot be linked to both an Item and a Service. Choose one.")
         
-        if self.amount < 0:
+        if self.amount and self.amount < 0:
             raise ValidationError({'amount': 'Price amount cannot be negative'})
         
+        # CHANGED: Check if both dates exist before comparing
         if self.valid_from and self.valid_until and self.valid_from > self.valid_until:
             raise ValidationError({'valid_until': 'End date must be after start date'})
         
-        if self.min_quantity < 1:
+        if self.min_quantity and self.min_quantity < 1:
             raise ValidationError({'min_quantity': 'Minimum quantity must be at least 1'})
         
         if self.max_quantity and self.min_quantity > self.max_quantity:
