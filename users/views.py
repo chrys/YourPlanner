@@ -5,6 +5,7 @@ from django.utils.safestring import mark_safe
 # from django.core.exceptions import ValidationError # Not used
 from django.db import transaction
 from django.contrib.auth import login
+from django.contrib.auth.views import LoginView
 from django.utils.html import escape
 from django.urls import reverse, reverse_lazy
 from django.http import HttpResponseRedirect, Http404
@@ -21,6 +22,13 @@ from services.models import Price, Service # Needed for finding active price for
 # from django import forms # Not used directly in views.py if forms are in forms.py
 from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm, WeddingTimelineForm
 from labels.models import Label
+
+
+# CHANGED: Custom login view to use custom template
+class CustomLoginView(LoginView):
+    """CHANGED: Custom login view using the glassmorphism login.html template"""
+    template_name = 'core/login/login.html'
+    redirect_authenticated_user = True
 
 
 # --- Mixins ---
@@ -88,6 +96,84 @@ class CustomerProfessionalServicesView(LoginRequiredMixin, CustomerRequiredMixin
             # and a message being displayed.
             context['linked_professional'] = None
         return context
+
+
+# CHANGED: Added SignupView to render the signup landing page with form
+class SignupView(CreateView):
+    """Handles GET/POST for the signup landing page at /signup/"""
+    template_name = 'core/login/signup.html'
+    form_class = RegistrationForm
+    # CHANGED: Redirect to home page after registration
+    success_url = reverse_lazy('core:home')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['has_default_professional'] = Professional.objects.filter(default=True).exists()
+        return context
+
+    def form_valid(self, form):
+        email = form.cleaned_data['email']
+        if User.objects.filter(email=email).exists():
+            login_url = reverse('users:login')
+            error_message = mark_safe(
+                f'Email address {escape(email)} already exists, please <a href="{escape(login_url)}">login instead</a>'
+            )
+            messages.error(self.request, error_message)
+            return self.form_invalid(form)
+
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=form.cleaned_data['password']
+                )
+
+                # Always create customer for signup landing page
+                customer = Customer.objects.create(
+                    user=user,
+                    wedding_day=form.cleaned_data['wedding_day'],
+                    bride_name=form.cleaned_data.get('bride_name', ''),
+                    groom_name=form.cleaned_data.get('groom_name', ''),
+                    bride_contact=form.cleaned_data.get('bride_contact', ''),
+                    groom_contact=form.cleaned_data.get('groom_contact', '')
+                )
+                
+                # Automatically link to default professional if exists
+                if Professional.objects.filter(default=True).exists():
+                    default_professional = Professional.objects.get(default=True)
+                    ProfessionalCustomerLink.objects.create(
+                        professional=default_professional,
+                        customer=customer,
+                        status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+                    )
+                    messages.success(self.request, f'Registration successful. You are now linked with {default_professional.title}.')
+                else:
+                    messages.success(self.request, 'Registration successful!')
+
+                # CHANGED: Login user after registration
+                login(self.request, user)
+                return redirect(self.success_url)
+
+        except Exception as e:
+            # CHANGED: Log exception and display user-friendly error message
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Registration error: {str(e)}', exc_info=True)
+            messages.error(self.request, f'An error occurred during registration: {str(e)}')
+            return self.form_invalid(form)
+    
+    # CHANGED: Override form_invalid to display form errors as messages
+    def form_invalid(self, form):
+        """CHANGED: Display form errors both in form and as Django messages"""
+        # CHANGED: Show field errors as messages for visibility
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(self.request, f'{field}: {str(error)}')
+        # CHANGED: Show non-field errors
+        for error in form.non_field_errors():
+            messages.error(self.request, str(error))
+        return super().form_invalid(form)
 
 
 class UserRegistrationView(CreateView):

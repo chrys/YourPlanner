@@ -1,7 +1,9 @@
 from django.urls import path, include
 from django.contrib.auth import views as auth_views 
 from .views import (
+    CustomLoginView,  # CHANGED: Import custom login view
     UserRegistrationView,
+    SignupView,  # CHANGED: Added SignupView for landing page
     UserManagementView,
     UserProfileView,
     ChangeProfessionalView,
@@ -51,6 +53,11 @@ urlpatterns = [
     # CHANGED: Added Wedding Timeline routes
     path('wedding-timeline/', WeddingTimelineDetailView.as_view(), name='wedding_timeline'),
     path('wedding-timeline/update/', WeddingTimelineUpdateView.as_view(), name='wedding_timeline_update'),
+    # CHANGED: Custom login view with glassmorphism template
+    path('accounts/login/', CustomLoginView.as_view(), name='login'),
+    # CHANGED: Explicit logout URL with redirect
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    # CHANGED: Keep other auth URLs (logout, password reset, etc) from django
     path('accounts/', include('django.contrib.auth.urls')),
     path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),  # Explicit password change URL
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),  # Done page after password change

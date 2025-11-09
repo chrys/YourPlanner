@@ -35,14 +35,7 @@
                     {% if customer_profile %}
                         <h4>{% trans "Customer Details" %}</h4>
                         <dl class="row">
-                            {% if customer_profile.get_linked_professional %}
-                            <dt class="col-sm-4">{% trans "Linked Professional" %}:</dt>
-                            <dd class="col-sm-8">{{ customer_profile.get_linked_professional.title|default:customer_profile.get_linked_professional.user.get_full_name }}</dd>
-                            {% else %}
-                            <dt class="col-sm-4">{% trans "Linked Professional" %}:</dt>
-                            <dd class="col-sm-8">{% trans "None" %} - <a href="{% url 'users:user_management' %}">{% trans "Choose one" %}</a></dd>
-                            {% endif %}
-                            <!-- CHANGED: Added wedding date display -->
+                            <!-- CHANGED: Removed Linked Professional line -->
                             {% if customer_profile.wedding_day %}
                             <dt class="col-sm-4">{% trans "Wedding Date" %}:</dt>
                             <dd class="col-sm-8">

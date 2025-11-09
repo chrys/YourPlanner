@@ -1,36 +1,143 @@
 {% extends "core/base.html" %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}Welcome to V planner{% endblock %}
 
 {% block content %}
-<header>
-    <div class="header-images">
-        <img src="{% static 'core/images/header1.jpg' %}" alt="Venue 1">
-        <img src="{% static 'core/images/header2.jpg' %}" alt="Venue 2">
-        <img src="{% static 'core/images/header3.jpg' %}" alt="Venue 3">
+<div class="container mt-5">
+    <!-- CHANGED: Added welcome message for authenticated users -->
+    <div class="text-center mb-5">
+        <h1 class="welcome-title">{% trans "Welcome to V planner" %}</h1>
+        <p class="text-muted">{% trans "Plan your dream wedding with us" %}</p>
     </div>
-</header>
-<main>
-    <h1 class="welcome-title">Welcome to <span class="v-planner">V planner</span></h1>
-    <p class="intro">
-        Welcome to the V planner, your 24/7 wedding planning tool. This program has been carefully created for all Vaslias brides and grooms. Our aim is to offer you a stress free and professional service through out your wedding planning process. Here you can update your menus and drinks your ceremony arrangements your table plans and accommodation options. Always remember that your Vaslias team is available for questions and assistance! Happy wedding planning!
-    </p>
-    <div class="circle-grid">
-        <div class="circle">Order your<br>food & drinks</div>
-        <div class="circle">Book rooms</div>
-        <div class="circle">Plan the tables</div>
-        <div class="circle">Choose your<br>decoration</div>
-        <div class="circle">Trusted<br>Suppliers</div>
-        <div class="circle">Wedding<br>Timings</div>
-    </div>
-</main>
-<footer>
-    <div class="footer-images">
-        <img src="{% static 'core/images/footer1.jpg' %}" alt="Footer 1">
-        <img src="{% static 'core/images/footer2.jpg' %}" alt="Footer 2">
-        <img src="{% static 'core/images/footer3.jpg' %}" alt="Footer 3">
-        <img src="{% static 'core/images/footer4.jpg' %}" alt="Footer 4">
-    </div>
-</footer>
+
+    <!-- CHANGED: Display personalized greeting for authenticated users -->
+    {% if request.user.is_authenticated %}
+        <div class="alert alert-info text-center">
+            <h4>{% blocktrans with name=request.user.first_name|default:request.user.username %}Hello, {{ name }}!{% endblocktrans %}</h4>
+            <p>{% trans "Welcome back to your wedding planning dashboard" %}</p>
+        </div>
+
+        <!-- CHANGED: Show dashboard options based on user type -->
+        <div class="row mt-5">
+            {% if request.user.customer_profile %}
+                <!-- Customer Dashboard Options -->
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Services" %}</h5>
+                            <p class="card-text">{% trans "View and select services for your wedding" %}</p>
+                            <a href="{% url 'users:customer_professional_services' %}" class="btn btn-primary">
+                                {% trans "Browse Services" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Orders" %}</h5>
+                            <p class="card-text">{% trans "View and manage your orders" %}</p>
+                            <a href="{% url 'orders:order_list' %}" class="btn btn-primary">
+                                {% trans "View Orders" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Profile" %}</h5>
+                            <p class="card-text">{% trans "Update your profile information" %}</p>
+                            <a href="{% url 'users:profile' %}" class="btn btn-primary">
+                                {% trans "View Profile" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if request.user.professional_profile %}
+                <!-- Professional Dashboard Options -->
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Services" %}</h5>
+                            <p class="card-text">{% trans "Manage your services and packages" %}</p>
+                            <a href="{% url 'services:service_list' %}" class="btn btn-primary">
+                                {% trans "Manage Services" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Customers" %}</h5>
+                            <p class="card-text">{% trans "View and manage your customers" %}</p>
+                            <a href="{% url 'users:customer_management' %}" class="btn btn-primary">
+                                {% trans "View Customers" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Profile" %}</h5>
+                            <p class="card-text">{% trans "Update your profile information" %}</p>
+                            <a href="{% url 'users:profile' %}" class="btn btn-primary">
+                                {% trans "View Profile" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if request.user.agent_profile %}
+                <!-- Agent Dashboard Options -->
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Orders" %}</h5>
+                            <p class="card-text">{% trans "Manage orders assigned to you" %}</p>
+                            <a href="{% url 'users:agent_management' %}" class="btn btn-primary">
+                                {% trans "View Orders" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "Create Order" %}</h5>
+                            <p class="card-text">{% trans "Create a new order for a customer" %}</p>
+                            <a href="{% url 'users:agent_create_order' %}" class="btn btn-primary">
+                                {% trans "New Order" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{% trans "My Profile" %}</h5>
+                            <p class="card-text">{% trans "Update your profile information" %}</p>
+                            <a href="{% url 'users:profile' %}" class="btn btn-primary">
+                                {% trans "View Profile" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

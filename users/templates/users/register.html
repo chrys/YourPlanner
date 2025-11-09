@@ -54,6 +54,90 @@
 </div>
 {% endblock %}
 
+<!-- CHANGED: Added comprehensive form field styling for white backgrounds -->
+{% block extra_css %}
+<style>
+  /* Form input styling - ensure white backgrounds */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="date"],
+  input[type="number"],
+  select,
+  textarea {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 14px !important;
+    box-sizing: border-box;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="date"]:focus,
+  input[type="number"]:focus,
+  select:focus,
+  textarea:focus {
+    background-color: #fafafa !important;
+    border-color: #79976e !important;
+    box-shadow: 0 0 0 3px rgba(121, 151, 110, 0.1) !important;
+    outline: none !important;
+  }
+
+  input::placeholder {
+    color: #c9c9c9;
+  }
+
+  /* Crispy forms field wrapper */
+  .fieldWrapper {
+    margin-bottom: 12px;
+  }
+
+  .fieldWrapper label {
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+    color: #333333;
+  }
+
+  .fieldWrapper input,
+  .fieldWrapper select,
+  .fieldWrapper textarea {
+    width: 100% !important;
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #e0e0e0 !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
+  }
+
+  .fieldWrapper .helptext {
+    font-size: 12px;
+    color: #666666;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .fieldWrapper ul.errorlist {
+    color: #cc3434;
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .fieldWrapper ul.errorlist li {
+    margin-bottom: 4px;
+  }
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {

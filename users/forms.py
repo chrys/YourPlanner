@@ -10,8 +10,9 @@ class RegistrationForm(forms.ModelForm):
         ('customer', 'Customer'),
         ('professional', 'Professional'),
     )
-    first_name = forms.CharField(max_length=30, required=True)
-    last_name = forms.CharField(max_length=30, required=True)
+    # CHANGED: Made first_name and last_name optional for landing page signup
+    first_name = forms.CharField(max_length=30, required=False)
+    last_name = forms.CharField(max_length=30, required=False)
     email = forms.EmailField(required=True)
     password = forms.CharField(widget=forms.PasswordInput)
     role = forms.ChoiceField(
@@ -31,10 +32,37 @@ class RegistrationForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         help_text="Your planned wedding day (must be in the future)."
     )
+    
+    # CHANGED: Added optional customer fields for signup landing page
+    bride_name = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Bride name (optional)'}),
+        help_text="Full name of the bride"
+    )
+    groom_name = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Groom name (optional)'}),
+        help_text="Full name of the groom"
+    )
+    bride_contact = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Bride phone (optional)'}),
+        help_text="Bride contact phone number"
+    )
+    groom_contact = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Groom phone (optional)'}),
+        help_text="Groom contact phone number"
+    )
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'password']
+        # CHANGED: Only include fields that are used in the signup form
+        fields = ['email', 'password']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
