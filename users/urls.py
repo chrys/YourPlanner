@@ -13,6 +13,8 @@ from .views import (
     AgentCreateOrderView,
     AgentOrderDetailView,  # Removed AgentSelectCustomerView (no longer needed)
     AgentDeleteOrderView,
+    WeddingTimelineDetailView,  # CHANGED: Added WeddingTimeline views
+    WeddingTimelineUpdateView,
 )
 from .views_professional import (
     CustomerManagementView,
@@ -46,12 +48,14 @@ urlpatterns = [
     path('customer-templates/', CustomerTemplateListView.as_view(), name='customer_template_list'),
     path('customer-templates/<int:pk>/', CustomerTemplateDetailView.as_view(), name='customer_template_detail'),
     path('my-professional-services/', CustomerProfessionalServicesView.as_view(), name='customer_professional_services'),
+    # CHANGED: Added Wedding Timeline routes
+    path('wedding-timeline/', WeddingTimelineDetailView.as_view(), name='wedding_timeline'),
+    path('wedding-timeline/update/', WeddingTimelineUpdateView.as_view(), name='wedding_timeline_update'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),  # Explicit password change URL
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),  # Done page after password change
 
     
 ]
-
 
 

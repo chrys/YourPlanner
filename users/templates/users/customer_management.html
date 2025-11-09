@@ -7,6 +7,13 @@
 <div class="container mt-4">
     <h1>Customer Management</h1>
     
+    <!-- CHANGED: Added link to Wedding Timeline -->
+    <div class="mb-4">
+        <a href="{% url 'users:wedding_timeline' %}" class="btn btn-secondary">
+            <i class="fas fa-calendar-alt"></i> View My Wedding Timeline
+        </a>
+    </div>
+    
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">Your Customers</h5>

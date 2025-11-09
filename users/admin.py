@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Professional, Customer, ProfessionalCustomerLink, Agent
+from .models import Professional, Customer, ProfessionalCustomerLink, Agent, WeddingTimeline
 
 @admin.register(Professional)
 class ProfessionalAdmin(admin.ModelAdmin):
@@ -98,6 +98,40 @@ class AgentAdmin(admin.ModelAdmin):  # Simplified AgentAdmin (no permissions man
             # You could add logging here if needed
             pass
         super().save_model(request, obj, form, change)
+
+
+@admin.register(WeddingTimeline)
+class WeddingTimelineAdmin(admin.ModelAdmin):
+    """CHANGED: Admin interface for managing Wedding Timelines."""
+    list_display = [
+        'customer', 'location', 'pre_wedding_appointment', 'total_guests', 'apostille_stamp'
+    ]
+    list_filter = ['apostille_stamp', 'created_at']
+    search_fields = ['customer__user__email', 'customer__user__username', 'location', 'ceremony_admin']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Customer', {
+            'fields': ('customer',)
+        }),
+        ('Event Details', {
+            'fields': ('event_organiser_name', 'contact_number', 'pre_wedding_appointment', 'location', 'ceremony_admin', 'apostille_stamp')
+        }),
+        ('Guest Numbers', {
+            'fields': ('adults', 'children', 'babies')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def total_guests(self, obj):
+        """Display total number of guests."""
+        return obj.total_guests
+    
+    total_guests.short_description = "Total Guests"
+
     
     def has_add_permission(self, request):  # Only superusers can create agents
         """Only superusers can create new agents."""

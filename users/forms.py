@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Professional, Customer
+from .models import Professional, Customer, WeddingTimeline
 from labels.models import Label
 from django.utils import timezone 
 
@@ -170,3 +170,75 @@ class CustomerLabelForm(forms.ModelForm):
 
 class DepositPaymentForm(forms.Form):
     deposit_paid_checkbox = forms.BooleanField(label="I have paid the deposit", required=True)
+
+
+class WeddingTimelineForm(forms.ModelForm):
+    """
+    CHANGED: Form for managing wedding timeline details.
+    Organized with sections for Event Details and Guest Numbers.
+    """
+    class Meta:
+        model = WeddingTimeline
+        fields = [
+            'event_organiser_name',
+            'contact_number',
+            'pre_wedding_appointment',
+            'location',
+            'apostille_stamp',
+            'ceremony_admin',
+            'adults',
+            'children',
+            'babies',
+        ]
+        widgets = {
+            'event_organiser_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Event organiser name'
+            }),
+            'contact_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Contact phone number',
+                'type': 'tel'
+            }),
+            'pre_wedding_appointment': forms.DateTimeInput(attrs={
+                'class': 'form-control',
+                'type': 'datetime-local'
+            }),
+            'location': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Wedding venue location'
+            }),
+            'apostille_stamp': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'ceremony_admin': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ceremony administrator name'
+            }),
+            'adults': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'placeholder': 'Number of adults'
+            }),
+            'children': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'placeholder': 'Number of children'
+            }),
+            'babies': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'placeholder': 'Number of babies'
+            }),
+        }
+        labels = {
+            'event_organiser_name': 'Event Organiser Name',
+            'contact_number': 'Contact Number',
+            'pre_wedding_appointment': 'Pre-Wedding Appointment',
+            'location': 'Wedding Venue Location',
+            'apostille_stamp': 'Apostille Stamp Required',
+            'ceremony_admin': 'Ceremony Administrator',
+            'adults': 'Number of Adults',
+            'children': 'Number of Children',
+            'babies': 'Number of Babies',
+        }

@@ -36,6 +36,13 @@ class Professional(TimeStampedModel):
         null=True,
         help_text="Hours when the professional is available for contact"
     )
+    # CHANGED: Added contact_number field
+    contact_number = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Contact phone number for the professional"
+    )
     rating = models.DecimalField(
         max_digits=3,
         decimal_places=2,
@@ -110,6 +117,48 @@ class Customer(TimeStampedModel):
         help_text="Marketing communication preferences"
     )
     wedding_day = models.DateField(help_text="The planned wedding day (must be in the future).")
+    
+    # CHANGED: Added bride and groom details
+    bride_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Full name of the bride"
+    )
+    groom_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Full name of the groom"
+    )
+    bride_contact = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Bride contact phone number"
+    )
+    groom_contact = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Groom contact phone number"
+    )
+    emergency_contact = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Emergency contact name and phone number"
+    )
+    planner = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Wedding planner or coordinator name"
+    )
+    special_notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Special notes for the wedding"
+    )
 
     # New role field - not accessible by customers
     role = models.CharField(
@@ -387,3 +436,77 @@ class Agent(TimeStampedModel):  # Agent user profile for order assignment
             ('can_edit_agent', 'Can edit agent'),
             ('can_delete_agent', 'Can delete agent'),
         ]
+
+
+class WeddingTimeline(TimeStampedModel):
+    """
+    CHANGED: Wedding Timeline model for storing wedding planning details.
+    Stores event details, bride/groom information, and guest numbers.
+    """
+    customer = models.OneToOneField(
+        Customer,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='wedding_timeline'
+    )
+    
+    # Event Details Section
+    event_organiser_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Name of the event organiser"
+    )
+    contact_number = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Event organiser contact number"
+    )
+    pre_wedding_appointment = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Date and time of pre-wedding appointment"
+    )
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Wedding venue location"
+    )
+    apostille_stamp = models.BooleanField(
+        default=False,
+        help_text="Whether apostille stamp is required"
+    )
+    ceremony_admin = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Name of ceremony administrator"
+    )
+    
+    # Guest Numbers Section
+    adults = models.IntegerField(
+        default=0,
+        help_text="Number of adult guests"
+    )
+    children = models.IntegerField(
+        default=0,
+        help_text="Number of children guests"
+    )
+    babies = models.IntegerField(
+        default=0,
+        help_text="Number of baby guests"
+    )
+    
+    def __str__(self):
+        return f"Wedding Timeline for {self.customer.user.get_full_name() or self.customer.user.username}"
+    
+    @property
+    def total_guests(self):
+        """Computed property for total guests."""
+        return self.adults + self.children + self.babies
+    
+    class Meta:
+        verbose_name = "Wedding Timeline"
+        verbose_name_plural = "Wedding Timelines"

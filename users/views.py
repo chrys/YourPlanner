@@ -8,18 +8,18 @@ from django.contrib.auth import login
 from django.utils.html import escape
 from django.urls import reverse, reverse_lazy
 from django.http import HttpResponseRedirect, Http404
-from django.views.generic import CreateView, View, TemplateView, FormView, ListView, DetailView
+from django.views.generic import CreateView, View, TemplateView, FormView, ListView, DetailView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404 # Though DetailView handles its own 404
 from django.templatetags.static import static # For placeholder image URL
 import json # For serializing data for Vue
 from decimal import Decimal
-from .models import Professional, Customer, ProfessionalCustomerLink
+from .models import Professional, Customer, ProfessionalCustomerLink, WeddingTimeline
 from packages.models import Template, TemplateImage # For CustomerTemplateListView
 from orders.models import Order, OrderItem
 from services.models import Price, Service # Needed for finding active price for an item
 # from django import forms # Not used directly in views.py if forms are in forms.py
-from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm
+from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm, WeddingTimelineForm
 from labels.models import Label
 
 
@@ -734,5 +734,63 @@ class AgentDeleteOrderView(LoginRequiredMixin, AgentRequiredMixin, DetailView): 
         # Add context
         context = super().get_context_data(**kwargs)
         context['page_title'] = f"Delete Order #{self.object.pk_formatted if hasattr(self.object, 'pk_formatted') else self.object.pk}"
+        return context
+
+
+class WeddingTimelineDetailView(LoginRequiredMixin, CustomerRequiredMixin, DetailView):
+    """
+    CHANGED: View for displaying wedding timeline details.
+    Only allows customers to view their own timeline.
+    """
+    model = WeddingTimeline
+    template_name = 'users/wedding_timeline.html'
+    context_object_name = 'timeline'
+
+    def get_object(self, queryset=None):
+        # Get the timeline for the current customer
+        customer = self.request.user.customer_profile
+        try:
+            return customer.wedding_timeline
+        except WeddingTimeline.DoesNotExist:
+            # If no timeline exists, create one
+            return WeddingTimeline.objects.create(customer=customer)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Wedding Timeline'
+        context['customer'] = self.request.user.customer_profile
+        return context
+
+
+class WeddingTimelineUpdateView(LoginRequiredMixin, CustomerRequiredMixin, UpdateView):
+    """
+    CHANGED: View for updating wedding timeline details.
+    Only allows customers to update their own timeline.
+    """
+    model = WeddingTimeline
+    form_class = WeddingTimelineForm
+    template_name = 'users/wedding_timeline.html'
+    context_object_name = 'timeline'
+
+    def get_object(self, queryset=None):
+        # Get the timeline for the current customer
+        customer = self.request.user.customer_profile
+        try:
+            return customer.wedding_timeline
+        except WeddingTimeline.DoesNotExist:
+            # If no timeline exists, create one
+            return WeddingTimeline.objects.create(customer=customer)
+
+    def get_success_url(self):
+        return reverse_lazy('users:wedding_timeline')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Wedding timeline updated successfully!')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Wedding Timeline'
+        context['customer'] = self.request.user.customer_profile
         return context
 
