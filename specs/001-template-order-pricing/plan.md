@@ -1,19 +1,15 @@
-# Implementation Plan: Template-First Order and Dynamic Pricing  # [added]
+# Implementation Plan: [FEATURE]
 
-**Branch**: `001-template-order-pricing` | **Date**: 2025-10-21 | **Spec**: /Users/chrys/Projects/YourPlanner/specs/001-template-order-pricing/spec.md  # [added]
-**Input**: Feature specification from `/specs/001-template-order-pricing/spec.md`  # [added]
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
-## Summary  # [added]
+## Summary
 
-Implement a template‑first ordering flow where each order begins with exactly one  # [added]
-Template priced as base_price + (additional_guest_price × additional_guests). Template  # [added]
-composition is locked (services/items not editable). After the Template, users can add  # [added]
-add‑on Services (subtotal = Service.price + sum of item lines) and individual Items.  # [added]
-Totals update immediately; order currency is set by the Template and enforced for add‑ons.  # [added]
+[Extract from feature spec: primary requirement + technical approach from research]
 
-## Technical Context  # [added]
+## Technical Context
 
 <!--
   ACTION REQUIRED: Replace the content in this section with the technical details
@@ -21,32 +17,25 @@ Totals update immediately; order currency is set by the Template and enforced fo
   the iteration process.
 -->
 
-**Language/Version**: Python 3.x (Django project)  # [added]
-**Primary Dependencies**: Django, pytest/pytest‑django, Playwright (UI smoke)  # [added]
-**Storage**: sqlite3 locally; PostgreSQL in staging/production  # [added]
-**Testing**: pytest with coverage ≥85%; deterministic tests; Playwright smoke  # [added]
-**Target Platform**: Linux server behind Nginx → Gunicorn → Django  # [added]
-**Project Type**: Web application (Django monorepo with multiple apps)  # [added]
-**Performance Goals**: Basket recalculation perceived instant (<300ms p95 server time)  # [added]
-**Constraints**: Single currency per order (from Template); same‑professional add‑ons  # [added]
-**Scale/Scope**: MVP scope—Templates, add‑on Services/Items, basket verify/update  # [added]
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [single/web/mobile - determines source structure]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
-## Constitution Check  # [added]
+## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-Merge‑blocking gates from constitution:  # [added]
-- Formatting/Linting: black --check; ruff; isort --check‑only  # [added]
-- Type checking: mypy (migrations excluded)  # [added]
-- Tests: pytest; coverage ≥85% overall and per‑package minima  # [added]
-- UI Smoke: Playwright (register, login, create order)  # [added]
-- Security: Bandit; Gitleaks (0 high/critical)  # [added]
+[Gates determined based on constitution file]
 
-Status: No planned violations. Tests and coverage to be added/updated with the feature.  # [added]
+## Project Structure
 
-## Project Structure  # [added]
-
-### Documentation (this feature)  # [added]
+### Documentation (this feature)
 
 ```
 specs/[###-feature]/
@@ -58,7 +47,7 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
-### Source Code (repository root)  # [added]
+### Source Code (repository root)
 <!--
   ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
   for this feature. Delete unused options and expand the chosen structure with
@@ -67,29 +56,50 @@ specs/[###-feature]/
 -->
 
 ```
-apps/
-├── templates/              # Template models/views/templates (curated bundles)
-├── orders/                 # Basket/order models, views, templates
-├── services/               # Services, Items, Prices
-└── core/, users/, labels/, rules/ ...
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
 
-specs/001-template-order-pricing/
-├── spec.md
-├── plan.md
-├── research.md
-├── data-model.md
-├── quickstart.md
-└── contracts/
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Use existing Django apps; extend orders to support Template  # [added]
-component plus add‑on Services/Items with recalculation and verification steps.  # [added]
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
-## Complexity Tracking  # [added]
+## Complexity Tracking
 
 *Fill ONLY if Constitution Check has violations that must be justified*
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| — | — | — |  # [added]
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
