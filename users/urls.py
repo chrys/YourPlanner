@@ -53,14 +53,16 @@ urlpatterns = [
     # CHANGED: Added Wedding Timeline routes
     path('wedding-timeline/', WeddingTimelineDetailView.as_view(), name='wedding_timeline'),
     path('wedding-timeline/update/', WeddingTimelineUpdateView.as_view(), name='wedding_timeline_update'),
-    # CHANGED: Custom login view with glassmorphism template
+
+    # Auth views
     path('accounts/login/', CustomLoginView.as_view(), name='login'),
-    # CHANGED: Explicit logout URL with redirect
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
-    # CHANGED: Keep other auth URLs (logout, password reset, etc) from django
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),  # Explicit password change URL
-    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),  # Done page after password change
+    path('accounts/password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
+    path('accounts/password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
+    path('accounts/password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+    path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     
 ]

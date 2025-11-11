@@ -1,0 +1,82 @@
+<div id="vasbot-app">
+  <div class="vasbot-container">
+    <!-- Widget Icon (Closed) -->
+    <button
+      v-if="!isOpen"
+      class="vasbot-icon"
+      @click="toggleWidget"
+      aria-label="Open chat"
+    >
+      💬
+    </button>
+
+    <!-- Chat Window (Open) -->
+    <div v-if="isOpen" class="vasbot-window">
+      <div class="vasbot-header">
+        <h3>VasiliasBot</h3>
+        <button @click="toggleWidget" aria-label="Close chat">✕</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="vasbot-messages">
+        <div
+          v-for="message in messages"
+          :key="message.id"
+          :class="['vasbot-message', `vasbot-${message.sender}`]"
+        >
+          <p>{{ message.text }}</p>
+
+          <!-- Feedback (bot messages only) -->
+          <div v-if="message.sender === 'bot'" class="vasbot-feedback">
+            <button
+              @click="submitFeedback(message.id, 'up')"
+              :class="{ active: message.feedback?.value === 'up' }"
+            >
+              👍
+            </button>
+            <button
+              @click="submitFeedback(message.id, 'down')"
+              :class="{ active: message.feedback?.value === 'down' }"
+            >
+              👎
+            </button>
+          </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div v-if="isLoading" class="vasbot-typing">
+          <span>•</span><span>•</span><span>•</span>
+        </div>
+      </div>
+
+      <!-- FAQ List (if no conversation yet) -->
+      <div v-if="messages.length === 0" class="vasbot-faqs">
+        <p>Popular questions:</p>
+        <button
+          v-for="faq in faqs"
+          :key="faq.id"
+          @click="sendMessage(faq.question)"
+          class="vasbot-faq-btn"
+        >
+          {{ faq.question }}
+        </button>
+      </div>
+
+      <!-- Input -->
+      <div class="vasbot-footer">
+        <button @click="downloadTranscript" class="vasbot-transcript-btn">Download Transcript</button>
+      </div>
+      <div class="vasbot-input">
+        <input
+          v-model="inputText"
+          @keyup.enter="sendMessage(inputText)"
+          placeholder="Ask me anything..."
+          :disabled="isLoading"
+        />
+        <button @click="sendMessage(inputText)" :disabled="!inputText || isLoading">
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
