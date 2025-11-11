@@ -30,6 +30,12 @@ class CustomLoginView(LoginView):
     template_name = 'core/login/login.html'
     redirect_authenticated_user = True
 
+    def dispatch(self, request, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"CustomLoginView dispatched for user: {request.user}")
+        return super().dispatch(request, *args, **kwargs)
+
 
 # --- Mixins ---
 class CustomerRequiredMixin(UserPassesTestMixin):
@@ -247,18 +253,21 @@ class UserManagementView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         user = request.user
         
+        if user.is_superuser:
+            return redirect('admin:index')
+
         # Check if user is an agent first
         try:
             from .models import Agent  # Import Agent model
             agent = user.agent_profile
             if agent and agent.status == Agent.StatusChoices.ACTIVE:  # Redirect active agents to their dashboard
                 return redirect('users:agent_management')
-        except Agent.DoesNotExist:
+        except (Agent.DoesNotExist, AttributeError):
             pass
         
         try:
             customer = user.customer_profile
-        except Customer.DoesNotExist: # User is not a customer (could be Professional or Admin without CustomerProfile)
+        except (Customer.DoesNotExist, AttributeError): # User is not a customer (could be Professional or Admin without CustomerProfile)
             # Professionals or other non-customer users see a generic management page.
             return render(request, 'users/management.html', {'page_title': "User Management"})
 

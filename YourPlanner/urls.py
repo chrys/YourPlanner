@@ -21,6 +21,7 @@ urlpatterns = [
     path('', include('core.urls', namespace='core')),
     # CHANGED: Added signup landing page route - uses SignupView to provide form context
     path('signup/', SignupView.as_view(), name='landing_signup'),
+    path('api/chatbot/', include('chatbot.api_urls')),
 ]
 
 
