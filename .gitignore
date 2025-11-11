@@ -478,3 +478,4 @@ YourPlanner/media/template_images/*
 requirements.txt
 specs/
 /Documentation
+./specify
