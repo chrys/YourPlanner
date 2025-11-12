@@ -15,6 +15,8 @@ urlpatterns = [
     path('orders/', include('orders.urls')),
     path('packages/', include('packages.urls', namespace='packages')),
     path('config/', include('configuration.urls', namespace='configuration')),
+    # CHANGED: Added payments app URLs
+    path('payments/', include('payments.urls', namespace='payments')),
     #path('accounts/', include('django.contrib.auth.urls')),
     path('summernote/', include('django_summernote.urls')),
     # CHANGED: Uncommented core URLs to register the 'core:home' namespace for post-signup redirect

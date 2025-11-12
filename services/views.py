@@ -574,3 +574,29 @@ class FoodDrinksView(LoginRequiredMixin, TemplateView):
         context['food_drinks_sections'] = food_drinks_sections
         context['page_title'] = "Food & Drinks"
         return context
+
+
+# CHANGED: Added RoomsView for displaying available event rooms
+class RoomsView(TemplateView):
+    """
+    View to display event rooms.
+    """
+    template_name = 'services/rooms.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Rooms"
+        return context
+
+
+# CHANGED: Added DecorsServicesView for displaying decors and services
+class DecorsServicesView(TemplateView):
+    """
+    View to display decors and services.
+    """
+    template_name = 'services/decors_services.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Decors & Services"
+        return context

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.views.generic import CreateView, UpdateView, DetailView, ListView, DeleteView
+from django.views.generic import CreateView, UpdateView, DetailView, ListView, DeleteView, TemplateView
 from django.shortcuts import get_object_or_404
 
 from django.urls import reverse_lazy
@@ -474,4 +474,18 @@ class TemplateDetailView(LoginRequiredMixin, DetailView):
 
         context['is_owner_or_superuser'] = is_owner_or_superuser
 
+        return context
+
+
+# CHANGED: Added PackagesView for displaying wedding packages
+class PackagesView(TemplateView):
+    """
+    View to display wedding packages.
+    """
+    # CHANGED: Corrected template path to match packages/templates/templates/ structure
+    template_name = 'templates/packages.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Wedding Packages"
         return context

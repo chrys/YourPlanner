@@ -4,6 +4,8 @@ from .views import (
     ItemCreateView, ItemListView, ItemDetailView, ItemUpdateView, ItemDeleteView, # ItemListView might be optional if only shown in service_detail
     PriceCreateView, PriceListView, PriceDetailView, PriceUpdateView, PriceDeleteView, # PriceListView might be optional
     FoodDrinksView,  # CHANGED: Added FoodDrinksView import
+    RoomsView,  # CHANGED: Added RoomsView import
+    DecorsServicesView,  # CHANGED: Added DecorsServicesView import
 )
 
 app_name = 'services'
@@ -17,6 +19,10 @@ urlpatterns = [
     path('service/<int:pk>/delete/', ServiceDeleteView.as_view(), name='service_delete'),
     # CHANGED: Updated Food & Drinks URL to be a standalone page
     path('food-drinks/', FoodDrinksView.as_view(), name='food_drinks'),
+    # CHANGED: Added Rooms URL
+    path('rooms/', RoomsView.as_view(), name='rooms'),
+    # CHANGED: Added Decors & Services URL
+    path('decors-services/', DecorsServicesView.as_view(), name='decors_services'),
 
     # Item URLs (nested under services)
     # service_pk is used by the UserOwnsParentServiceMixin to fetch the parent service

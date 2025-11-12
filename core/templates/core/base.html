@@ -34,23 +34,32 @@
     <div class="sidebar-wrapper">
         <div class="container--0-">
             <div class="container-0-1-0">
-                <img
-                    src="{% static 'core/images/VPlogo.png' %}"
-                    alt="Vplanner logo"  
-                />
+                <!-- CHANGED: Wrapped logo in link to homepage -->
+                <a href="{% url 'core:home' %}" style="text-decoration: none;">
+                    <img
+                        src="{% static 'core/images/VPlogo.png' %}"
+                        alt="Vplanner logo"  
+                    />
+                </a>
                 <div class="container-1-2-1">
                     <!-- CHANGED: Menu items - "Your Booked Services" highlighted in green as selected item -->
                     <div class="container-2-3-1">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M16 22V18C16 15.7909 14.2091 14 12 14C9.79086 14 8 15.7909 8 18V22M21 10.1503V17.9668C21 20.1943 19.2091 22 17 22H7C4.79086 22 3 20.1943 3 17.9668V10.1503C3 8.93937 3.53964 7.7925 4.46986 7.02652L9.46986 2.90935C10.9423 1.69689 13.0577 1.69688 14.5301 2.90935L19.5301 7.02652C20.4604 7.7925 21 8.93937 21 10.1503Z" stroke="#111111" stroke-width="2"></path>
-                        </svg>
-                        <div class="text-3-4-1">Welcome to V planner</div>
+                        <!-- CHANGED: Added link to homepage -->
+                        <a href="{% url 'core:home' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 22V18C16 15.7909 14.2091 14 12 14C9.79086 14 8 15.7909 8 18V22M21 10.1503V17.9668C21 20.1943 19.2091 22 17 22H7C4.79086 22 3 20.1943 3 17.9668V10.1503C3 8.93937 3.53964 7.7925 4.46986 7.02652L9.46986 2.90935C10.9423 1.69689 13.0577 1.69688 14.5301 2.90935L19.5301 7.02652C20.4604 7.7925 21 8.93937 21 10.1503Z" stroke="#111111" stroke-width="2"></path>
+                            </svg>
+                            <div class="text-3-4-1">Welcome to V planner</div>
+                        </a>
                     </div>
                     <div class="container-2-3-0">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M10 6H16M10 14H16M10 10H22M10 18H22M3 10H5C5.55228 10 6 9.55228 6 9V7C6 6.44772 5.55228 6 5 6H3C2.44772 6 2 6.44772 2 7V9C2 9.55228 2.44772 10 3 10ZM3 18H5C5.55228 18 6 17.5523 6 17V15C6 14.4477 5.55228 14 5 14H3C2.44772 14 2 14.4477 2 15V17C2 17.5523 2.44772 18 3 18Z" stroke="#111111" stroke-width="2" stroke-linecap="round"></path>
-                        </svg>
-                        <div class="text-3-4-1">Your Booked Services</div>
+                        <!-- CHANGED: Added link to services list page -->
+                        <a href="{% url 'services:service_list' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 6H16M10 14H16M10 10H22M10 18H22M3 10H5C5.55228 10 6 9.55228 6 9V7C6 6.44772 5.55228 6 5 6H3C2.44772 6 2 6.44772 2 7V9C2 9.55228 2.44772 10 3 10ZM3 18H5C5.55228 18 6 17.5523 6 17V15C6 14.4477 5.55228 14 5 14H3C2.44772 14 2 14.4477 2 15V17C2 17.5523 2.44772 18 3 18Z" stroke="#111111" stroke-width="2" stroke-linecap="round"></path>
+                            </svg>
+                            <div class="text-3-4-1">Your Booked Services</div>
+                        </a>
                     </div>
                     <div class="container-2-3-2">
                         <!-- CHANGED: Added link to Food & Drinks page (standalone collection) -->
@@ -62,65 +71,92 @@
                         </a>
                     </div>
                     <div class="container-2-3-3">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <g clip-path="url(#clip0_2043_243)">
-                                <path d="M4 6C4 5.17155 4.67157 4.5 5.5 4.5H18.5C19.3285 4.5 20 5.17155 20 6V11.5H4V6Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                <path d="M3 17.5V19.5M21 17.5V19.5M10 9H7C6.17155 9 5.5 9.67155 5.5 10.5V11.5H11.5V10.5C11.5 9.67155 10.8285 9 10 9ZM17 9H14C13.1715 9 12.5 9.67155 12.5 10.5V11.5H18.5V10.5C18.5 9.67155 17.8285 9 17 9ZM2 13C2 12.1715 2.67158 11.5 3.5 11.5H20.5C21.3285 11.5 22 12.1715 22 13V17.5H2V13Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </g>
-                            <defs>
-                                <clipPath id="clip0_2043_243"><rect width="24" height="24" fill="white"></rect></clipPath>
-                            </defs>
-                        </svg>
-                        <div class="text-3-4-1">Rooms</div>
+                        <!-- CHANGED: Added link to Rooms page -->
+                        <a href="{% url 'services:rooms' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <g clip-path="url(#clip0_2043_243)">
+                                    <path d="M4 6C4 5.17155 4.67157 4.5 5.5 4.5H18.5C19.3285 4.5 20 5.17155 20 6V11.5H4V6Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M3 17.5V19.5M21 17.5V19.5M10 9H7C6.17155 9 5.5 9.67155 5.5 10.5V11.5H11.5V10.5C11.5 9.67155 10.8285 9 10 9ZM17 9H14C13.1715 9 12.5 9.67155 12.5 10.5V11.5H18.5V10.5C18.5 9.67155 17.8285 9 17 9ZM2 13C2 12.1715 2.67158 11.5 3.5 11.5H20.5C21.3285 11.5 22 12.1715 22 13V17.5H2V13Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </g>
+                                <defs>
+                                    <clipPath id="clip0_2043_243"><rect width="24" height="24" fill="white"></rect></clipPath>
+                                </defs>
+                            </svg>
+                            <div class="text-3-4-1">Rooms</div>
+                        </a>
                     </div>
                     <div class="container-2-3-4">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M14.1263 3H16.9516C17.5589 3 18.1373 3.263 18.5408 3.72267L21.4629 7.05149C22.141 7.82402 22.1814 8.9755 21.559 9.79476L13.6854 20.1597C12.8342 21.2801 11.1658 21.2801 10.3146 20.1597L2.44095 9.79476C1.81861 8.9755 1.85896 7.82402 2.53709 7.05149L5.45918 3.72267C5.86269 3.263 6.44106 3 7.04842 3H10.1099M14.1263 3L16.2526 8.38285M14.1263 3H10.1099M16.2526 8.38285H21.5684M16.2526 8.38285L12 20.7634L7.74736 8.38285M16.2526 8.38285H7.74736M10.1099 3L7.74736 8.38285M2.43156 8.38285H7.74736" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                        <div class="text-3-4-1">Wedding Packages</div>
+                        <!-- CHANGED: Added link to Wedding Packages page -->
+                        <a href="{% url 'packages:packages' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14.1263 3H16.9516C17.5589 3 18.1373 3.263 18.5408 3.72267L21.4629 7.05149C22.141 7.82402 22.1814 8.9755 21.559 9.79476L13.6854 20.1597C12.8342 21.2801 11.1658 21.2801 10.3146 20.1597L2.44095 9.79476C1.81861 8.9755 1.85896 7.82402 2.53709 7.05149L5.45918 3.72267C5.86269 3.263 6.44106 3 7.04842 3H10.1099M14.1263 3L16.2526 8.38285M14.1263 3H10.1099M16.2526 8.38285H21.5684M16.2526 8.38285L12 20.7634L7.74736 8.38285M16.2526 8.38285H7.74736M10.1099 3L7.74736 8.38285M2.43156 8.38285H7.74736" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <div class="text-3-4-1">Wedding Packages</div>
+                        </a>
                     </div>
                     <div class="container-2-3-5">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 11H20M4 11C2.89543 11 2 10.1046 2 9V8C2 6.89543 2.89543 6 4 6H20C21.1046 6 22 6.89543 22 8V9C22 10.1046 21.1046 11 20 11M4 11L4 20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V11M12 6H16C17.1046 6 18 5.10457 18 4C18 2.89543 17.1046 2 16 2C13.7909 2 12 3.79086 12 6ZM12 6H8C6.89543 6 6 5.10457 6 4C6 2.89543 6.89543 2 8 2C10.2091 2 12 3.79086 12 6ZM12 6V22" stroke="#111111" stroke-width="2" stroke-linecap="round"></path>
-                        </svg>
-                        <div class="text-3-4-1">Decors &amp; Services</div>
+                        <!-- CHANGED: Added link to Decors & Services page -->
+                        <a href="{% url 'services:decors_services' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 11H20M4 11C2.89543 11 2 10.1046 2 9V8C2 6.89543 2.89543 6 4 6H20C21.1046 6 22 6.89543 22 8V9C22 10.1046 21.1046 11 20 11M4 11L4 20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V11M12 6H16C17.1046 6 18 5.10457 18 4C18 2.89543 17.1046 2 16 2C13.7909 2 12 3.79086 12 6ZM12 6H8C6.89543 6 6 5.10457 6 4C6 2.89543 6.89543 2 8 2C10.2091 2 12 3.79086 12 6ZM12 6V22" stroke="#111111" stroke-width="2" stroke-linecap="round"></path>
+                            </svg>
+                            <div class="text-3-4-1">Decors &amp; Services</div>
+                        </a>
                     </div>
                     <div class="container-2-3-6">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8 9H12M8 13H16M8 17H16M15.9995 2V5M7.99951 2V5M7 3.5H17C19.2091 3.5 21 5.29086 21 7.5V18C21 20.2091 19.2091 22 17 22H7C4.79086 22 3 20.2091 3 18V7.5C3 5.29086 4.79086 3.5 7 3.5Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                        <div class="text-3-4-1">Table &amp; Floor Plans</div>
+                        <!-- CHANGED: Added link to Tables & Floor Plans page -->
+                        <a href="{% url 'core:tables' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 9H12M8 13H16M8 17H16M15.9995 2V5M7.99951 2V5M7 3.5H17C19.2091 3.5 21 5.29086 21 7.5V18C21 20.2091 19.2091 22 17 22H7C4.79086 22 3 20.2091 3 18V7.5C3 5.29086 4.79086 3.5 7 3.5Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <div class="text-3-4-1">Table &amp; Floor Plans</div>
+                        </a>
                     </div>
                     <div class="container-2-3-7">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M21 10.8889C21 15.7981 15.375 22 12 22C8.625 22 3 15.7981 3 10.8889C3 5.97969 7.02944 2 12 2C16.9706 2 21 5.97969 21 10.8889ZM15 11C15 12.6569 13.6569 14 12 14C10.3431 14 9 12.6569 9 11C9 9.34315 10.3431 8 12 8C13.6569 8 15 9.34315 15 11Z" stroke="#111111" stroke-width="2"></path>
-                        </svg>
-                        <div class="text-3-4-1">Event Locations</div>
+                        <!-- CHANGED: Added link to Event Locations page -->
+                        <a href="{% url 'core:locations' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 10.8889C21 15.7981 15.375 22 12 22C8.625 22 3 15.7981 3 10.8889C3 5.97969 7.02944 2 12 2C16.9706 2 21 5.97969 21 10.8889ZM15 11C15 12.6569 13.6569 14 12 14C10.3431 14 9 12.6569 9 11C9 9.34315 10.3431 8 12 8C13.6569 8 15 9.34315 15 11Z" stroke="#111111" stroke-width="2"></path>
+                            </svg>
+                            <div class="text-3-4-1">Event Locations</div>
+                        </a>
                     </div>
                     <div class="container-2-3-8">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 9V11.382C12 11.7607 12.214 12.107 12.5528 12.2764L14 13M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12ZM19 12C19 15.866 15.866 19 12 19C8.13401 19 5 15.866 5 12C5 8.13401 8.13401 5 12 5C15.866 5 19 8.13401 19 12Z" stroke="#111111" stroke-width="2" stroke-linecap="round"></path>
-                        </svg>
-                        <div class="text-3-4-1">Wedding Timeline</div>
+                        <!-- CHANGED: Added link to Wedding Timeline page -->
+                        <a href="{% url 'users:wedding_timeline' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 9V11.382C12 11.7607 12.214 12.107 12.5528 12.2764L14 13M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12ZM19 12C19 15.866 15.866 19 12 19C8.13401 19 5 15.866 5 12C5 8.13401 8.13401 5 12 5C15.866 5 19 8.13401 19 12Z" stroke="#111111" stroke-width="2" stroke-linecap="round"></path>
+                            </svg>
+                            <div class="text-3-4-1">Wedding Timeline</div>
+                        </a>
                     </div>
                     <div class="container-2-3-9">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M16 6C16 3.79086 14.2091 2 12 2C9.79085 2 7.99999 3.79086 7.99999 6M6.8197 22H17.1803C19.6848 22 21.5733 19.7245 21.1118 17.2628L19.6118 9.26285C19.257 7.37095 17.6051 6 15.6803 6H8.3197C6.39484 6 4.74294 7.37096 4.38821 9.26285L2.88821 17.2628C2.42665 19.7245 4.31515 22 6.8197 22Z" stroke="#111111" stroke-width="2" stroke-linejoin="round"></path>
-                        </svg>
-                        <div class="text-3-4-1">Invoicing &amp; Payments</div>
+                        <!-- CHANGED: Added link to Invoicing & Payments page -->
+                        <a href="{% url 'payments:invoice' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 6C16 3.79086 14.2091 2 12 2C9.79085 2 7.99999 3.79086 7.99999 6M6.8197 22H17.1803C19.6848 22 21.5733 19.7245 21.1118 17.2628L19.6118 9.26285C19.257 7.37095 17.6051 6 15.6803 6H8.3197C6.39484 6 4.74294 7.37096 4.38821 9.26285L2.88821 17.2628C2.42665 19.7245 4.31515 22 6.8197 22Z" stroke="#111111" stroke-width="2" stroke-linejoin="round"></path>
+                            </svg>
+                            <div class="text-3-4-1">Invoicing &amp; Payments</div>
+                        </a>
                     </div>
                     <div class="container-2-3-10">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="7" r="1" fill="#111111"></circle>
-                            <path d="M11 10H12V17M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                        <div class="text-3-4-1">Legal &amp; Documents</div>
+                        <!-- CHANGED: Added link to Legal & Documents page -->
+                        <a href="{% url 'core:legal' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="7" r="1" fill="#111111"></circle>
+                                <path d="M11 10H12V17M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <div class="text-3-4-1">Legal &amp; Documents</div>
+                        </a>
                     </div>
                     <div class="container-2-3-11">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M16 7H15C15 8.65685 13.6569 10 12 10V11V12C14.7614 12 17 9.76142 17 7H16ZM12 11V10C10.3431 10 9 8.65685 9 7H8H7C7 9.76142 9.23858 12 12 12V11ZM8 7H9C9 5.34315 10.3431 4 12 4V3V2C9.23858 2 7 4.23858 7 7H8ZM12 3V4C13.6569 4 15 5.34315 15 7H16H17C17 4.23858 14.7614 2 12 2V3ZM19 17.5H18C18 17.8837 17.663 18.5002 16.5025 19.0804C15.4019 19.6308 13.8114 20 12 20V21V22C14.0546 22 15.9641 21.5857 17.397 20.8693C18.77 20.1828 20 19.0493 20 17.5H19ZM12 21V20C10.1886 20 8.5981 19.6308 7.49747 19.0804C6.33702 18.5002 6 17.8837 6 17.5H5H4C4 19.0493 5.22998 20.1828 6.60304 20.8693C8.03591 21.5857 9.94542 22 12 22V21ZM5 17.5H6C6 17.1163 6.33702 16.4998 7.49747 15.9196C8.5981 15.3692 10.1886 15 12 15V14V13C9.94542 13 8.03591 13.4143 6.60304 14.1307C5.22998 14.8172 4 15.9507 4 17.5H5ZM12 14V15C13.8114 15 15.4019 15.3692 16.5025 15.9196C17.663 16.4998 18 17.1163 18 17.5H19H20C20 15.9507 18.77 14.8172 17.397 14.1307C15.9641 13.4143 14.0546 13 12 13V14Z" fill="#111111"></path>
-                        </svg>
-                        <div class="text-3-4-1">Our Team</div>
+                        <!-- CHANGED: Added link to Our Team page -->
+                        <a href="{% url 'core:our_team' %}" style="text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 7H15C15 8.65685 13.6569 10 12 10V11V12C14.7614 12 17 9.76142 17 7H16ZM12 11V10C10.3431 10 9 8.65685 9 7H8H7C7 9.76142 9.23858 12 12 12V11ZM8 7H9C9 5.34315 10.3431 4 12 4V3V2C9.23858 2 7 4.23858 7 7H8ZM12 3V4C13.6569 4 15 5.34315 15 7H16H17C17 4.23858 14.7614 2 12 2V3ZM19 17.5H18C18 17.8837 17.663 18.5002 16.5025 19.0804C15.4019 19.6308 13.8114 20 12 20V21V22C14.0546 22 15.9641 21.5857 17.397 20.8693C18.77 20.1828 20 19.0493 20 17.5H19ZM12 21V20C10.1886 20 8.5981 19.6308 7.49747 19.0804C6.33702 18.5002 6 17.8837 6 17.5H5H4C4 19.0493 5.22998 20.1828 6.60304 20.8693C8.03591 21.5857 9.94542 22 12 22V21ZM5 17.5H6C6 17.1163 6.33702 16.4998 7.49747 15.9196C8.5981 15.3692 10.1886 15 12 15V14V13C9.94542 13 8.03591 13.4143 6.60304 14.1307C5.22998 14.8172 4 15.9507 4 17.5H5ZM12 14V15C13.8114 15 15.4019 15.3692 16.5025 15.9196C17.663 16.4998 18 17.1163 18 17.5H19H20C20 15.9507 18.77 14.8172 17.397 14.1307C15.9641 13.4143 14.0546 13 12 13V14Z" fill="#111111"></path>
+                            </svg>
+                            <div class="text-3-4-1">Our Team</div>
+                        </a>
                     </div>
                     <div class="container-2-3-12">
                         <form method="post" action="{% url 'users:logout' %}" style="display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; padding: 0; cursor: pointer;">
@@ -150,5 +186,30 @@
     <!-- CHANGED: Temporarily disabled test script to debug -->
     <!-- <script src="{% static 'core/js/test-faq-api.js' %}"></script> -->
     <script src="{% static 'core/js/vassbot.js' %}"></script>
+
+    <!-- CHANGED: Script to highlight active menu item -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const menuLinks = document.querySelectorAll('.container-1-2-1 a');
+            
+            menuLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                // Check if current path matches or starts with the href
+                if (currentPath === href || currentPath.startsWith(href + '/')) {
+                    // Get the container parent
+                    const container = link.closest('[class^="container-2-3-"]');
+                    if (container) {
+                        // Remove green background from all menu items
+                        document.querySelectorAll('.container-1-2-1 > div').forEach(item => {
+                            item.style.backgroundColor = '#ffffff';
+                        });
+                        // Add green background to current item
+                        container.style.backgroundColor = '#a8d497';
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>

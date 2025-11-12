@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'labels.apps.LabelsConfig',
     'rules.apps.RulesConfig',
+    'payments.apps.PaymentsConfig',
     'crispy_forms',
     'crispy_bootstrap5',
     'django_summernote',
