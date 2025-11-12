@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import home_view, TablesView, LocationsView, LegalView, OurTeamView
+from .views import home_view, TablesView, LocationsView, LegalView, OurTeamView, SuppliersView
 from orders.views import SelectItemsView, BasketView
 
 app_name = 'core'  # Define the namespace
@@ -13,4 +13,6 @@ urlpatterns = [
     path('locations/', LocationsView.as_view(), name='locations'),
     path('legal/', LegalView.as_view(), name='legal'),
     path('our-team/', OurTeamView.as_view(), name='our_team'),
+    # CHANGED: Added suppliers route
+    path('suppliers/', SuppliersView.as_view(), name='suppliers'),
 ]

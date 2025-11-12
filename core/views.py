@@ -65,3 +65,16 @@ class OurTeamView(TemplateView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = "Our Team"
         return context
+
+
+# CHANGED: Added SuppliersView for displaying trusted suppliers
+class SuppliersView(TemplateView):
+    """
+    View to display trusted suppliers.
+    """
+    template_name = 'core/suppliers.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Trusted Suppliers"
+        return context

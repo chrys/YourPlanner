@@ -478,3 +478,5 @@ YourPlanner/media/template_images/*
 requirements.txt
 specs/
 /Documentation
+media/.DS_Store
+.DS_Store

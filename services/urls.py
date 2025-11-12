@@ -3,7 +3,7 @@ from .views import (
     ServiceCreateView, ServiceListView, ServiceDetailView, ServiceUpdateView, ServiceDeleteView,
     ItemCreateView, ItemListView, ItemDetailView, ItemUpdateView, ItemDeleteView, # ItemListView might be optional if only shown in service_detail
     PriceCreateView, PriceListView, PriceDetailView, PriceUpdateView, PriceDeleteView, # PriceListView might be optional
-    FoodDrinksView,  # CHANGED: Added FoodDrinksView import
+    FoodDrinksView,  
     RoomsView,  # CHANGED: Added RoomsView import
     DecorsServicesView,  # CHANGED: Added DecorsServicesView import
 )

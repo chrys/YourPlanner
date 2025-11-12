@@ -5,139 +5,209 @@
 {% block title %}Welcome to V planner{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <!-- CHANGED: Added welcome message for authenticated users -->
-    <div class="text-center mb-5">
-        <h1 class="welcome-title">{% trans "Welcome to V planner" %}</h1>
-        <p class="text-muted">{% trans "Plan your dream wedding with us" %}</p>
+<!-- CHANGED: Hero section with background image and overlay text -->
+<style>
+    .hero-section {
+        position: relative;
+        width: 100%;
+        height: 500px;
+        background-image: url("{% static 'core/images/married-couple.png' %}");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center right;
+        border-radius: 8px;
+        margin-bottom: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        overflow: hidden;
+    }
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.3);
+        z-index: 1;
+    }
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        padding: 48px;
+        color: white;
+        max-width: 500px;
+    }
+    .hero-content h1 {
+        font-size: 48px;
+        font-weight: 700;
+        margin: 0 0 16px 0;
+        color: white;
+    }
+    .hero-content p {
+        font-size: 20px;
+        color: #f0f0f0;
+        margin: 0 0 32px 0;
+    }
+    .hero-button {
+        display: inline-block;
+        background-color: #a8d497;
+        color: #111;
+        padding: 14px 32px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    .hero-button:hover {
+        background-color: #98c885;
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h1>Welcome to V planner!</h1>
+        <p>Your 24/7 wedding planning tool</p>
+        <a href="#quick-access" class="hero-button">Start Planning →</a>
+    </div>
+</div>
+
+<!-- CHANGED: Quick access section with 6 buttons -->
+<style>
+    .quick-access-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 40px;
+    }
+    
+    .button-container {
+        width: 100%;
+        height: 140px;
+        background-color: #e8f1d9;
+        justify-content: center;
+        align-items: center;
+        border-radius: 16px;
+        gap: 16px;
+        display: flex;
+        flex-direction: column;
+        padding: 32px 32px 32px 32px;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .button-container:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .button-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .button-text {
+        width: 100%;
+        color: #111111;
+        font-size: 16px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    @media (max-width: 1024px) {
+        .quick-access-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .quick-access-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div id="quick-access" style="margin-bottom: 60px;">
+    <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Quick access:</h2>
+    <p style="font-size: 16px; color: #5b5b5b; margin-bottom: 32px;">
+        Our aim is to offer you a stress free and professional service through out your wedding planning process.
+    </p>
+
+    <!-- CHANGED: 6 quick access buttons matching Figma template -->
+    <div class="quick-access-grid">
+        <!-- Choose Food & Drinks -->
+        <a href="{% url 'services:food_drinks' %}" class="button-container">
+            <svg class="button-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10.6667 5.33337V26.6667" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M24 16C24 16 20 14.6667 20 10.6667C20 6.66671 24 5.33337 24 5.33337V26.6667" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M6.66663 5.33337V9.33337C6.66663 11.5425 8.45749 13.3334 10.6666 13.3334C12.8758 13.3334 14.6666 11.5425 14.6666 9.33337V5.33337" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <div class="button-text">Choose Food & Drinks</div>
+        </a>
+
+        <!-- Book Guest Rooms -->
+        <a href="{% url 'services:rooms' %}" class="button-container">
+            <svg class="button-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.33337 8C5.33337 6.8954 6.22869 6 7.33325 6H24.6666C25.7712 6 26.6666 6.8954 26.6666 8V15.3333H5.33325V8Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M4 23.3334V26" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M28 23.3334V26" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M13.3333 12H9.33325C8.22865 12 7.33325 12.8954 7.33325 14V15.3333H15.3333V14C15.3333 12.8954 14.4379 12 13.3333 12Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M22.6667 12H18.6667C17.5621 12 16.6667 12.8954 16.6667 14V15.3333H24.6667V14C24.6667 12.8954 23.7713 12 22.6667 12Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M2.66675 17.3334C2.66675 16.2288 3.56218 15.3334 4.66675 15.3334H27.3334C28.438 15.3334 29.3334 16.2288 29.3334 17.3334V23.3334H2.66675V17.3334Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <div class="button-text">Book Guest Rooms</div>
+        </a>
+
+        <!-- Plan Your Tables -->
+        <a href="{% url 'core:tables' %}" class="button-container">
+            <svg class="button-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 9H12M8 13H16M8 17H16M15.9995 2V5M7.99951 2V5M7 3.5H17C19.2091 3.5 21 5.29086 21 7.5V18C21 20.2091 19.2091 22 17 22H7C4.79086 22 3 20.2091 3 18V7.5C3 5.29086 4.79086 3.5 7 3.5Z" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <div class="button-text">Plan Your Tables</div>
+        </a>
+
+        <!-- Decor & Styling -->
+        <a href="{% url 'services:decors_services' %}" class="button-container">
+            <svg class="button-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 11H24M8 11C6.89543 11 6 10.1046 6 9V8C6 6.89543 6.89543 6 8 6H24C25.1046 6 26 6.89543 26 8V9C26 10.1046 25.1046 11 24 11M8 11L8 20C8 21.1046 8.89543 22 10 22H22C23.1046 22 24 21.1046 24 20V11M16 6H20C21.1046 6 22 5.10457 22 4C22 2.89543 21.1046 2 20 2C17.7909 2 16 3.79086 16 6ZM16 6H12C10.8954 6 10 5.10457 10 4C10 2.89543 10.8954 2 12 2C14.2091 2 16 3.79086 16 6ZM16 6V22" stroke="#111111" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+            <div class="button-text">Decor & Styling</div>
+        </a>
+
+        <!-- Wedding Day Schedule -->
+        <a href="{% url 'users:wedding_timeline' %}" class="button-container">
+            <svg class="button-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 2V4V4C20.4183 4 24 7.58172 24 12C24 16.4183 20.4183 20 16 20C11.5817 20 8 16.4183 8 12C8 7.58172 11.5817 4 16 4M16 12L20 8.5" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <div class="button-text">Wedding Day Schedule</div>
+        </a>
+
+        <!-- Trusted Suppliers -->
+        <a href="{% url 'core:suppliers' %}" class="button-container">
+            <svg class="button-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 2C8.26801 2 2 8.26801 2 16C2 23.732 8.26801 30 16 30C23.732 30 30 23.732 30 16C30 8.26801 23.732 2 16 2ZM16 8C19.3137 8 22 10.6863 22 14C22 17.3137 19.3137 20 16 20C12.6863 20 10 17.3137 10 14C10 10.6863 12.6863 8 16 8ZM9.11798 25.0859C10.5104 23.7396 12.5 22.7917 16 22.7917C19.5 22.7917 21.4896 23.7396 22.882 25.0859C20.9074 26.9374 18.1936 28.1667 16 28.1667C13.8064 28.1667 11.0926 26.9374 9.11798 25.0859Z" fill="#111111"></path>
+            </svg>
+            <div class="button-text">Trusted Suppliers</div>
+        </a>
     </div>
 
-    <!-- CHANGED: Display personalized greeting for authenticated users -->
-    {% if request.user.is_authenticated %}
-        <div class="alert alert-info text-center">
-            <h4>{% blocktrans with name=request.user.first_name|default:request.user.username %}Hello, {{ name }}!{% endblocktrans %}</h4>
-            <p>{% trans "Welcome back to your wedding planning dashboard" %}</p>
-        </div>
-
-        <!-- CHANGED: Show dashboard options based on user type -->
-        <div class="row mt-5">
-            {% if request.user.customer_profile %}
-                <!-- Customer Dashboard Options -->
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Services" %}</h5>
-                            <p class="card-text">{% trans "View and select services for your wedding" %}</p>
-                            <a href="{% url 'users:customer_professional_services' %}" class="btn btn-primary">
-                                {% trans "Browse Services" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Orders" %}</h5>
-                            <p class="card-text">{% trans "View and manage your orders" %}</p>
-                            <a href="{% url 'orders:order_list' %}" class="btn btn-primary">
-                                {% trans "View Orders" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Profile" %}</h5>
-                            <p class="card-text">{% trans "Update your profile information" %}</p>
-                            <a href="{% url 'users:profile' %}" class="btn btn-primary">
-                                {% trans "View Profile" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
-
-            {% if request.user.professional_profile %}
-                <!-- Professional Dashboard Options -->
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Services" %}</h5>
-                            <p class="card-text">{% trans "Manage your services and packages" %}</p>
-                            <a href="{% url 'services:service_list' %}" class="btn btn-primary">
-                                {% trans "Manage Services" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Customers" %}</h5>
-                            <p class="card-text">{% trans "View and manage your customers" %}</p>
-                            <a href="{% url 'users:customer_management' %}" class="btn btn-primary">
-                                {% trans "View Customers" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Profile" %}</h5>
-                            <p class="card-text">{% trans "Update your profile information" %}</p>
-                            <a href="{% url 'users:profile' %}" class="btn btn-primary">
-                                {% trans "View Profile" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
-
-            {% if request.user.agent_profile %}
-                <!-- Agent Dashboard Options -->
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Orders" %}</h5>
-                            <p class="card-text">{% trans "Manage orders assigned to you" %}</p>
-                            <a href="{% url 'users:agent_management' %}" class="btn btn-primary">
-                                {% trans "View Orders" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "Create Order" %}</h5>
-                            <p class="card-text">{% trans "Create a new order for a customer" %}</p>
-                            <a href="{% url 'users:agent_create_order' %}" class="btn btn-primary">
-                                {% trans "New Order" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{% trans "My Profile" %}</h5>
-                            <p class="card-text">{% trans "Update your profile information" %}</p>
-                            <a href="{% url 'users:profile' %}" class="btn btn-primary">
-                                {% trans "View Profile" %}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-    {% endif %}
+    <div style="text-align: center;">
+        <div style="font-size: 24px; font-family: Rochester, 'Regular'; color: #79976e; margin-bottom: 16px;">Happy wedding planning!</div>
+        <svg width="248" height="32" viewBox="0 0 248 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M140.58 22.8034C138.709 21.4472 137.764 19.6783 137.737 17.5045C137.712 15.5285 138.56 13.6911 140.265 11.9876C141.972 10.2841 144.242 9.40901 147.087 9.35139C149.321 9.30624 151.459 9.5024 153.506 9.94463C155.552 10.3869 157.705 10.9677 159.971 11.6871C156.568 13.5743 153.353 15.4881 150.328 17.4329C147.304 19.3809 144.052 21.1716 140.58 22.8034ZM107.419 22.8034C103.946 21.1716 100.696 19.3809 97.6716 17.4329C94.6452 15.4881 91.4301 13.5743 88.0278 11.6871C90.2928 10.9677 92.4471 10.3869 94.4933 9.94463C96.5401 9.50396 98.678 9.30624 100.913 9.35139C103.756 9.40745 106.027 10.2826 107.733 11.9876C109.439 13.6911 110.286 15.5285 110.261 17.5045C110.234 19.6783 109.289 21.4456 107.419 22.8034ZM75.5877 12.8611C73.4257 13.2644 71.2204 13.4124 68.9775 13.3049C66.1223 13.1679 63.6927 12.6945 61.6951 11.8926C59.6959 11.0923 58.7477 9.89796 58.8418 8.32059C59.0316 5.16428 61.0464 3.70054 64.8864 3.89985C67.5156 4.03688 70.2604 4.81233 73.1399 6.22777C76.0179 7.64164 78.9415 9.39184 81.9193 11.4784C79.8604 11.9954 77.7496 12.4578 75.5877 12.8611ZM174.86 6.22777C177.737 4.81233 180.484 4.03688 183.114 3.89985C186.952 3.70054 188.966 5.16428 189.155 8.32059C189.251 9.89796 188.303 11.0923 186.303 11.8926C184.305 12.6945 181.876 13.1679 179.021 13.3049C176.778 13.4124 174.573 13.2644 172.41 12.8611C170.248 12.4578 168.137 11.9954 166.079 11.4784C169.058 9.39184 171.982 7.64164 174.86 6.22777ZM245.566 6.38506C244.256 4.73606 242.625 3.41716 240.678 2.42526C238.733 1.43337 236.623 0.751348 234.344 0.377636C232.064 0.00392532 229.92 -0.0941467 227.903 0.0911503C221.049 0.718674 214.963 2.50626 209.591 5.48661C204.221 8.4654 198.928 11.645 193.708 15.0302C188.487 18.4154 183.052 21.5282 177.408 24.359C171.762 27.1915 165.497 28.7221 158.673 28.9261C156.399 28.993 153.803 28.7673 150.896 28.2425C147.988 27.7162 145.382 26.6791 143.088 25.136C146.771 23.4932 150.382 21.5873 153.913 19.4214C157.446 17.2538 160.701 15.0287 163.68 12.7506C166.357 13.4498 168.936 14.043 171.409 14.5335C173.886 15.0256 176.455 15.2078 179.108 15.0816C181.97 14.9446 184.856 14.2999 187.757 13.1492C190.657 11.9985 192.022 10.1315 191.863 7.56848C191.738 5.59715 190.587 4.22999 188.412 3.46544C186.238 2.69777 184.345 2.35207 182.73 2.43615C179.296 2.61366 175.847 3.41869 172.362 4.85281C168.877 6.28692 165.446 8.04808 162.058 10.1377C159.794 9.42147 157.437 8.8017 154.984 8.27539C152.531 7.74753 150.192 7.50772 147.962 7.55443C143.906 7.63852 140.83 8.62266 138.719 10.527C136.608 12.4298 135.56 14.6627 135.587 17.232C135.615 19.999 136.56 22.2615 138.436 24.018C135.771 25.0379 133.151 25.9022 130.576 26.6091C128.424 27.1977 126.229 27.2895 124 27.3845C121.77 27.2895 119.576 27.1977 117.422 26.6091C114.847 25.9022 112.226 25.0379 109.562 24.018C111.439 22.2615 112.384 19.999 112.413 17.232C112.44 14.6643 111.39 12.4298 109.28 10.527C107.169 8.6211 104.094 7.63852 100.038 7.55443C97.8068 7.50772 95.4681 7.74753 93.0146 8.27539C90.5622 8.8017 88.2046 9.42147 85.9401 10.1377C82.5537 8.04808 79.1209 6.28692 75.6368 4.85281C72.1514 3.41869 68.7031 2.61366 65.2694 2.43615C63.6542 2.35207 61.7624 2.69622 59.5872 3.46544C57.4123 4.23155 56.2598 5.59715 56.1372 7.56848C55.9775 10.1315 57.3418 11.9985 60.242 13.1492C63.1428 14.2999 66.0288 14.9431 68.8886 15.0816C71.5446 15.2078 74.1143 14.9758 76.595 14.3856C79.0735 13.7955 81.551 13.1492 84.0251 12.4454C87.2055 14.7297 90.508 17.0063 93.9347 19.2703C97.3617 21.5328 101.02 23.4901 104.911 25.136C102.616 26.6791 100.012 27.7162 97.1043 28.2425C94.1944 28.7673 91.6011 28.993 89.3264 28.9261C82.5004 28.7221 76.2362 27.1915 70.592 24.359C64.9476 21.5282 59.5106 18.4154 54.2911 15.0302C49.0706 11.645 43.7788 8.4654 38.4083 5.48661C33.0371 2.50626 26.9519 0.718674 20.0961 0.0911503C18.0791 -0.0941467 15.9332 0.00392532 13.6542 0.377636C11.3755 0.751348 9.26467 1.43337 7.31955 2.42526C5.3738 3.41716 3.7446 4.73606 2.4318 6.38506C1.11899 8.03406 0.326656 10.035 0.0606907 12.3909C-0.160894 14.356 0.223579 16.4348 1.22572 18.6288C2.22834 20.8228 3.77753 22.8237 5.87901 24.6269C7.98113 26.43 10.4279 28.0136 13.2196 29.373C16.0128 30.7293 19.1802 31.5654 22.7069 31.8722C27.4808 32.2864 31.2449 31.6916 33.9761 30.1204C36.7091 28.5477 38.1733 26.374 38.3857 23.6147C38.6738 19.8714 37.2496 16.8957 34.1426 14.6721C31.033 12.447 27.4566 11.1624 23.3833 10.8042C17.888 10.3215 14.1546 11.7431 12.1572 15.1237C13.2605 14.437 14.6565 13.8764 16.3478 13.4389C18.0382 13.0013 19.6986 12.8565 21.3305 13.0029C24.7992 13.3127 28.2472 14.3996 31.6957 16.262C35.144 18.1243 36.7805 20.3245 36.5793 22.886C36.3623 25.6436 35.0128 27.6243 32.519 28.8171C30.0277 30.0083 27.011 30.4567 23.4891 30.1531C21.0022 29.9398 18.448 29.3154 15.8351 28.2783C13.2209 27.2413 10.8554 25.871 8.74005 24.1706C6.62569 22.4718 4.94797 20.6577 3.70372 18.7409C2.4609 16.8225 1.96349 14.7811 2.20274 12.6214C2.50799 9.86992 3.94694 7.59029 6.50002 5.76689C9.05501 3.94505 12.6475 3.2677 17.3004 3.70369C23.5721 4.29229 29.3347 5.92102 34.6369 8.61486C39.9365 11.3103 45.3565 14.2206 50.906 17.3442C56.4561 20.4693 62.3247 23.322 68.5028 25.8943C74.6802 28.4636 81.6292 29.8806 89.2897 30.1095C92.1871 30.1951 95.2523 29.932 98.4744 29.3107C101.697 28.6894 104.563 27.5044 107.065 25.762C112.599 28.0167 117.976 29.141 123.147 29.1456C123.467 29.1456 123.779 29.1394 124.094 29.1347C124.348 29.1363 124.596 29.1456 124.853 29.1456C130.022 29.141 135.401 28.0167 140.935 25.762C143.435 27.5029 146.303 28.6894 149.523 29.3107C152.747 29.9305 155.811 30.1951 158.709 30.1095C166.37 29.8806 173.318 28.4636 179.496 25.8943C185.673 23.322 191.541 20.4693 197.093 17.3442C202.641 14.2206 208.062 11.3103 213.363 8.61486C218.664 5.92102 224.426 4.29229 230.698 3.70369C235.352 3.2677 238.944 3.94505 241.497 5.76689C244.052 7.59029 245.492 9.86992 245.795 12.6214C246.036 14.7811 245.541 16.8225 244.295 18.7409C243.051 20.6577 241.373 22.4718 239.258 24.1706C237.144 25.871 234.777 27.2413 232.165 28.2783C229.551 29.3154 226.996 29.9398 224.509 30.1547C220.987 30.4583 217.971 30.0083 215.48 28.8171C212.987 27.6243 211.638 25.6436 211.422 22.886C211.22 20.3229 212.854 18.1243 216.302 16.262C219.752 14.3996 223.199 13.3143 226.669 13.0029C228.301 12.8581 229.962 13.0029 231.651 13.4389C233.342 13.8764 234.738 14.437 235.841 15.1237C233.844 11.7431 230.113 10.3215 224.615 10.8042C220.543 11.1624 216.965 12.447 213.856 14.6721C210.749 16.8957 209.327 19.8714 209.615 23.6147C209.826 26.374 211.29 28.5477 214.023 30.1188C216.756 31.6915 220.516 32.2864 225.291 31.8722C228.613 31.5841 231.727 30.7542 234.622 29.387C237.519 28.0198 240.018 26.43 242.121 24.6269C244.222 22.8237 245.772 20.8228 246.774 18.6288C247.774 16.4348 248.161 14.356 247.94 12.3909C247.672 10.035 246.88 8.03406 245.566 6.38506Z" fill="#79976E"></path>
+        </svg>
+    </div>
 </div>
 {% endblock %}
