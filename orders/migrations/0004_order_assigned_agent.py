@@ -10,13 +10,9 @@ class Migration(migrations.Migration):  # Add assigned_agent field to Order
     ]
 
     operations = [
-        migrations.CreateModel(  # This is a no-op since field already exists
-            name='DummyModel',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-            ],
-        ),
-        migrations.DeleteModel(  # Clean up the dummy model
-            name='DummyModel',
+        migrations.AddField(
+            model_name='order',
+            name='assigned_agent',
+            field=models.ForeignKey(blank=True, help_text='Agent assigned to handle this order', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='assigned_orders', to='users.agent'),
         ),
     ]

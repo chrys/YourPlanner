@@ -18,13 +18,13 @@
       </div>
 
       <!-- Messages -->
-      <div class="vasbot-messages">
+      <div class="vasbot-messages"><!-- CHANGED: FAQ list moved inside scrollable messages area so input always visible -->
         <div
           v-for="message in messages"
           :key="message.id"
           :class="['vasbot-message', `vasbot-${message.sender}`]"
         >
-          <p>{{ message.text }}</p>
+          <p v-text="message.text"></p>
 
           <!-- Feedback (bot messages only) -->
           <div v-if="message.sender === 'bot'" class="vasbot-feedback">
@@ -47,24 +47,20 @@
         <div v-if="isLoading" class="vasbot-typing">
           <span>•</span><span>•</span><span>•</span>
         </div>
-      </div>
-
-      <!-- FAQ List (if no conversation yet) -->
-      <div v-if="messages.length === 0" class="vasbot-faqs">
-        <p>Popular questions:</p>
-        <button
-          v-for="faq in faqs"
-          :key="faq.id"
-          @click="sendMessage(faq.question)"
-          class="vasbot-faq-btn"
-        >
-          {{ faq.question }}
-        </button>
+        <!-- FAQ List (always show if available) -->
+        <div class="vasbot-faqs" v-if="faqsLoading || faqs.length > 0 || faqsError"><!-- CHANGED: show container if loading, have data, or error -->
+          <p>Popular questions:</p>
+          <div v-if="faqsLoading" class="vasbot-faq-status"><span>Loading FAQs...</span></div><!-- CHANGED: loading indicator -->
+          <div v-else-if="faqsError" class="vasbot-faq-status error"><span v-text="faqsError"></span> <button @click="fetchFaqs" class="vasbot-faq-toggle">Retry</button></div><!-- CHANGED: error + retry -->
+          <!-- CHANGED: Removed v-for loop - FAQs will be rendered manually via JavaScript to avoid Vue reactivity issues -->
+        </div>
       </div>
 
       <!-- Input -->
+      <!-- CHANGED: Moved Download Transcript button to left and added FAQs button -->
       <div class="vasbot-footer">
-        <button @click="downloadTranscript" class="vasbot-transcript-btn">Download Transcript</button>
+        <button @click="downloadTranscript" class="vasbot-transcript-btn">📥 Download</button>
+        <button @click="fetchFaqs" class="vasbot-faqs-btn">❓ FAQs</button>
       </div>
       <div class="vasbot-input">
         <input

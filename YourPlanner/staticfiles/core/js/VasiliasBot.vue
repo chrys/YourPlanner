@@ -79,46 +79,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, shallowRef } from 'vue';
-
-// CHANGED: Helper function to get CSRF token from hidden input
-function getCsrfToken() {
-  // CHANGED: Get token from Django's hidden CSRF input (from any form on page)
-  const csrfInput = document.querySelector('[name="csrfmiddlewaretoken"]');
-  if (csrfInput && csrfInput.value) {
-    return csrfInput.value;
-  }
-  
-  // Fallback: get from cookie
-  const name = 'csrftoken';
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        return cookieValue;
-      }
-    }
-  }
-  
-  return null;
-}
+import { ref, onMounted, onUnmounted } from 'vue';
 
 const isOpen = ref(false);
 const isLoading = ref(false);
 const inputText = ref('');
 const messages = ref([]);
-const faqs = shallowRef([]);  // CHANGED: Use shallowRef instead of ref to avoid deep reactivity tracking
+const faqs = ref([]);
 const currentConversationId = ref(null);
 const pollingInterval = ref(2500);
 let pollTimer = null;
-
-// CHANGED: Added missing reactive variables for FAQ state
-const faqsLoading = ref(false);
-const faqsError = ref(null);
-const showAllFaqs = ref(false);
 
 const apiBaseUrl = '/api/chatbot';
 
@@ -150,7 +120,9 @@ async function initializeWidget() {
       startPolling();
     }
 
-    // CHANGED: Removed FAQ fetching on widget open
+    // Fetch FAQs
+    const faqsRes = await fetch(`${apiBaseUrl}/faqs/`);
+    faqs.value = await faqsRes.json();
   } catch (error) {
     console.error('Failed to initialize widget:', error);
   }
@@ -179,47 +151,29 @@ async function sendMessage(text) {
   isLoading.value = true;
 
   try {
-    const csrfToken = getCsrfToken();
-    
     const res = await fetch(`${apiBaseUrl}/messages/`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken || ''
-      },
-      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         conversation_id: currentConversationId.value || null,
-        text: text.trim(),
-        csrfmiddlewaretoken: csrfToken
+        text: text.trim()
       })
     });
 
     const botMessage = await res.json();
 
     // Add user message
-    const userMsg = {
+    messages.value.push({
       id: `local-${Date.now()}`,
       sender: 'customer',
       text: text,
       timestamp: new Date().toISOString(),
       feedback: null
-    };
-    messages.value.push(userMsg);
+    });
 
-    // Normalize bot message object
-    const normalizedBotMsg = {
-      id: botMessage.id,
-      sender: botMessage.sender || 'bot',
-      text: botMessage.text || '',
-      timestamp: botMessage.timestamp || new Date().toISOString(),
-      conversation_id: botMessage.conversation_id || botMessage.conversation,
-      feedback: botMessage.feedback || null
-    };
-    
-    messages.value.push(normalizedBotMsg);
-    
-    currentConversationId.value = normalizedBotMsg.conversation_id;
+    // Add bot message
+    messages.value.push(botMessage);
+    currentConversationId.value = botMessage.conversation_id;
 
     // Scroll to bottom
     setTimeout(() => {
@@ -255,151 +209,7 @@ async function submitFeedback(messageId, value) {
   }
 }
 
-  // CHANGED: Added fetchFaqs function to load FAQs on demand
-  async function fetchFaqs() {
-    try {
-      // CHANGED: Set loading state and clear error
-      faqsLoading.value = true;
-      faqsError.value = null;
-      
-      const faqsRes = await fetch(`${apiBaseUrl}/faqs/`);
-      // CHANGED: Added response validation before parsing JSON
-      if (!faqsRes.ok) {
-        throw new Error(`HTTP ${faqsRes.status}`);
-      }
-      const rawData = await faqsRes.json();
-      
-      console.log('[VasBot] Raw FAQ data received');
-      
-      // CHANGED: Detailed inspection of raw data
-      if (Array.isArray(rawData)) {
-        rawData.forEach((faq, idx) => {
-          console.log(`[VasBot] FAQ ${idx}:`, {
-            id: faq.id,
-            questionLen: (faq.question || '').length,
-            answerLen: (faq.answer || '').length,
-            questionChars: Array.from(faq.question || '').map(c => `${c}(${ord(c)})`)
-          });
-        });
-      }
-      
-      // CHANGED: Sanitize FAQ data - remove control characters
-      const sanitized = (Array.isArray(rawData) ? rawData : []).map((faq, idx) => {
-        const q = (faq.question || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim();
-        const a = (faq.answer || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim();
-        
-        console.log(`[VasBot] FAQ ${idx} after sanitization:`, {
-          question: q,
-          answer: a.substring(0, 50) + '...'
-        });
-        
-        return { ...faq, question: q, answer: a };
-      });
-      
-      console.log('[VasBot] Sanitized FAQ data, count:', sanitized.length);
-      
-      // CHANGED: Inspect each item before assignment
-      console.log('[VasBot] Detailed inspection before assignment:');
-      sanitized.forEach((faq, idx) => {
-        // Check for invalid characters
-        const hasInvalid = /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(faq.question + faq.answer);
-        console.log(`[VasBot] FAQ ${idx} - hasInvalid: ${hasInvalid}, Q:"${faq.question}", A:"${faq.answer.substring(0,30)}..."`);
-      });
-      
-      // CHANGED: Try assignment with try-catch
-      console.log('[VasBot] About to assign to faqs.value');
-      try {
-        faqs.value = sanitized;
-        console.log('[VasBot] FAQs assigned successfully');
-        
-        // CHANGED: Use manual rendering instead of Vue template
-        console.log('[VasBot] Attempting manual FAQ rendering');
-        renderFaqsManually();
-      } catch (assignError) {
-        console.error('[VasBot] Error during assignment:', assignError);
-        console.error('[VasBot] Assignment error message:', assignError.message);
-        throw assignError;
-      }
-      
-      // CHANGED: Reset to show limited FAQs (not all)
-      showAllFaqs.value = false;
-      console.log('[VasBot] FAQs loaded successfully');
-    } catch (error) {
-      console.error('[VasBot] Failed to fetch FAQs:', error);
-      console.error('[VasBot] Error message:', error.message);
-      console.error('[VasBot] Full error object:', error);
-      // CHANGED: Set error message for user feedback
-      faqsError.value = error.message || 'Failed to load FAQs';
-    } finally {
-      // CHANGED: Always clear loading state
-      faqsLoading.value = false;
-    }
-  }
-  
-  // CHANGED: Helper function to get character code
-  function ord(char) {
-    return char.charCodeAt(0);
-  }
-  
-  // CHANGED: Manual FAQ rendering to bypass Vue reactivity issues
-  function renderFaqsManually() {
-    const container = document.querySelector('.vasbot-faqs');
-    if (!container) {
-      console.log('[VasBot] FAQ container not found');
-      return;
-    }
-    
-    // Clear existing FAQ buttons (but keep header and loading)
-    const existingButtons = container.querySelectorAll('.vasbot-faq-btn, .vasbot-faq-toggle');
-    existingButtons.forEach(btn => btn.remove());
-    
-    const faqList = faqs.value || [];
-    if (faqList.length === 0) {
-      console.log('[VasBot] No FAQs to render');
-      return;
-    }
-    
-    // Determine how many to show
-    const displayCount = showAllFaqs.value ? faqList.length : Math.min(3, faqList.length);
-    const displayFaqs = faqList.slice(0, displayCount);
-    
-    console.log(`[VasBot] Rendering ${displayCount} FAQs manually`);
-    
-    // Find insertion point (after loading/error message if present)
-    const loadingDiv = container.querySelector('.vasbot-faq-status');
-    const insertAfter = loadingDiv || container.querySelector('p');
-    
-    // Create and insert FAQ buttons
-    displayFaqs.forEach((faq, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'vasbot-faq-btn';
-      btn.textContent = faq.question;
-      btn.addEventListener('click', () => {
-        console.log(`[VasBot] FAQ clicked: ${faq.question}`);
-        sendMessage(faq.question);
-      });
-      
-      if (insertAfter) {
-        insertAfter.parentNode.insertBefore(btn, insertAfter.nextSibling);
-      } else {
-        container.appendChild(btn);
-      }
-    });
-    
-    // Add "Show more/less" button if needed
-    if (faqList.length > 3) {
-      const toggleBtn = document.createElement('button');
-      toggleBtn.className = 'vasbot-faq-toggle';
-      toggleBtn.textContent = showAllFaqs.value ? 'Show fewer' : 'Show more';
-      toggleBtn.addEventListener('click', () => {
-        showAllFaqs.value = !showAllFaqs.value;
-        renderFaqsManually();
-      });
-      container.appendChild(toggleBtn);
-    }
-    
-    console.log('[VasBot] Manual FAQ rendering complete');
-  }// Polling
+// Polling
 function startPolling() {
   pollTimer = setInterval(loadMessages, pollingInterval.value);
 }

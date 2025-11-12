@@ -176,34 +176,11 @@
   background: #e0e0e0;
 }
 
-.vasbot-faq-status { /* CHANGED: helper message styles */
-  font-size: 12px; /* CHANGED */
-  color: #777; /* CHANGED */
-  margin-bottom: 6px; /* CHANGED */
-}
-.vasbot-faq-status.error { /* CHANGED */
-  color: #b94a48; /* CHANGED */
-}
-
 .vasbot-input {
   padding: 12px;
   border-top: 1px solid #eee;
   display: flex;
   gap: 8px;
-}
-
-/* CHANGED: toggle button for showing more/less FAQs */
-.vasbot-faq-toggle { /* CHANGED */
-  background: none; /* CHANGED */
-  border: none; /* CHANGED */
-  color: #667eea; /* CHANGED */
-  cursor: pointer; /* CHANGED */
-  padding: 4px 0; /* CHANGED */
-  font-size: 12px; /* CHANGED */
-  align-self: flex-start; /* CHANGED */
-}
-.vasbot-faq-toggle:hover { /* CHANGED */
-  text-decoration: underline; /* CHANGED */
 }
 
 .vasbot-input input {

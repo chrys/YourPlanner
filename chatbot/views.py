@@ -1,9 +1,11 @@
 import requests
 import difflib
+import logging
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Prefetch
 
@@ -13,12 +15,17 @@ from .serializers import (
     FAQSerializer, ChatConfigSerializer
 )
 
+logger = logging.getLogger(__name__)
+
 
 @api_view(['GET'])
 def faq_list_view(request):
     """Fetch active FAQs."""
+    # CHANGED: Added debug logging
     faqs = FAQ.objects.filter(is_active=True).order_by('order')
+    logger.info(f'[VasBot] FAQ list view called. Found {faqs.count()} active FAQs')
     serializer = FAQSerializer(faqs, many=True)
+    logger.info(f'[VasBot] Serialized {len(serializer.data)} FAQs')
     return Response(serializer.data)
 
 
@@ -31,6 +38,8 @@ def chat_config_view(request):
 
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def conversation_list_view(request):
     """Fetch customer's conversations."""
     status_filter = request.query_params.get('status', 'active')
@@ -46,8 +55,11 @@ def conversation_list_view(request):
 
 
 @api_view(['POST', 'GET'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def message_view(request):
     """Send message or fetch message history."""
+    # CHANGED: Session authentication with CSRF protection enabled
     if request.method == 'POST':
         conversation_id = request.data.get('conversation_id')
         text = request.data.get('text', '').strip()
@@ -57,6 +69,8 @@ def message_view(request):
                 {'error': 'Text must not be empty.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        logger.info(f'[VasBot] Message from {request.user}, text: {text[:50]}...')
 
         # Get or create conversation
         if conversation_id:
@@ -95,7 +109,6 @@ def message_view(request):
         if not faq_match:
             # TODO: Integrate RAG API in Phase 1.5
             pass
-
         # Store bot message
         bot_message = Message.objects.create(
             conversation=conversation,
@@ -104,8 +117,7 @@ def message_view(request):
             sender='bot'
         )
 
-        # Annotate faq_matched for response
-        bot_message.faq_matched = bool(faq_match)
+        logger.info(f'[VasBot] Bot response created: {bot_text[:50]}...')
 
         serializer = MessageSerializer(bot_message)
         return Response(serializer.data, status=status.HTTP_200_OK)
