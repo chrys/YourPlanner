@@ -16,9 +16,8 @@
             {% if order %}  <!-- Check if order exists -->
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <p><strong>{% trans "Order ID" %}:</strong> {{ order.pk_formatted }}</p>
-                        <p><strong>{% trans "Date Placed" %}:</strong> {{ order.created_at|date:"Y-m-d H:i" }}</p>
-                        <p><strong>{% trans "Status" %}:</strong> <span class="badge bg-info text-dark">{{ order.get_status_display }}</span></p>
+                        <!-- CHANGED: Removed Order ID and Date Placed, removed color from Status badge -->
+                        <p><strong>{% trans "Status" %}:</strong> {{ order.get_status_display }}</p>
                     </div>
                     <div class="col-md-6 text-md-end">
                         <p><strong>{% trans "To" %}:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
@@ -111,7 +110,8 @@
                 {% if order.items.exists %}  <!-- Check if items exist -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h4 class="mb-0">{% trans "Add-On Items" %}</h4>
+                        <!-- CHANGED: Renamed "Add-On Items" to "Additional Services" -->
+                        <h4 class="mb-0">{% trans "Additional Services" %}</h4>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -132,7 +132,8 @@
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
                                             <td>{{ item.service.title }}</td>
-                                            <td>{{ item.item.title }}</td>
+                                            <!-- CHANGED: Added fallback logic for service-level pricing (when item.item is None) -->
+                                            <td>{% if item.item %}{{ item.item.title }}{% elif item.price.description %}{{ item.price.description }}{% else %}Service Item{% endif %}</td>
                                             <td class="text-center">{{ item.quantity }}</td>
                                             <td class="text-end">{{ item.price_amount_at_order|floatformat:2 }} {{ item.price_currency_at_order }}</td>
                                             <td class="text-end">{{ item.subtotal_before_discount|floatformat:2 }} {{ item.price_currency_at_order }}</td>

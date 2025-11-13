@@ -394,10 +394,14 @@ class OrderItemCreateView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Crea
             existing_item.quantity += form.cleaned_data['quantity']
             existing_item.save()
             self.object = existing_item
-            messages.info(self.request, f"Quantity for '{existing_item.price.item.title}' updated in your order.")
+            # CHANGED: Added null check for price.item (can be None for service-level pricing)
+            item_title = existing_item.price.item.title if existing_item.price.item else existing_item.service.title
+            messages.info(self.request, f"Quantity for '{item_title}' updated in your order.")
         else:
             self.object = form.save()
-            messages.success(self.request, f"Item '{self.object.price.item.title}' added to your order.")
+            # CHANGED: Added null check for price.item (can be None for service-level pricing)
+            item_title = self.object.price.item.title if self.object.price.item else self.object.service.title
+            messages.success(self.request, f"Item '{item_title}' added to your order.")
 
         self.order.calculate_total()
         return redirect(self.get_success_url())
@@ -432,7 +436,9 @@ class OrderItemUpdateView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Upda
         return kwargs
 
     def form_valid(self, form):
-        messages.success(self.request, f"Item '{self.object.price.item.title}' quantity updated.")
+        # CHANGED: Added null check for price.item (can be None for service-level pricing)
+        item_title = self.object.price.item.title if self.object.price.item else self.object.service.title
+        messages.success(self.request, f"Item '{item_title}' quantity updated.")
         response = super().form_valid(form)
         self.order.calculate_total()
         return response
@@ -444,7 +450,9 @@ class OrderItemUpdateView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Upda
         context = super().get_context_data(**kwargs)
         context['order'] = self.order
         if self.object:
-            context['page_title'] = f"Update Item: {self.object.price.item.title} in Order #{self.order.pk}"
+            # CHANGED: Added null check for price.item as Price can have null item (service-level pricing)
+            item_title = self.object.price.item.title if self.object.price.item else self.object.service.title
+            context['page_title'] = f"Update Item: {item_title} in Order #{self.order.pk}"
         else:
             context['page_title'] = f"Update Item in Order #{self.order.pk_formatted}"
         return context
@@ -465,7 +473,8 @@ class OrderItemDeleteView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, Dele
         return OrderItem.objects.filter(order=self.order, pk=self.kwargs.get(self.pk_url_kwarg))
     
     def form_valid(self, form):
-        item_title = self.object.price.item.title
+        # CHANGED: Added null check for price.item (can be None for service-level pricing)
+        item_title = self.object.price.item.title if self.object.price.item else self.object.service.title
         response = super().form_valid(form)
         messages.success(self.request, f"Item '{item_title}' removed from your order.")
         return response
@@ -743,9 +752,13 @@ class SelectItemsView(LoginRequiredMixin, UserCanModifyOrderItemsMixin, PriceFil
                         }
                     )
                     if created:
-                        messages.success(request, f"Added '{price.item.title}' (x{quantity}) to your order.")
+                        # CHANGED: Use price.item.title or price.service.title depending on which is set
+                        item_title = price.item.title if price.item else price.service.title
+                        messages.success(request, f"Added '{item_title}' (x{quantity}) to your order.")
                     elif order_item.quantity != quantity:
-                        messages.info(request, f"Updated quantity for '{price.item.title}' to {quantity}.")
+                        # CHANGED: Use price.item.title or price.service.title depending on which is set
+                        item_title = price.item.title if price.item else price.service.title
+                        messages.info(request, f"Updated quantity for '{item_title}' to {quantity}.")
                 else:
                     # Service-level price (no item)
                     if not price.service.is_active:

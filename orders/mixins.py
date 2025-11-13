@@ -20,7 +20,8 @@ class CustomerRequiredMixin(UserPassesTestMixin):
 
     def handle_no_permission(self):
         messages.error(self.request, "You need a customer profile to access this page.")
-        return redirect('users:profile_choice') # Or 'users:customer_profile_create'
+        # CHANGED: Fixed URL name from 'profile_choice' to 'user_management'
+        return redirect('users:user_management') # Or 'users:customer_profile_create'
     
 class AdminAccessMixin(UserPassesTestMixin):
     """Ensures the logged-in user is a staff member."""

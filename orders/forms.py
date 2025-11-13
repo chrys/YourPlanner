@@ -51,20 +51,18 @@ class OrderStatusUpdateForm(forms.ModelForm):
         #     pass
 
 class OrderItemForm(forms.ModelForm):
-    price_amount_at_order = forms.DecimalField(
-        label="Price per Unit",
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
-    )
+    # CHANGED: Removed price_amount_at_order field declaration as it's not in the form anymore
     labels = forms.ModelMultipleChoiceField(
-        queryset=Label.objects.all(),
+        queryset=Label.objects.filter(visible_to_client=True, label_type='ITEM'),  # CHANGED: Filter to show only labels visible to client and type ITEM
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        label="Custom Labels for this Item"
+        label="Additional Requests"  # CHANGED: Renamed from "Custom Labels for this Item"
     )
 
     class Meta:
         model = OrderItem
-        fields = []  # Empty list - no fields needed for initial order creation
+        # CHANGED: Removed price_amount_at_order from fields (removed price per unit field)
+        fields = ['quantity', 'price', 'labels']
 
 
     def __init__(self, *args, **kwargs):
@@ -90,33 +88,7 @@ class OrderItemForm(forms.ModelForm):
                 price_field.disabled = True
                 price_field.help_text = "The underlying catalog item/price. Cannot be changed here."
 
-            # price_amount_at_order field handling
-            price_amount_field = self.fields['price_amount_at_order']
-            can_edit_price = False # Default to not editable
-
-            if self.user and hasattr(self.user, 'professional_profile') and self.user.professional_profile and self.order_instance:
-                professional = self.user.professional_profile
-                order_customer = self.order_instance.customer
-                
-                # Check if an active link exists between this professional and the order's customer
-                is_linked_and_active = ProfessionalCustomerLink.objects.filter(
-                    professional=professional,
-                    customer=order_customer,
-                    status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-                ).exists()
-                
-                if is_linked_and_active:
-                    can_edit_price = True
-
-            if can_edit_price:
-                price_amount_field.disabled = False
-                price_amount_field.help_text = "As a linked professional, you can override the price for this order item."
-            else:
-                price_amount_field.disabled = True
-                price_amount_field.help_text = "Price per unit (read-only unless you are an actively linked professional for this customer)."
-            
-            self.initial['price_amount_at_order'] = self.instance.price_amount_at_order
-
+            # CHANGED: Removed price_amount_at_order field handling since it's no longer in the form
             if self.instance.price and self.instance.price.item:
                 self.fields['quantity'].label = f"Quantity for: {self.instance.price.item.title}"
             else:
@@ -129,72 +101,3 @@ class OrderItemForm(forms.ModelForm):
                 else:
                      self.fields['price'].queryset = Price.objects.filter(is_active=True).select_related('item', 'item__service')
                 self.fields['price'].empty_label = "Select an item/price"
-            
-            self.fields['price_amount_at_order'].disabled = False
-            self.fields['price_amount_at_order'].help_text = "Price will be copied from selected item, or can be set manually if applicable."
-
-        self.order_instance = kwargs.pop('order_instance', None)
-        self.user = kwargs.pop('user', None)
-        available_prices_queryset = kwargs.pop('available_prices_queryset', None)
-
-        super().__init__(*args, **kwargs)
-
-        self.fields['quantity'].widget.attrs.update({'class': 'form-control', 'min': '1'})
-        if 'price' in self.fields:
-            self.fields['price'].widget.attrs.update({'class': 'form-select'})
-
-        if self.instance and self.instance.pk:  # This is an UPDATE form
-            # Price (ForeignKey to services.Price) should always be read-only on update
-            if 'price' in self.fields:
-                price_field = self.fields['price']
-                current_price_pk = self.instance.price.pk if self.instance.price else None
-                if current_price_pk:
-                    price_field.queryset = Price.objects.filter(pk=current_price_pk)
-                else:
-                    price_field.queryset = Price.objects.none()
-                price_field.disabled = True
-                price_field.help_text = "The underlying catalog item/price."
-
-            # price_amount_at_order field handling
-            price_amount_field = self.fields['price_amount_at_order']
-            can_edit_price = False # Default to not editable
-
-            if self.user and hasattr(self.user, 'professional_profile') and self.user.professional_profile and self.order_instance:
-                professional = self.user.professional_profile
-                order_customer = self.order_instance.customer
-                
-                # Check if an active link exists between this professional and the order's customer
-                is_linked_and_active = ProfessionalCustomerLink.objects.filter(
-                    professional=professional,
-                    customer=order_customer,
-                    status=ProfessionalCustomerLink.StatusChoices.ACTIVE
-                ).exists()
-                
-                if is_linked_and_active:
-                    can_edit_price = True
-
-            can_edit_price = True #TODO temporary until this bug is fixed
-            if can_edit_price:
-                price_amount_field.disabled = False
-                price_amount_field.help_text = "Price per unit"
-            else:
-                price_amount_field.disabled = True
-                price_amount_field.help_text = "Price per unit"
-            
-            self.initial['price_amount_at_order'] = self.instance.price_amount_at_order
-
-            if self.instance.price and self.instance.price.item:
-                self.fields['quantity'].label = f"Quantity for: {self.instance.price.item.title}"
-            else:
-                self.fields['quantity'].label = "Quantity"
-            
-        else:  # This is a CREATE form
-            if 'price' in self.fields:
-                if available_prices_queryset is not None:
-                    self.fields['price'].queryset = available_prices_queryset
-                else:
-                     self.fields['price'].queryset = Price.objects.filter(is_active=True).select_related('item', 'item__service')
-                self.fields['price'].empty_label = "Select an item/price"
-            
-            self.fields['price_amount_at_order'].disabled = False
-            self.fields['price_amount_at_order'].help_text = "Price will be copied from selected item, or can be set manually if applicable."
