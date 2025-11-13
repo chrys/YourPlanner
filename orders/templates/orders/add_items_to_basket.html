@@ -6,97 +6,112 @@
 {% load static %}
 
 <main class="container mt-4">
-    <div id="add-items-app">
-        <h2 class="mb-4">{{ page_title|default:"Add Items to Your Basket" }}</h2>
+    <!-- CHANGED: Empty div for Vue app to mount to -->
+    <div id="add-items-app"></div>
+</main>
 
-        {% include "_messages.html" %}
+<!-- CHANGED: Template for Vue app - minimal test template -->
+<template id="add-items-template">
+    <div class="container mt-4">
+        <h2 class="mb-4">Add Items to Your Basket</h2>
 
-        <form id="add-items-form" method="post">
+        <!-- CHANGED: Simple test div to verify Vue is working -->
+        <div v-if="servicesData && servicesData.length > 0" class="alert alert-info">
+            Found [[ servicesData.length ]] services
+        </div>
+        <div v-else class="alert alert-warning">
+            No services found or loading...
+        </div>
+
+        <form method="post">
             {% csrf_token %}
-            <!-- Services Section -->
-            <div v-for="service in servicesData" :key="service.id" class="service-section card mb-4">
+            <!-- CHANGED: Using v-show instead of v-if to avoid render-time evaluation issues -->
+            <div v-show="servicesData && servicesData.length > 0">
+                <!-- Services Section -->
+                <template v-for="service in servicesData" :key="service.id">
+                    <div v-show="(service.items && service.items.length > 0) || (service.service_prices && service.service_prices.length > 0)"
+                         class="service-section card mb-4">
                 <div class="card-header bg-light">
-                    <h3 class="h5 mb-0">
-                        [[ service.title ]]
-                        <small class="text-muted">by [[ service.professional_name ]]</small>
-                    </h3>
+                    <h3 class="h5 mb-0">[[ service.title ]]</h3>
                 </div>
                 <div class="card-body p-0">
-                    <table class="items-table table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 25%;">{% trans "Item" %}</th>
-                                <th style="width: 35%;">{% trans "Description" %}</th>
-                                <th style="width: 20%;">{% trans "Price" %}</th>
-                                <th style="width: 20%;" class="text-center">{% trans "Quantity" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Item-level prices -->
-                            <template v-for="item in service.items" :key="item.id">
-                                <!-- Show row for each price, or one row if no prices -->
-                                <tr v-if="item.prices.length === 0">
-                                    <td><strong>[[ item.title ]]</strong></td>
-                                    <td>[[ item.description ]]</td>
-                                    <td><span class="text-muted">(No prices available)</span></td>
-                                    <td class="text-center"><span class="text-muted">-</span></td>
+                    <template v-if="service.items && service.items.length > 0">
+                        <table class="items-table table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 25%;">Item</th>
+                                    <th style="width: 35%;">Description</th>
+                                    <th style="width: 20%;">Price</th>
+                                    <th style="width: 20%;" class="text-center">Quantity</th>
                                 </tr>
-                                <tr v-for="price in item.prices" :key="price.id" v-else>
-                                    <td><strong>[[ item.title ]]</strong></td>
-                                    <td>[[ item.description ]]</td>
-                                    <td>
-                                        <span style="color:#e88ea1;">[[ price.amount ]] [[ price.currency ]]</span>
-                                        <small class="d-block text-muted">([[ price.frequency ]])</small>
-                                        {% if price.description %}
-                                        <small class="d-block text-muted"><em>[[ price.description ]]</em></small>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="number"
-                                               :name="'quantity_' + price.id"
-                                               min="0"
-                                               class="form-control form-control-sm mx-auto"
-                                               style="width: 80px;"
-                                               v-model.number="quantities[price.id]"
-                                               @input="validateQuantity(price.id)">
-                                    </td>
-                                </tr>
-                            </template>
-                            <!-- Service-level prices - show all available service prices -->
-                            <tr v-for="price in (service.service_prices || [])" :key="'service_price_' + price.id">
-                                <td><strong>[[ service.title ]]</strong></td>
-                                <td>[[ price.description ]]</td>
-                                <td>
-                                    <span style="color:#e88ea1;">[[ price.amount ]] [[ price.currency ]]</span>
+                            </thead>
+                            <tbody>
+                                <template v-for="item in service.items" :key="item.id">
+                                    <tr v-if="item.prices.length === 0">
+                                        <td><strong>[[ item.title ]]</strong></td>
+                                        <td>[[ item.description ]]</td>
+                                        <td><span class="text-muted">(No prices available)</span></td>
+                                        <td class="text-center"><span class="text-muted">-</span></td>
+                                    </tr>
+                                    <tr v-for="price in item.prices" :key="price.id" v-else>
+                                        <td><strong>[[ item.title ]]</strong></td>
+                                        <td>[[ item.description ]]</td>
+                                        <td>
+                                            <span style="color:#e88ea1;">[[ price.amount ]] [[ price.currency ]]</span>
+                                            <small class="d-block text-muted">([[ price.frequency ]])</small>
+                                            <small v-if="price.description" class="d-block text-muted"><em>[[ price.description ]]</em></small>
+                                        </td>
+                                        <td class="text-center">
+                                            <!-- CHANGED: Added hidden fields to capture service and item IDs with quantity -->
+                                            <input type="hidden" :name="'service_' + price.id" :value="service.id">
+                                            <input type="hidden" :name="'item_' + price.id" :value="item.id">
+                                            <input type="number"
+                                                   :name="'quantity_' + price.id"
+                                                   min="0"
+                                                   class="form-control form-control-sm mx-auto"
+                                                   style="width: 80px;"
+                                                   v-model.number="quantities[price.id]"
+                                                   @input="validateQuantity(price.id)">
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <div v-else-if="service.service_prices && service.service_prices.length > 0" class="px-3 py-3">
+                        <div v-for="price in service.service_prices" :key="'service_price_' + price.id" class="row align-items-center mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-0">
+                                    <span style="color:#e88ea1; font-size: 1.1em;"><strong>[[ price.amount ]] [[ price.currency ]]</strong></span>
                                     <small class="d-block text-muted">([[ price.frequency ]])</small>
-                                </td>
-                                <td class="text-center">
-                                    <input type="number"
-                                           :name="'quantity_' + price.id"
-                                           min="0"
-                                           class="form-control form-control-sm mx-auto"
-                                           style="width: 80px;"
-                                           v-model.number="quantities[price.id]"
-                                           @input="validateQuantity(price.id)">
-                                </td>
-                            </tr>
-                            <!-- Show message only if service has no items and no service prices -->
-                            <tr v-if="service.items.length === 0 && (!service.service_prices || service.service_prices.length === 0)">
-                                <td colspan="4" class="text-center text-muted py-3">{% trans "No items available for this service." %}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                    <small v-if="price.description" class="d-block text-muted"><em>[[ price.description ]]</em></small>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- CHANGED: Added hidden field for service ID (no item for service-level prices) -->
+                                <input type="hidden" :name="'service_' + price.id" :value="service.id">
+                                <input type="number"
+                                       :name="'quantity_' + price.id"
+                                       min="0"
+                                       class="form-control form-control-sm"
+                                       style="max-width: 100px;"
+                                       v-model.number="quantities[price.id]"
+                                       @input="validateQuantity(price.id)">
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </template>
 
             <div class="text-end my-4">
-                <!-- CHANGED: "Add to Basket" button instead of "Update Order Items" -->
-                <button type="submit" class="btn btn-lg basket-btn-vue">{% trans "Add to Basket" %}</button>
-                <a href="{% url 'orders:basket' %}" class="btn btn-lg btn-secondary ms-2">{% trans "Back to Basket" %}</a>
+                <button type="submit" class="btn btn-lg basket-btn-vue">Add to Basket</button>
+                <a href="{% url 'orders:basket' %}" class="btn btn-lg btn-secondary ms-2">Back to Basket</a>
             </div>
+            </div>
+            <!-- CHANGED: End of outer servicesData check -->
         </form>
     </div>
-</main>
+</template>
 
 <script>
 window.__servicesData__ = {{ services_json|safe }};
@@ -104,48 +119,74 @@ window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
 
 <script>
-// CHANGED: Vue app for customer-focused item selection
-if (document.getElementById('add-items-app')) {
-  const { createApp, ref, onMounted } = Vue;
+// CHANGED: Wait for Vue to load before initializing - increased retry timeout
+function initAddItemsApp() {
+    if (typeof Vue !== 'undefined' && document.getElementById('add-items-app') && document.getElementById('add-items-template')) {
+        try {
+            // CHANGED: Don't destructure createApp - use Vue.createApp() to avoid conflicts with vassbot.js
+            const { ref } = Vue;
+            // CHANGED: Get template from the <template> element
+            const templateElement = document.getElementById('add-items-template');
+            const templateHTML = templateElement.innerHTML;
 
-  createApp({
-    delimiters: ['[[', ']]'],
-    setup() {
-        const servicesData = ref([]);
-        const quantities = ref({}); // Store quantities by price_id
-        
-        onMounted(() => {
-            servicesData.value = window.__servicesData__;
-            const initialQuantities = window.__currentQuantities__;
-            servicesData.value.forEach(service => {
-                service.items.forEach(item => {
-                    item.prices.forEach(price => {
-                        quantities.value[price.id] = initialQuantities[price.id] || 0;
+            Vue.createApp({
+                template: templateHTML,
+                delimiters: ['[[', ']]'],
+                setup() {
+                    // CHANGED: Initialize with empty array to avoid undefined errors during initial render
+                    const servicesData = ref(window.__servicesData__ || []);
+                    const quantities = ref({}); // Store quantities by price_id
+                    
+                    // CHANGED: Move initialization to setup instead of onMounted to avoid race condition
+                    // Initialize quantities from current state
+                    const initialQuantities = window.__currentQuantities__ || {};
+                    servicesData.value.forEach(service => {
+                        // CHANGED: Check if service.items exists before iterating
+                        if (service.items && service.items.length > 0) {
+                            service.items.forEach(item => {
+                                if (item.prices && item.prices.length > 0) {
+                                    item.prices.forEach(price => {
+                                        quantities.value[price.id] = initialQuantities[price.id] || 0;
+                                    });
+                                }
+                            });
+                        }
+                        // CHANGED: Check if service_prices exists before iterating
+                        if (service.service_prices && service.service_prices.length > 0) {
+                            service.service_prices.forEach(price => {
+                                quantities.value[price.id] = initialQuantities[price.id] || 0;
+                            });
+                        }
                     });
-                });
-                if (service.service_prices && service.service_prices.length > 0) {
-                    service.service_prices.forEach(price => {
-                        quantities.value[price.id] = initialQuantities[price.id] || 0;
-                    });
+
+                    function validateQuantity(priceId) {
+                        if (quantities.value[priceId] < 0 || isNaN(quantities.value[priceId])) {
+                            quantities.value[priceId] = 0;
+                        }
+                    }
+
+                    // Expose to template
+                    return {
+                        servicesData,
+                        quantities,
+                        validateQuantity,
+                    };
                 }
-            });
-        });
-
-        function validateQuantity(priceId) {
-            if (quantities.value[priceId] < 0 || isNaN(quantities.value[priceId])) {
-                quantities.value[priceId] = 0;
-            }
+            }).mount('#add-items-app');
+        } catch (err) {
+            console.error('Error initializing Vue app:', err);
+            setTimeout(initAddItemsApp, 500);
         }
-
-        // Expose to template
-        return {
-            servicesData,
-            quantities,
-            validateQuantity,
-        };
+    } else {
+        // CHANGED: Increased retry timeout from 100ms to 500ms to ensure Vue is loaded
+        setTimeout(initAddItemsApp, 500);
     }
-  }).mount('#add-items-app');
 }
+
+// CHANGED: Call after DOM is ready - use a longer delay to ensure Vue script loads
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initAddItemsApp, 1000);
+});
 </script>
 
 <style>

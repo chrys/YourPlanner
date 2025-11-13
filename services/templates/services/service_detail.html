@@ -34,11 +34,15 @@
     </div>
 
     {# CHANGED: Added service prices section #}
-    {% if service_prices %}
+    {% if service_prices or user_owns_service %}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4>Service Prices</h4>
+        {% if user_owns_service %}
+            <a href="{% url 'services:service_price_create' service_pk=service.pk %}" class="btn btn-primary">Add Price</a>
+        {% endif %}
     </div>
     
+    {% if service_prices %}
     <table class="table table-striped table-hover align-middle mb-4">
         <thead class="table-dark">
             <tr>
@@ -75,6 +79,11 @@
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        No service-level prices have been added yet.
+    </div>
+    {% endif %}
     {% endif %}
 
     <div class="d-flex justify-content-between align-items-center mb-3">

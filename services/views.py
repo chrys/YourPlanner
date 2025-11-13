@@ -442,6 +442,35 @@ class PriceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsGra
         context['page_title'] = f"Add Price to {self.item.title} ({self.service.title})"
         return context
 
+# CHANGED: Added ServicePriceCreateView to allow professionals to add prices directly to services
+class ServicePriceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsParentServiceMixin, CreateView):
+    """View for creating prices directly attached to a service (without an item)."""
+    model = Price
+    form_class = PriceForm
+    template_name = 'services/price_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        # UserOwnsParentServiceMixin's test_func sets self.service
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # CHANGED: Link price to service instead of item
+        form.instance.service = self.service
+        form.instance.item = None  # CHANGED: Explicitly set item to None for service-level prices
+        messages.success(self.request, f"Price created for service '{self.service.title}'.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        # Redirect back to the service detail page
+        return reverse_lazy('services:service_detail', kwargs={'pk': self.service.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['service'] = self.service
+        context['item'] = None  # CHANGED: No item for service-level prices
+        context['page_title'] = f"Add Price to {self.service.title}"
+        return context
+
 class PriceListView(LoginRequiredMixin, ProfessionalRequiredMixin, UserOwnsGrandparentServiceViaItemMixin, ListView):
     model = Price
     template_name = 'services/price_list.html' # Or integrate into item_detail

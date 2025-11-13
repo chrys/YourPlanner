@@ -992,14 +992,32 @@ class AddItemsToBasketView(LoginRequiredMixin, CustomerRequiredMixin, PriceFilte
                         if quantity > 0:
                             price = get_object_or_404(Price, pk=price_id)
                             
-                            # Get or create OrderItem
+                            # CHANGED: Extract service and item IDs from hidden form fields
+                            service_id = request.POST.get(f'service_{price_id}')
+                            item_id = request.POST.get(f'item_{price_id}')
+                            
+                            service = get_object_or_404(Service, pk=service_id) if service_id else None
+                            item = get_object_or_404(Item, pk=item_id) if item_id else None
+                            professional = service.professional if service else None
+                            
+                            # Validate service exists and is linked to customer
+                            if not service:
+                                raise ValueError(f"Service not found for price {price_id}")
+                            if not professional:
+                                raise ValueError(f"Professional not found for service {service.id}")
+                            
+                            # Get or create OrderItem with all required fields
                             order_item, created = OrderItem.objects.get_or_create(
                                 order=order,
                                 price=price,
                                 defaults={
                                     'quantity': quantity,
+                                    'service': service,
+                                    'item': item,
+                                    'professional': professional,
                                     'price_amount_at_order': price.amount,
-                                    'price_currency_at_order': price.currency
+                                    'price_currency_at_order': price.currency,
+                                    'price_frequency_at_order': price.frequency  # CHANGED: Use raw frequency value
                                 }
                             )
                             

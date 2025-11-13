@@ -3,6 +3,7 @@ from .views import (
     ServiceCreateView, ServiceListView, ServiceDetailView, ServiceUpdateView, ServiceDeleteView,
     ItemCreateView, ItemListView, ItemDetailView, ItemUpdateView, ItemDeleteView, # ItemListView might be optional if only shown in service_detail
     PriceCreateView, PriceListView, PriceDetailView, PriceUpdateView, PriceDeleteView, # PriceListView might be optional
+    ServicePriceCreateView,  # CHANGED: Added ServicePriceCreateView import
     FoodDrinksView,  
     RoomsView,  # CHANGED: Added RoomsView import
     DecorsServicesView,  # CHANGED: Added DecorsServicesView import
@@ -17,6 +18,8 @@ urlpatterns = [
     path('service/<int:pk>/', ServiceDetailView.as_view(), name='service_detail'),
     path('service/<int:pk>/update/', ServiceUpdateView.as_view(), name='service_update'),
     path('service/<int:pk>/delete/', ServiceDeleteView.as_view(), name='service_delete'),
+    # CHANGED: Added URL for creating service-level prices
+    path('service/<int:service_pk>/price/create/', ServicePriceCreateView.as_view(), name='service_price_create'),
     # CHANGED: Updated Food & Drinks URL to be a standalone page
     path('food-drinks/', FoodDrinksView.as_view(), name='food_drinks'),
     # CHANGED: Added Rooms URL

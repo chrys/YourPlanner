@@ -68,57 +68,69 @@
 <script id="templates-json-data" type="application/json">{{ templates_json|safe }}</script>
 
 <script>
-// CHANGED: Vue is already imported in base.html, just use destructuring available from global Vue
-if (document.getElementById('customer-templates-app')) {
-  const { createApp, ref } = Vue;
+// CHANGED: Wait for Vue to load before initializing
+function initCustomerTemplatesApp() {
+    if (typeof Vue !== 'undefined' && document.getElementById('customer-templates-app')) {
+        const { ref } = Vue;
 
-  createApp({
-    delimiters: ['[[', ']]'],
-    setup() {
-        const templates_data = ref([]);
-        const initialLoadError = ref(false);
-        const selectedTemplate = ref(null);
+        Vue.createApp({
+            delimiters: ['[[', ']]'],
+            setup() {
+                const templates_data = ref([]);
+                const initialLoadError = ref(false);
+                const selectedTemplate = ref(null);
 
-        const getDetailUrl = (pk) => {
-            return `/users/customer-templates/${pk}/`;
-        };
+                const getDetailUrl = (pk) => {
+                    return `/users/customer-templates/${pk}/`;
+                };
 
-        const truncateDescription = (description, maxLength) => {
-            if (!description) return '';
-            if (description.length <= maxLength) {
-                return description;
-            }
-            return description.substring(0, maxLength) + '...';
-        };
+                const truncateDescription = (description, maxLength) => {
+                    if (!description) return '';
+                    if (description.length <= maxLength) {
+                        return description;
+                    }
+                    return description.substring(0, maxLength) + '...';
+                };
 
-        const selectTemplate = (pk) => {
-            selectedTemplate.value = pk;
-            // Redirect to the detail page for the selected template
-            window.location.href = getDetailUrl(pk);
-        };
+                const selectTemplate = (pk) => {
+                    selectedTemplate.value = pk;
+                    // Redirect to the detail page for the selected template
+                    window.location.href = getDetailUrl(pk);
+                };
 
-        try {
-            const jsonDataElement = document.getElementById('templates-json-data');
-            if (jsonDataElement && jsonDataElement.textContent) {
-                const parsedData = JSON.parse(jsonDataElement.textContent);
-                if (Array.isArray(parsedData)) {
-                    templates_data.value = parsedData;
+                try {
+                    const jsonDataElement = document.getElementById('templates-json-data');
+                    if (jsonDataElement && jsonDataElement.textContent) {
+                        const parsedData = JSON.parse(jsonDataElement.textContent);
+                        if (Array.isArray(parsedData)) {
+                            templates_data.value = parsedData;
+                        }
+                    }
+                } catch (e) {
+                    initialLoadError.value = true;
                 }
-            }
-        } catch (e) {
-            initialLoadError.value = true;
-        }
 
-        return {
-            templates_data,
-            getDetailUrl,
-            truncateDescription,
-            selectedTemplate,
-            selectTemplate,
-            initialLoadError
-        };
+                return {
+                    templates_data,
+                    getDetailUrl,
+                    truncateDescription,
+                    selectedTemplate,
+                    selectTemplate,
+                    initialLoadError
+                };
+            }
+        }).mount('#customer-templates-app');
+    } else {
+        // Retry after a short delay if Vue isn't ready yet
+        setTimeout(initCustomerTemplatesApp, 100);
     }
-  }).mount('#customer-templates-app');
+}
+
+// CHANGED: Call after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCustomerTemplatesApp);
+} else {
+    initCustomerTemplatesApp();
 }
 </script>
 {% endblock %}

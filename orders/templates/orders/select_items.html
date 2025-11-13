@@ -122,84 +122,95 @@ window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
 
 <script>
-// CHANGED: Vue is already imported in base.html, use destructuring that's already available
-// Or use createApp directly from the global Vue object
-if (document.getElementById('select-items-app')) {
-  const { createApp, ref, onMounted } = Vue;  // CHANGED: Removed watch since we're not using templates
+// CHANGED: Wait for Vue to load before initializing
+function initSelectItemsApp() {
+    if (typeof Vue !== 'undefined' && document.getElementById('select-items-app')) {
+        const { ref, onMounted } = Vue;  // CHANGED: Don't destructure createApp
 
-  createApp({
-    delimiters: ['[[', ']]'],
-    setup() {
-        const servicesData = ref([]);
-        const quantities = ref({}); // Store quantities by price_id
-        const showSuccess = ref(false);
-        const selectedServices = ref([]); 
-        
-        onMounted(() => {
-            servicesData.value = window.__servicesData__;
-            // CHANGED: Removed template initialization since we're only showing services
-            const initialQuantities = window.__currentQuantities__;
-            servicesData.value.forEach(service => {
-                // CHANGED: Initialize quantities for item prices
-                service.items.forEach(item => {
-                    item.prices.forEach(price => {
-                        quantities.value[price.id] = initialQuantities[price.id] || 0;
+        Vue.createApp({
+            delimiters: ['[[', ']]'],
+            setup() {
+                const servicesData = ref([]);
+                const quantities = ref({}); // Store quantities by price_id
+                const showSuccess = ref(false);
+                const selectedServices = ref([]); 
+                
+                onMounted(() => {
+                    servicesData.value = window.__servicesData__;
+                    // CHANGED: Removed template initialization since we're only showing services
+                    const initialQuantities = window.__currentQuantities__;
+                    servicesData.value.forEach(service => {
+                        // CHANGED: Initialize quantities for item prices
+                        service.items.forEach(item => {
+                            item.prices.forEach(price => {
+                                quantities.value[price.id] = initialQuantities[price.id] || 0;
+                            });
+                        });
+                        // CHANGED: Also initialize quantities for service-level prices
+                        if (service.service_prices && service.service_prices.length > 0) {
+                            service.service_prices.forEach(price => {
+                                quantities.value[price.id] = initialQuantities[price.id] || 0;
+                            });
+                        }
                     });
                 });
-                // CHANGED: Also initialize quantities for service-level prices
-                if (service.service_prices && service.service_prices.length > 0) {
-                    service.service_prices.forEach(price => {
-                        quantities.value[price.id] = initialQuantities[price.id] || 0;
-                    });
-                }
-            });
-        });
 
-        function validateQuantity(priceId) {
-            if (quantities.value[priceId] < 0 || isNaN(quantities.value[priceId])) {
-                quantities.value[priceId] = 0;
-            }
-        }
-
-        function confirmUpdate() {
-            // CHANGED: Removed showDialog.value = false since dialog is gone
-            // Directly submit the form, no need for success popup and timeout here
-            // as the page will reload/redirect on successful POST.
-            submitForm();
-        }
-
-        function submitForm() {
-            // Remove quantities for unselected services
-            servicesData.value.forEach(service => {
-                if (!selectedServices.value.includes(service.id)) {
-                    // CHANGED: Also zero out service-level prices for unselected services
-                    service.items.forEach(item => {
-                        item.prices.forEach(price => {
-                            quantities.value[price.id] = 0;
-                        });
-                    });
-                    if (service.service_prices && service.service_prices.length > 0) {
-                        service.service_prices.forEach(price => {
-                            quantities.value[price.id] = 0;
-                        });
+                function validateQuantity(priceId) {
+                    if (quantities.value[priceId] < 0 || isNaN(quantities.value[priceId])) {
+                        quantities.value[priceId] = 0;
                     }
                 }
-            });
-            // CHANGED: Removed template-related code
-            document.getElementById('select-items-form').submit();
-        }
 
-        // Expose to template
-        return {
-            servicesData,
-            quantities,
-            selectedServices,
-            showSuccess,
-            validateQuantity,
-            confirmUpdate,
-        };
+                function confirmUpdate() {
+                    // CHANGED: Removed showDialog.value = false since dialog is gone
+                    // Directly submit the form, no need for success popup and timeout here
+                    // as the page will reload/redirect on successful POST.
+                    submitForm();
+                }
+
+                function submitForm() {
+                    // Remove quantities for unselected services
+                    servicesData.value.forEach(service => {
+                        if (!selectedServices.value.includes(service.id)) {
+                            // CHANGED: Also zero out service-level prices for unselected services
+                            service.items.forEach(item => {
+                                item.prices.forEach(price => {
+                                    quantities.value[price.id] = 0;
+                                });
+                            });
+                            if (service.service_prices && service.service_prices.length > 0) {
+                                service.service_prices.forEach(price => {
+                                    quantities.value[price.id] = 0;
+                                });
+                            }
+                        }
+                    });
+                    // CHANGED: Removed template-related code
+                    document.getElementById('select-items-form').submit();
+                }
+
+                // Expose to template
+                return {
+                    servicesData,
+                    quantities,
+                    selectedServices,
+                    showSuccess,
+                    validateQuantity,
+                    confirmUpdate,
+                };
+            }
+        }).mount('#select-items-app');
+    } else {
+        // Retry after a short delay if Vue isn't ready yet
+        setTimeout(initSelectItemsApp, 100);
     }
-  }).mount('#select-items-app');
+}
+
+// CHANGED: Call after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSelectItemsApp);
+} else {
+    initSelectItemsApp();
 }
 </script>
 
