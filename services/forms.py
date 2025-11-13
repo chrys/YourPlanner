@@ -118,7 +118,7 @@ ServicePriceFormSet = inlineformset_factory(
     Price,
     form=ServicePriceForm,
     fields=['amount', 'currency', 'frequency', 'description', 'is_active', 'labels'],
-    extra=1,  # CHANGED: Show 1 empty form by default
+    extra=0,  # CHANGED: Show 0 empty forms by default to avoid validation issues
     can_delete=True,  # CHANGED: Allow deleting prices
     # CHANGED: Use fk_name to specify service as the FK (Price has both item and service)
     fk_name='service'

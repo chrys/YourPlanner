@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     OrderCreateView, OrderListView, OrderDetailView, OrderStatusUpdateView, OrderCancelView,
     OrderItemCreateView, OrderItemUpdateView, OrderItemDeleteView,
-    SelectItemsView, BasketView, CustomerServiceItemSelectionView
+    SelectItemsView, BasketView, CustomerServiceItemSelectionView, AddItemsToBasketView
 )
 
 from . import views
@@ -27,6 +27,7 @@ urlpatterns = [
     # Other Order related URLs
     path('<int:order_pk>/select-items/', SelectItemsView.as_view(), name='select_items'),
     path('basket/', BasketView.as_view(), name='basket'),
+    path('basket/add-items/', AddItemsToBasketView.as_view(), name='add_items_to_basket'),  # CHANGED: New customer-focused view
     path('basket/remove-template/', views.remove_template, name='remove_template'),  # Keep this
     path('<int:pk>/update-template-guests/', views.update_template_guests, name='update_template_guests'),  # New endpoint
 

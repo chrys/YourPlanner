@@ -1,34 +1,27 @@
 {% extends "core/base.html" %}
 {% load i18n %}
-{% block title %}{{ page_title|default:"Select Items" }}{% endblock %}
+{% block title %}{{ page_title|default:"Add Items to Basket" }}{% endblock %}
 
 {% block content %}
 {% load static %}
-{% load order_extras %} {# Assuming get_item is here or built-in #}
 
 <main class="container mt-4">
-    <div id="select-items-app">
-        <h2 class="mb-4">{{ page_title|default:"Select Items" }} for Order #{{ order.pk_formatted }}</h2>
+    <div id="add-items-app">
+        <h2 class="mb-4">{{ page_title|default:"Add Items to Your Basket" }}</h2>
 
         {% include "_messages.html" %}
 
-        <form id="select-items-form" method="post">
+        <form id="add-items-form" method="post">
             {% csrf_token %}
             <!-- Services Section -->
             <div v-for="service in servicesData" :key="service.id" class="service-section card mb-4">
-                <div class="card-header bg-light d-flex align-items-center">
-                    <input type="checkbox"
-                        :id="'service_' + service.id"
-                        :value="service.id"
-                        v-model="selectedServices"
-                        class="form-check-input me-2"
-                        style="margin-top:0;">
+                <div class="card-header bg-light">
                     <h3 class="h5 mb-0">
                         [[ service.title ]]
                         <small class="text-muted">by [[ service.professional_name ]]</small>
                     </h3>
                 </div>
-                <div class="card-body p-0" v-if="selectedServices.includes(service.id)">
+                <div class="card-body p-0">
                     <table class="items-table table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -41,7 +34,7 @@
                         <tbody>
                             <!-- Item-level prices -->
                             <template v-for="item in service.items" :key="item.id">
-                                <!-- CHANGED: Show row for each price, or one row if no prices -->
+                                <!-- Show row for each price, or one row if no prices -->
                                 <tr v-if="item.prices.length === 0">
                                     <td><strong>[[ item.title ]]</strong></td>
                                     <td>[[ item.description ]]</td>
@@ -65,12 +58,11 @@
                                                class="form-control form-control-sm mx-auto"
                                                style="width: 80px;"
                                                v-model.number="quantities[price.id]"
-                                               :disabled="!selectedServices.includes(service.id)"
                                                @input="validateQuantity(price.id)">
                                     </td>
                                 </tr>
                             </template>
-                            <!-- CHANGED: Service-level prices - show all available service prices -->
+                            <!-- Service-level prices - show all available service prices -->
                             <tr v-for="price in (service.service_prices || [])" :key="'service_price_' + price.id">
                                 <td><strong>[[ service.title ]]</strong></td>
                                 <td>[[ price.description ]]</td>
@@ -85,11 +77,10 @@
                                            class="form-control form-control-sm mx-auto"
                                            style="width: 80px;"
                                            v-model.number="quantities[price.id]"
-                                           :disabled="!selectedServices.includes(service.id)"
                                            @input="validateQuantity(price.id)">
                                 </td>
                             </tr>
-                            <!-- CHANGED: Show message only if service has no items and no service prices -->
+                            <!-- Show message only if service has no items and no service prices -->
                             <tr v-if="service.items.length === 0 && (!service.service_prices || service.service_prices.length === 0)">
                                 <td colspan="4" class="text-center text-muted py-3">{% trans "No items available for this service." %}</td>
                             </tr>
@@ -98,55 +89,40 @@
                 </div>
             </div>
 
-            <!-- Packages/Templates Section - REMOVED: User wants only services, not templates -->
-
             <div class="text-end my-4">
-                <!-- CHANGED: Removed confirmation dialog - now directly calls confirmUpdate -->
-                <button type="button" class="btn btn-lg basket-btn-vue" @click="confirmUpdate">{% trans "Update Order Items" %}</button>
-                <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-lg btn-secondary ms-2">{% trans "View Order Summary" %}</a>
+                <!-- CHANGED: "Add to Basket" button instead of "Update Order Items" -->
+                <button type="submit" class="btn btn-lg basket-btn-vue">{% trans "Add to Basket" %}</button>
+                <a href="{% url 'orders:basket' %}" class="btn btn-lg btn-secondary ms-2">{% trans "Back to Basket" %}</a>
             </div>
-
-            <!-- Success Popup (Vue) -->
-            <div v-if="showSuccess" class="success-popup">
-                {% trans "Order items updated successfully!" %}
-            </div>
-            <!-- Hidden inputs for actual form submission are now part of the main form, managed by Vue's v-model on visible inputs -->
         </form>
     </div>
 </main>
 
 <script>
 window.__servicesData__ = {{ services_json|safe }};
-window.__templatesData__ = {{ templates_json|safe }};
 window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
 
 <script>
-// CHANGED: Vue is already imported in base.html, use destructuring that's already available
-// Or use createApp directly from the global Vue object
-if (document.getElementById('select-items-app')) {
-  const { createApp, ref, onMounted } = Vue;  // CHANGED: Removed watch since we're not using templates
+// CHANGED: Vue app for customer-focused item selection
+if (document.getElementById('add-items-app')) {
+  const { createApp, ref, onMounted } = Vue;
 
   createApp({
     delimiters: ['[[', ']]'],
     setup() {
         const servicesData = ref([]);
         const quantities = ref({}); // Store quantities by price_id
-        const showSuccess = ref(false);
-        const selectedServices = ref([]); 
         
         onMounted(() => {
             servicesData.value = window.__servicesData__;
-            // CHANGED: Removed template initialization since we're only showing services
             const initialQuantities = window.__currentQuantities__;
             servicesData.value.forEach(service => {
-                // CHANGED: Initialize quantities for item prices
                 service.items.forEach(item => {
                     item.prices.forEach(price => {
                         quantities.value[price.id] = initialQuantities[price.id] || 0;
                     });
                 });
-                // CHANGED: Also initialize quantities for service-level prices
                 if (service.service_prices && service.service_prices.length > 0) {
                     service.service_prices.forEach(price => {
                         quantities.value[price.id] = initialQuantities[price.id] || 0;
@@ -161,50 +137,18 @@ if (document.getElementById('select-items-app')) {
             }
         }
 
-        function confirmUpdate() {
-            // CHANGED: Removed showDialog.value = false since dialog is gone
-            // Directly submit the form, no need for success popup and timeout here
-            // as the page will reload/redirect on successful POST.
-            submitForm();
-        }
-
-        function submitForm() {
-            // Remove quantities for unselected services
-            servicesData.value.forEach(service => {
-                if (!selectedServices.value.includes(service.id)) {
-                    // CHANGED: Also zero out service-level prices for unselected services
-                    service.items.forEach(item => {
-                        item.prices.forEach(price => {
-                            quantities.value[price.id] = 0;
-                        });
-                    });
-                    if (service.service_prices && service.service_prices.length > 0) {
-                        service.service_prices.forEach(price => {
-                            quantities.value[price.id] = 0;
-                        });
-                    }
-                }
-            });
-            // CHANGED: Removed template-related code
-            document.getElementById('select-items-form').submit();
-        }
-
         // Expose to template
         return {
             servicesData,
             quantities,
-            selectedServices,
-            showSuccess,
             validateQuantity,
-            confirmUpdate,
         };
     }
-  }).mount('#select-items-app');
+  }).mount('#add-items-app');
 }
 </script>
 
 <style>
-/* Using .basket-btn-vue to avoid conflict if original .basket-btn style is global */
 .basket-btn-vue {
     background: #e88ea1;
     color: #fff;
@@ -220,43 +164,18 @@ if (document.getElementById('select-items-app')) {
     color: #e88ea1;
     border: 1px solid #e88ea1;
 }
-/* Removed table border for Bootstrap default styling */
-.dialog-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1050; /* Ensure it's above other content, Bootstrap modal z-index is 1050+ */
+
+.service-section {
+    border-left: 4px solid #e88ea1;
 }
-.dialog-box {
-    background: #fff;
-    padding: 2rem;
-    border-radius: .5rem;
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-    min-width: 300px;
-    max-width: 500px; /* Added for responsiveness */
+
+.service-section .card-header {
+    background-color: #f8f0f5 !important;
+    border-bottom: 2px solid #e88ea1;
 }
-.success-popup { /* This might be removed if not used due to direct form submission */
-    position: fixed;
-    bottom: 20px; /* Adjusted position */
-    right: 20px;  /* Adjusted position */
-    background: #28a745; /* Using a success green */
-    color: #fff;
-    padding: 1rem 1.5rem;
-    border-radius: .375rem; /* Bootstrap's .rounded */
-    font-size: 1rem;
-    box-shadow: 0 .25rem .75rem rgba(0,0,0,.1);
-    z-index: 1051;
-    /* animation: fadeOut 3s forwards; */ /* Animation can be kept if needed */
+
+.items-table {
+    margin-bottom: 0;
 }
-/*
-@keyframes fadeOut {
-    0% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { opacity: 0; }
-}
-*/
 </style>
 {% endblock %}

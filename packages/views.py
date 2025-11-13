@@ -29,7 +29,7 @@ except ImportError:
 
             def handle_no_permission(self):
                 messages.error(self.request, "You are not registered as a professional.")
-                return redirect('users:profile_choice')
+                return redirect('users:user_management')  # CHANGED: Fixed from 'profile_choice' to 'user_management'
 
 class TemplateDeleteView(LoginRequiredMixin, ProfessionalRequiredMixin, DeleteView):  # New delete view
     """

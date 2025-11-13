@@ -1,0 +1,27 @@
+{% comment %}
+Button Component Template
+Usage: {% include "core/components/button.html" with text="Button Text" url="#" icon_path="M..." variant="primary" %}
+
+Variants:
+- primary: Green button (#79976e) - default
+- secondary: Pink button (#e88ea1)
+- tertiary: Light button (#ffffff)
+- danger: Red button for destructive actions
+
+Parameters:
+- text: Button label text (required)
+- url: Link destination (required)
+- icon_path: SVG path data (optional)
+- variant: Button style variant (optional, default: primary)
+- classes: Additional CSS classes (optional)
+- blank: Open in new tab (optional, default: False)
+{% endcomment %}
+
+<a href="{{ url }}" class="btn btn-{{ variant | default:'primary' }}{% if classes %} {{ classes }}{% endif %}" {% if blank %}target="_blank" rel="noopener noreferrer"{% endif %} style="text-decoration: none;">
+  <span class="btn-text">{{ text }}</span>
+  {% if icon_path %}
+    <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="{{ icon_path }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  {% endif %}
+</a>

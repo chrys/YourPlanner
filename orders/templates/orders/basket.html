@@ -180,11 +180,9 @@
                         
                         <!-- Action buttons -->
                         <div class="d-flex justify-content-end mt-4 gap-2">
-                            <a href="{% url 'orders:select_items' order_pk=order.pk %}" class="btn basket-btn-vue-2">
+                            <!-- CHANGED: Link to new customer-focused add items view -->
+                            <a href="{% url 'orders:add_items_to_basket' %}" class="btn basket-btn-vue-2">
                                 <i class="fas fa-plus"></i> {% trans "Add More Items" %}
-                            </a>
-                            <a href="{% url 'orders:order_detail' pk=order.pk %}" class="btn btn-success">
-                                <i class="fas fa-check"></i> {% trans "Review Order" %}
                             </a>
                         </div>
                     </div>

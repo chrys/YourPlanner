@@ -28,9 +28,8 @@ class ProfessionalRequiredMixin(UserPassesTestMixin):
 
     def handle_no_permission(self):
         messages.error(self.request, "You are not registered as a professional.")
-        # Redirect to a page explaining they need to be a professional or to create a profile
-        # For now, redirect to login, or a dedicated 'not_professional_page'
-        return redirect('users:profile_choice') # Assuming 'users:profile_choice' or similar exists
+        # Redirect to user management page where they can set up professional profile
+        return redirect('users:user_management')  # CHANGED: Fixed from 'profile_choice' to 'user_management'
 
 class ProfessionalOwnsObjectMixin(UserPassesTestMixin):
     """
@@ -145,7 +144,9 @@ class ServiceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVie
     def form_valid(self, form):
         try:
             professional = self.request.user.professional_profile
-        except Professional.DoesNotExist:
+            if professional is None:  # CHANGED: Check if professional_profile is None
+                raise AttributeError("User has no professional profile")
+        except (Professional.DoesNotExist, AttributeError):  # CHANGED: Catch both exceptions
             # This should ideally be caught by ProfessionalRequiredMixin
             messages.error(self.request, "You must have a professional profile to create a service.")
             return self.form_invalid(form)
@@ -167,31 +168,33 @@ class ServiceCreateView(LoginRequiredMixin, ProfessionalRequiredMixin, CreateVie
             messages.success(self.request, "Service created successfully with prices.")
             return super().form_valid(form)
         else:
-            # If formset is invalid, delete the service and show errors
-            self.object.delete()
-            # Re-attach formset errors to context
-            context['formset'] = formset
-            return self.render_to_response(context)
+            # CHANGED: Only delete the service if formset has errors (not just empty)
+            # If formset is empty, it's valid - don't require prices
+            if formset.non_form_errors() or any(form.errors for form in formset.forms):
+                self.object.delete()
+                # Re-attach formset errors to context
+                context['formset'] = formset
+                return self.render_to_response(context)
+            else:
+                # Formset is empty but valid - just save service without prices
+                messages.success(self.request, "Service created successfully!")
+                return super().form_valid(form)
 
-class ServiceListView(LoginRequiredMixin, ListView):
+class ServiceListView(LoginRequiredMixin, ProfessionalRequiredMixin, ListView):
     model = Service
     template_name = 'services/service_list.html' # Or 'services/professional_account.html' if it becomes the list view
     context_object_name = 'services'
 
     def get_queryset(self):
-        try:
-            professional = self.request.user.professional_profile
-            # Professionals see only their services
-            return Service.objects.owned_by(professional).order_by('-created_at')
-        except Professional.DoesNotExist:
-            return Service.objects.none() # Or raise Http404 or redirect
+        # CHANGED: ProfessionalRequiredMixin ensures professional_profile exists
+        professional = self.request.user.professional_profile
+        # Professionals see only their services
+        return Service.objects.owned_by(professional).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        try:
-            context['professional'] = self.request.user.professional_profile
-        except Professional.DoesNotExist:
-            context['professional'] = None # Should not happen if get_queryset returns none for non-pros
+        # CHANGED: ProfessionalRequiredMixin ensures professional exists
+        context['professional'] = self.request.user.professional_profile
         context['page_title'] = "My Services"
         return context
 

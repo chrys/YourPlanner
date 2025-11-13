@@ -1,9 +1,10 @@
-// CHANGED: Destructure from Vue and check if an app is already being mounted
-const { createApp, ref, onMounted, onUnmounted, shallowRef } = Vue;
+// CHANGED: Don't destructure createApp globally - use Vue.createApp() instead
+// This avoids conflicts with other scripts that might try to destructure the same identifier
+const { ref, onMounted, onUnmounted, shallowRef } = Vue;
 
 // CHANGED: Check if vasbot-app element exists before creating the app
 if (document.getElementById('vasbot-app')) {
-  createApp({
+  Vue.createApp({
   setup() {
     const isOpen = ref(false);
     const isLoading = ref(false);

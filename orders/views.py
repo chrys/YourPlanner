@@ -861,6 +861,168 @@ class BasketView(LoginRequiredMixin, CustomerRequiredMixin, TemplateView):
         return context
 
 
+class AddItemsToBasketView(LoginRequiredMixin, CustomerRequiredMixin, PriceFilterByWeddingDateMixin, View):
+    # CHANGED: New customer-focused view for adding items to their basket
+    template_name = 'orders/add_items_to_basket.html'
+
+    def get(self, request, *args, **kwargs):
+        """Display available services and items for the customer to add to their basket."""
+        customer = request.user.customer_profile
+        
+        # Get or create a pending order for the customer
+        order, created = Order.objects.get_or_create(
+            customer=customer,
+            status=Order.StatusChoices.PENDING,
+            defaults={'wedding_day': customer.wedding_day}  # CHANGED: Fixed from wedding_date to wedding_day
+        )
+        
+        # Get the professional(s) linked to the customer
+        linked_professionals = Professional.objects.filter(
+            customer_links__customer=customer,
+            customer_links__status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+        )
+        
+        # Fetch all services from linked professionals
+        services_qs = Service.objects.filter(
+            is_active=True,
+            professional__in=linked_professionals,
+            professional__user__is_active=True
+        ).prefetch_related(
+            Prefetch('items', queryset=Item.objects.filter(is_active=True)
+                .prefetch_related(
+                    Prefetch('prices', 
+                        queryset=Price.objects.filter(is_active=True).order_by('amount')
+                    )
+                )
+            )
+        ).order_by('title')
+
+        # Build services list for template
+        services_list = []
+        for service in services_qs:
+            service_dict = {
+                'id': service.pk,
+                'title': service.title,
+                'professional_name': service.professional.title or service.professional.user.get_full_name(),
+                'items': []
+            }
+            
+            for item in service.items.all():
+                # Filter prices by customer's wedding date
+                filtered_prices = self.get_filtered_prices_for_customer(
+                    item.prices.all(),
+                    customer,
+                    user=request.user,
+                    wedding_date=customer.wedding_day  # CHANGED: Fixed from wedding_date to wedding_day
+                )
+                
+                item_dict = {
+                    'id': item.pk,
+                    'title': item.title,
+                    'description': item.description,
+                    'image_url': item.image.url if item.image else None,
+                    'prices': []
+                }
+                
+                for price in filtered_prices:
+                    item_dict['prices'].append({
+                        'id': price.pk,
+                        'amount': str(price.amount),
+                        'currency': price.currency,
+                        'frequency': price.get_frequency_display(),
+                        'description': price.description,
+                    })
+                
+                service_dict['items'].append(item_dict)
+            
+            # Add service-level prices
+            service_prices = self.get_filtered_service_prices(
+                service,
+                customer,
+                user=request.user,
+                wedding_date=customer.wedding_day  # CHANGED: Fixed from wedding_date to wedding_day
+            )
+            service_dict['service_prices'] = []
+            for price in service_prices:
+                service_dict['service_prices'].append({
+                    'id': price.pk,
+                    'amount': str(price.amount),
+                    'currency': price.currency,
+                    'frequency': price.get_frequency_display(),
+                    'description': price.description,
+                })
+            
+            services_list.append(service_dict)
+
+        # Get current quantities in the order
+        current_quantities_dict = {
+            item.price.pk: item.quantity
+            for item in OrderItem.objects.filter(order=order)
+        }
+
+        context = {
+            'order': order,
+            'services_json': json.dumps(services_list),
+            'current_quantities_json': json.dumps(current_quantities_dict),
+            'page_title': "Add Items to Your Basket",
+        }
+        
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        """Handle adding items to the customer's basket."""
+        customer = request.user.customer_profile
+        
+        # Get or create the pending order
+        order, created = Order.objects.get_or_create(
+            customer=customer,
+            status=Order.StatusChoices.PENDING,
+            defaults={'wedding_day': customer.wedding_day}  # CHANGED: Fixed from wedding_date to wedding_day
+        )
+        
+        # Process form data to add/update items
+        try:
+            with transaction.atomic():
+                # Iterate through all form data looking for quantities
+                for key, value in request.POST.items():
+                    if key.startswith('quantity_'):
+                        price_id = int(key.replace('quantity_', ''))
+                        quantity = int(value) if value else 0
+                        
+                        if quantity > 0:
+                            price = get_object_or_404(Price, pk=price_id)
+                            
+                            # Get or create OrderItem
+                            order_item, created = OrderItem.objects.get_or_create(
+                                order=order,
+                                price=price,
+                                defaults={
+                                    'quantity': quantity,
+                                    'price_amount_at_order': price.amount,
+                                    'price_currency_at_order': price.currency
+                                }
+                            )
+                            
+                            if not created:
+                                order_item.quantity = quantity
+                                order_item.save()
+                
+                # Recalculate order total
+                total = Decimal('0.00')
+                for item in order.items.all():
+                    total += (item.price_amount_at_order or Decimal('0.00')) * (item.quantity or 0)
+                
+                order.total_amount = total
+                order.save()
+            
+            messages.success(request, "Items added to your basket successfully!")
+            return redirect('orders:basket')
+        
+        except Exception as e:
+            messages.error(request, f"An error occurred while adding items: {str(e)}")
+            return redirect('orders:add_items_to_basket')
+
+
 #  Moved update_template_guests outside of BasketView class as module-level function
 # ...existing code...
 

@@ -1,0 +1,195 @@
+/* CHANGED: Centralized button styles for consistency */
+
+/* Base Button Styles */
+.btn {
+  position: relative;
+  height: auto;
+  border-radius: 8px;
+  gap: 8px;
+  display: flex;
+  padding: 12px 40px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.5;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  outline: none;
+}
+
+/* Button Icon */
+.btn-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Button Text */
+.btn-text {
+  white-space: nowrap;
+  color: inherit;
+}
+
+/* ===== PRIMARY VARIANT (Green) ===== */
+.btn-primary {
+  background-color: #79976e;
+  color: #f4f6f3;
+}
+
+.btn-primary:hover {
+  background-color: #6a8260;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(121, 151, 110, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(121, 151, 110, 0.3);
+}
+
+.btn-primary:focus {
+  outline: 2px solid #79976e;
+  outline-offset: 2px;
+}
+
+/* ===== SECONDARY VARIANT (Pink) ===== */
+.btn-secondary {
+  background-color: #e88ea1;
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background-color: #d97a8f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 142, 161, 0.3);
+}
+
+.btn-secondary:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(232, 142, 161, 0.3);
+}
+
+.btn-secondary:focus {
+  outline: 2px solid #e88ea1;
+  outline-offset: 2px;
+}
+
+/* ===== TERTIARY VARIANT (White) ===== */
+.btn-tertiary {
+  background-color: #ffffff;
+  color: #79976e;
+  border: 1px solid #79976e;
+}
+
+.btn-tertiary:hover {
+  background-color: #f9fdf7;
+  box-shadow: 0 4px 12px rgba(121, 151, 110, 0.2);
+}
+
+.btn-tertiary:active {
+  transform: scale(0.98);
+  background-color: #f4f6f3;
+}
+
+.btn-tertiary:focus {
+  outline: 2px solid #79976e;
+  outline-offset: 2px;
+}
+
+/* ===== DANGER VARIANT (Red) ===== */
+.btn-danger {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.btn-danger:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+
+.btn-danger:focus {
+  outline: 2px solid #dc3545;
+  outline-offset: 2px;
+}
+
+/* ===== DISABLED STATE ===== */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .btn {
+    padding: 11px 32px;
+    font-size: 15px;
+  }
+  
+  .btn-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+  
+  .btn-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ===== FULL WIDTH VARIANT ===== */
+.btn-full {
+  width: 100%;
+}
+
+/* ===== SMALL SIZE VARIANT ===== */
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.btn-sm .btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ===== LARGE SIZE VARIANT ===== */
+.btn-lg {
+  padding: 16px 48px;
+  font-size: 18px;
+}
+
+.btn-lg .btn-icon {
+  width: 28px;
+  height: 28px;
+}

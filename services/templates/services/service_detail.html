@@ -201,27 +201,41 @@
     </div>
 </div>
 
-<!-- CHANGED: Removed duplicate Vue.js CDN import and createApp const that was already in base template -->
+<!-- CHANGED: Wait for Vue to load before initializing -->
 <script>
-// CHANGED: Vue is already imported in base.html, just use createApp from global Vue
-if (document.getElementById('service-detail-app')) {
-  createApp({
-    delimiters: ['[[', ']]'],
-    data() {
-        return {
-            items: window.initialItems || [],
-            userOwnsService: window.userOwnsService,
-            servicePk: window.servicePk
-        }
-    },
-    methods: {
-        truncateWords(value, count) {
-            if (!value) return '';
-            const words = value.split(' ');
-            return words.slice(0, count).join(' ') + (words.length > count ? '...' : '');
-        }
+function initServiceDetailApp() {
+    if (typeof Vue !== 'undefined' && document.getElementById('service-detail-app')) {
+        // CHANGED: Don't destructure createApp - vassbot.js already does this at global scope
+        // Just use the Vue global to create the app
+        const app = Vue.createApp({
+            delimiters: ['[[', ']]'],
+            data() {
+                return {
+                    items: window.initialItems || [],
+                    userOwnsService: window.userOwnsService,
+                    servicePk: window.servicePk
+                }
+            },
+            methods: {
+                truncateWords(value, count) {
+                    if (!value) return '';
+                    const words = value.split(' ');
+                    return words.slice(0, count).join(' ') + (words.length > count ? '...' : '');
+                }
+            }
+        });
+        app.mount('#service-detail-app');
+    } else {
+        // Retry after a short delay
+        setTimeout(initServiceDetailApp, 100);
     }
-  }).mount('#service-detail-app');
+}
+
+// CHANGED: Call after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initServiceDetailApp);
+} else {
+    initServiceDetailApp();
 }
 </script>
 {% endblock %}
