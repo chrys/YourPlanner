@@ -97,12 +97,11 @@
     </div>
 </div>
 
-<!-- Vue.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<!-- CHANGED: Removed duplicate Vue.js CDN import and createApp const that was already in base template -->
 <script>
-const { createApp } = Vue;
-
-createApp({
+// CHANGED: Vue is already imported in base.html, just use createApp from global Vue
+if (document.getElementById('service-list-app')) {
+  createApp({
     delimiters: ['[[', ']]'],
     data() {
         return {
@@ -116,6 +115,7 @@ createApp({
             return words.slice(0, count).join(' ') + (words.length > count ? '...' : '');
         }
     }
-}).mount('#service-list-app');
+  }).mount('#service-list-app');
+}
 </script>
 {% endblock %}

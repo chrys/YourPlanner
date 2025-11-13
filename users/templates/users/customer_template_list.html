@@ -68,9 +68,11 @@
 <script id="templates-json-data" type="application/json">{{ templates_json|safe }}</script>
 
 <script>
-const { createApp, ref } = Vue;
+// CHANGED: Vue is already imported in base.html, just use destructuring available from global Vue
+if (document.getElementById('customer-templates-app')) {
+  const { createApp, ref } = Vue;
 
-createApp({
+  createApp({
     delimiters: ['[[', ']]'],
     setup() {
         const templates_data = ref([]);
@@ -116,6 +118,7 @@ createApp({
             initialLoadError
         };
     }
-}).mount('#customer-templates-app');
+  }).mount('#customer-templates-app');
+}
 </script>
 {% endblock %}

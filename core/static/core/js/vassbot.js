@@ -1,6 +1,9 @@
+// CHANGED: Destructure from Vue and check if an app is already being mounted
 const { createApp, ref, onMounted, onUnmounted, shallowRef } = Vue;
 
-createApp({
+// CHANGED: Check if vasbot-app element exists before creating the app
+if (document.getElementById('vasbot-app')) {
+  createApp({
   setup() {
     const isOpen = ref(false);
     const isLoading = ref(false);
@@ -327,5 +330,6 @@ createApp({
       fetchFaqs,
     };
   }
-// CHANGED: Mount to DOM element if it exists
-}).mount(document.querySelector('#vasbot-app') || document.body);
+  // CHANGED: Mount to DOM element if it exists
+  }).mount(document.querySelector('#vasbot-app') || document.body);
+}

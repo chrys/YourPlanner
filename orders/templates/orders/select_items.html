@@ -217,9 +217,12 @@ window.__currentQuantities__ = {{ current_quantities_json|safe }};
 </script>
 
 <script>
-const { createApp, ref, onMounted, watch } = Vue;  // Import watch function
+// CHANGED: Vue is already imported in base.html, use destructuring that's already available
+// Or use createApp directly from the global Vue object
+if (document.getElementById('select-items-app')) {
+  const { createApp, ref, onMounted, watch } = Vue;  // Import watch function
 
-createApp({
+  createApp({
     delimiters: ['[[', ']]'],
     setup() {
         const servicesData = ref([]);
@@ -355,7 +358,8 @@ createApp({
             confirmUpdate,
         };
     }
-}).mount('#select-items-app');
+  }).mount('#select-items-app');
+}
 </script>
 
 <style>
