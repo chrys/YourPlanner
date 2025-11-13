@@ -196,6 +196,58 @@ class CustomerLabelForm(forms.ModelForm):
         fields = ['labels']
 
 
+class CustomerProfileEditForm(forms.ModelForm):
+    # CHANGED: Form for editing customer profile fields (bride/groom details, contacts, emergency contact, planner)
+    # CHANGED: wedding_day is excluded - only professionals can edit this field
+    class Meta:
+        model = Customer
+        fields = [
+            'bride_name',
+            'groom_name',
+            'bride_contact',
+            'groom_contact',
+            'emergency_contact',
+            'planner'
+        ]
+        widgets = {
+            'bride_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Bride full name'
+            }),
+            'groom_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Groom full name'
+            }),
+            'bride_contact': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Bride phone number',
+                'type': 'tel'
+            }),
+            'groom_contact': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Groom phone number',
+                'type': 'tel'
+            }),
+            'emergency_contact': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Emergency contact name and phone number',
+                'rows': 3
+            }),
+            'planner': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Wedding planner or coordinator name'
+            }),
+        }
+        labels = {
+            'bride_name': 'Bride Name',
+            'groom_name': 'Groom Name',
+            'bride_contact': 'Bride Contact',
+            'groom_contact': 'Groom Contact',
+            'emergency_contact': 'Emergency Contact',
+            'planner': 'Wedding Planner',
+        }
+
+
 class DepositPaymentForm(forms.Form):
     deposit_paid_checkbox = forms.BooleanField(label="I have paid the deposit", required=True)
 
@@ -203,8 +255,85 @@ class DepositPaymentForm(forms.Form):
 class WeddingTimelineForm(forms.ModelForm):
     """
     CHANGED: Form for managing wedding timeline details.
-    Organized with sections for Event Details and Guest Numbers.
+    Updated to include customer profile fields (bride/groom info).
+    Organized with Event Details first, then Bride & Groom Information.
     """
+    # CHANGED: Added fields from Customer model
+    bride_name = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Bride full name'
+        }),
+        label='Bride Name'
+    )
+    groom_name = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Groom full name'
+        }),
+        label='Groom Name'
+    )
+    wedding_day_display = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date',
+            'disabled': True
+        }),
+        label='Wedding Day'
+    )
+    bride_contact = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Bride phone number',
+            'type': 'tel'
+        }),
+        label='Bride Contact'
+    )
+    groom_contact = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Groom phone number',
+            'type': 'tel'
+        }),
+        label='Groom Contact'
+    )
+    emergency_contact = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'placeholder': 'Emergency contact name and phone number',
+            'rows': 3
+        }),
+        label='Emergency Contact Name & Number'
+    )
+    planner = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Wedding planner or coordinator name'
+        }),
+        label='Planner/Coordinator'
+    )
+    special_notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'placeholder': 'Any special notes for the wedding',
+            'rows': 4
+        }),
+        label='Special Notes'
+    )
+    
     class Meta:
         model = WeddingTimeline
         fields = [
@@ -261,12 +390,52 @@ class WeddingTimelineForm(forms.ModelForm):
         }
         labels = {
             'event_organiser_name': 'Event Organiser Name',
-            'contact_number': 'Contact Number',
+            'contact_number': 'Event Organiser Contact Number',
             'pre_wedding_appointment': 'Pre-Wedding Appointment',
-            'location': 'Wedding Venue Location',
-            'apostille_stamp': 'Apostille Stamp Required',
-            'ceremony_admin': 'Ceremony Administrator',
+            'location': 'Location',
+            'apostille_stamp': 'Apostille stamp service by Vasilias',
+            'ceremony_admin': 'Administration of ceremony',
             'adults': 'Number of Adults',
             'children': 'Number of Children',
             'babies': 'Number of Babies',
         }
+    
+    # CHANGED: Override __init__ to populate fields from customer
+    def __init__(self, *args, **kwargs):
+        customer = kwargs.pop('customer', None)
+        super().__init__(*args, **kwargs)
+        self._customer = customer  # CHANGED: Store customer as private attribute (can be None)
+        if customer:
+            # CHANGED: Only set initial values if customer is provided and field exists
+            if 'bride_name' in self.fields:
+                self.fields['bride_name'].initial = customer.bride_name
+            if 'groom_name' in self.fields:
+                self.fields['groom_name'].initial = customer.groom_name
+            if 'wedding_day_display' in self.fields:
+                self.fields['wedding_day_display'].initial = customer.wedding_day
+            if 'bride_contact' in self.fields:
+                self.fields['bride_contact'].initial = customer.bride_contact
+            if 'groom_contact' in self.fields:
+                self.fields['groom_contact'].initial = customer.groom_contact
+            if 'emergency_contact' in self.fields:
+                self.fields['emergency_contact'].initial = customer.emergency_contact
+            if 'planner' in self.fields:
+                self.fields['planner'].initial = customer.planner
+            if 'special_notes' in self.fields:
+                self.fields['special_notes'].initial = customer.special_notes
+    
+    # CHANGED: Save customer fields when form is saved
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        # CHANGED: Only save customer if it was provided to the form
+        if self._customer:
+            self._customer.bride_name = self.cleaned_data.get('bride_name', '')
+            self._customer.groom_name = self.cleaned_data.get('groom_name', '')
+            self._customer.bride_contact = self.cleaned_data.get('bride_contact', '')
+            self._customer.groom_contact = self.cleaned_data.get('groom_contact', '')
+            self._customer.emergency_contact = self.cleaned_data.get('emergency_contact', '')
+            self._customer.planner = self.cleaned_data.get('planner', '')
+            self._customer.special_notes = self.cleaned_data.get('special_notes', '')
+            if commit:
+                self._customer.save()
+        return instance

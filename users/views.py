@@ -20,7 +20,7 @@ from packages.models import Template, TemplateImage # For CustomerTemplateListVi
 from orders.models import Order, OrderItem
 from services.models import Price, Service # Needed for finding active price for an item
 # from django import forms # Not used directly in views.py if forms are in forms.py
-from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm, WeddingTimelineForm
+from .forms import RegistrationForm, ProfessionalChoiceForm, DepositPaymentForm, WeddingTimelineForm, CustomerProfileEditForm  # CHANGED: Added CustomerProfileEditForm
 from labels.models import Label
 
 
@@ -348,6 +348,51 @@ class UserProfileView(LoginRequiredMixin, TemplateView):
         if hasattr(self.request.user, 'professional_profile'):
             context['professional_profile'] = self.request.user.professional_profile
         return context
+
+
+# CHANGED: Added CustomerProfileEditView to allow editing of customer profile fields
+class CustomerProfileEditView(LoginRequiredMixin, CustomerRequiredMixin, UpdateView):
+    """View for customers to edit their profile (bride/groom info, contacts, planner)."""
+    model = Customer
+    form_class = None  # CHANGED: Will be set in get_form_class() to allow proper form selection
+    template_name = 'users/profile_edit.html'
+    success_url = reverse_lazy('users:profile')
+    
+    def get_form_class(self):
+        # CHANGED: Use CustomerProfileEditForm for editing customer profiles
+        from .forms import CustomerProfileEditForm
+        return CustomerProfileEditForm
+    
+    def get_object(self, queryset=None):
+        # CHANGED: Get the customer profile for the logged-in user
+        try:
+            return self.request.user.customer_profile
+        except Customer.DoesNotExist:
+            raise Http404("Customer profile not found.")
+    
+    def get_context_data(self, **kwargs):
+        # CHANGED: Added context for the edit page
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Edit My Profile"
+        context['customer_profile'] = self.object
+        return context
+    
+    def form_valid(self, form):
+        # CHANGED: Added success message and error handling
+        try:
+            response = super().form_valid(form)
+            messages.success(
+                self.request,
+                "Your profile has been updated successfully!"
+            )
+            return response
+        except Exception as e:
+            # CHANGED: Added try-catch for error handling
+            messages.error(
+                self.request,
+                f"An error occurred while updating your profile: {str(e)}"
+            )
+            return self.form_invalid(form)
 
 
 class ChangeProfessionalView(LoginRequiredMixin, CustomerRequiredMixin, FormView):
@@ -854,6 +899,10 @@ class WeddingTimelineDetailView(LoginRequiredMixin, CustomerRequiredMixin, Detai
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Wedding Timeline'
         context['customer'] = self.request.user.customer_profile
+        # CHANGED: Include form in context for display - use self.object which is set by DetailView
+        customer = self.request.user.customer_profile
+        timeline = self.object  # This is the WeddingTimeline object set by DetailView
+        context['form'] = WeddingTimelineForm(customer=customer, instance=timeline)
         return context
 
 
@@ -861,6 +910,7 @@ class WeddingTimelineUpdateView(LoginRequiredMixin, CustomerRequiredMixin, Updat
     """
     CHANGED: View for updating wedding timeline details.
     Only allows customers to update their own timeline.
+    Updated to handle both timeline and customer fields.
     """
     model = WeddingTimeline
     form_class = WeddingTimelineForm
@@ -876,10 +926,27 @@ class WeddingTimelineUpdateView(LoginRequiredMixin, CustomerRequiredMixin, Updat
             # If no timeline exists, create one
             return WeddingTimeline.objects.create(customer=customer)
 
+    def get_form_kwargs(self):
+        # CHANGED: Pass customer to form for initializing customer fields
+        kwargs = super().get_form_kwargs()
+        kwargs['customer'] = self.request.user.customer_profile
+        return kwargs
+
     def get_success_url(self):
         return reverse_lazy('users:wedding_timeline')
 
     def form_valid(self, form):
+        # CHANGED: Save customer fields when timeline is saved
+        customer = self.request.user.customer_profile
+        customer.bride_name = form.cleaned_data.get('bride_name', '')
+        customer.groom_name = form.cleaned_data.get('groom_name', '')
+        customer.bride_contact = form.cleaned_data.get('bride_contact', '')
+        customer.groom_contact = form.cleaned_data.get('groom_contact', '')
+        customer.emergency_contact = form.cleaned_data.get('emergency_contact', '')
+        customer.planner = form.cleaned_data.get('planner', '')
+        customer.special_notes = form.cleaned_data.get('special_notes', '')
+        customer.save()
+        
         messages.success(self.request, 'Wedding timeline updated successfully!')
         return super().form_valid(form)
 

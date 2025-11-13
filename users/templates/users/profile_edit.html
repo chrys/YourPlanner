@@ -1,0 +1,143 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ page_title|default:"Edit My Profile" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h2 class="h4 mb-0">{{ page_title|default:"Edit My Profile" }}</h2>
+                </div>
+                <div class="card-body p-4">
+                    {% include "_messages.html" %}
+
+                    {# CHANGED: Added form for editing customer profile #}
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+                        
+                        <div class="form-section mb-4">
+                            <h5 class="mb-3">{% trans "Wedding Party Information" %}</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.bride_name.id_for_label }}" class="form-label">
+                                    {{ form.bride_name.label }}
+                                </label>
+                                {{ form.bride_name }}
+                                {% if form.bride_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.bride_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.groom_name.id_for_label }}" class="form-label">
+                                    {{ form.groom_name.label }}
+                                </label>
+                                {{ form.groom_name }}
+                                {% if form.groom_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.groom_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.bride_contact.id_for_label }}" class="form-label">
+                                    {{ form.bride_contact.label }}
+                                </label>
+                                {{ form.bride_contact }}
+                                {% if form.bride_contact.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.bride_contact.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.groom_contact.id_for_label }}" class="form-label">
+                                    {{ form.groom_contact.label }}
+                                </label>
+                                {{ form.groom_contact }}
+                                {% if form.groom_contact.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.groom_contact.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="form-section mb-4">
+                            <h5 class="mb-3">{% trans "Important Contacts" %}</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.emergency_contact.id_for_label }}" class="form-label">
+                                    {{ form.emergency_contact.label }}
+                                </label>
+                                {{ form.emergency_contact }}
+                                <small class="form-text text-muted">
+                                    {% trans "Include both name and phone number" %}
+                                </small>
+                                {% if form.emergency_contact.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.emergency_contact.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.planner.id_for_label }}" class="form-label">
+                                    {{ form.planner.label }}
+                                </label>
+                                {{ form.planner }}
+                                {% if form.planner.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.planner.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# CHANGED: Removed wedding_day field - only professionals can edit this #}
+                        {# CHANGED: Form submission buttons #}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>{% trans "Save Changes" %}
+                            </button>
+                            <a href="{% url 'users:profile' %}" class="btn btn-secondary ms-2">
+                                {% trans "Cancel" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CHANGED: Added Bootstrap validation script
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms)
+                .forEach(function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+        }, false);
+    })();
+</script>
+{% endblock %}

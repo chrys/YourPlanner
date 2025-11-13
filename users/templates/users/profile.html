@@ -34,8 +34,43 @@
                     <hr>
                     {% if customer_profile %}
                         <h4>{% trans "Customer Details" %}</h4>
+                        {# CHANGED: Display editable customer fields #}
                         <dl class="row">
-                            <!-- CHANGED: Removed Linked Professional line -->
+                            {% if customer_profile.get_linked_professional %}
+                            <dt class="col-sm-4">{% trans "Linked Professional" %}:</dt>
+                            <dd class="col-sm-8">{{ customer_profile.get_linked_professional.title|default:customer_profile.get_linked_professional.user.get_full_name }}</dd>
+                            {% endif %}
+                            
+                            {% if customer_profile.bride_name %}
+                            <dt class="col-sm-4">{% trans "Bride Name" %}:</dt>
+                            <dd class="col-sm-8">{{ customer_profile.bride_name }}</dd>
+                            {% endif %}
+                            
+                            {% if customer_profile.groom_name %}
+                            <dt class="col-sm-4">{% trans "Groom Name" %}:</dt>
+                            <dd class="col-sm-8">{{ customer_profile.groom_name }}</dd>
+                            {% endif %}
+                            
+                            {% if customer_profile.bride_contact %}
+                            <dt class="col-sm-4">{% trans "Bride Contact" %}:</dt>
+                            <dd class="col-sm-8">{{ customer_profile.bride_contact }}</dd>
+                            {% endif %}
+                            
+                            {% if customer_profile.groom_contact %}
+                            <dt class="col-sm-4">{% trans "Groom Contact" %}:</dt>
+                            <dd class="col-sm-8">{{ customer_profile.groom_contact }}</dd>
+                            {% endif %}
+                            
+                            {% if customer_profile.emergency_contact %}
+                            <dt class="col-sm-4">{% trans "Emergency Contact" %}:</dt>
+                            <dd class="col-sm-8">{{ customer_profile.emergency_contact }}</dd>
+                            {% endif %}
+                            
+                            {% if customer_profile.planner %}
+                            <dt class="col-sm-4">{% trans "Wedding Planner" %}:</dt>
+                            <dd class="col-sm-8">{{ customer_profile.planner }}</dd>
+                            {% endif %}
+                            
                             {% if customer_profile.wedding_day %}
                             <dt class="col-sm-4">{% trans "Wedding Date" %}:</dt>
                             <dd class="col-sm-8">
@@ -59,8 +94,10 @@
 
                     <div class="mt-3">
                         <a href="{% url 'users:password_change' %}" class="btn btn-outline-secondary btn-sm">{% trans "Change Password" %}</a>
-                        {# Add link to an 'edit profile' view if it exists #}
-                        {# <a href="#" class="btn btn-primary btn-sm ms-2">Edit Profile</a> #}
+                        {# CHANGED: Added link to edit profile #}
+                        {% if customer_profile %}
+                        <a href="{% url 'users:profile_edit' %}" class="btn btn-primary btn-sm ms-2">{% trans "Edit Profile" %}</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

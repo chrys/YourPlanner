@@ -6,6 +6,7 @@ from .views import (
     SignupView,  # CHANGED: Added SignupView for landing page
     UserManagementView,
     UserProfileView,
+    CustomerProfileEditView,  # CHANGED: Added CustomerProfileEditView for editing profiles
     ChangeProfessionalView,
     CustomerTemplateListView,
     CustomerTemplateDetailView,
@@ -32,6 +33,7 @@ urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='register'),
     path('management/', UserManagementView.as_view(), name='user_management'),
     path('profile/', UserProfileView.as_view(), name='profile'), # Changed path from accounts/profile/ to just profile/
+    path('profile/edit/', CustomerProfileEditView.as_view(), name='profile_edit'),  # CHANGED: Added edit profile URL
     path('change-professional/', ChangeProfessionalView.as_view(), name='change_professional'),
     path('deposit-payment/', DepositPaymentView.as_view(), name='deposit_payment'),
     

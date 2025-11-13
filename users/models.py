@@ -238,6 +238,23 @@ class Customer(TimeStampedModel):
         
         return customer_level >= required_level
 
+    # CHANGED: Added method to get the active linked professional
+    def get_linked_professional(self):
+        """
+        Get the active linked professional for this customer.
+        
+        Returns:
+            Professional or None: The active linked professional, or None if not linked
+        """
+        try:
+            link = ProfessionalCustomerLink.objects.select_related('professional').get(
+                customer=self,
+                status=ProfessionalCustomerLink.StatusChoices.ACTIVE
+            )
+            return link.professional
+        except ProfessionalCustomerLink.DoesNotExist:
+            return None
+
     class Meta:
         verbose_name = "Customer"
         verbose_name_plural = "Customers"

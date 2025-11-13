@@ -12,10 +12,10 @@
             <form method="post" action="{% url 'users:wedding_timeline_update' %}" class="needs-validation" novalidate>
                 {% csrf_token %}
                 
-                <!-- Bride & Groom Information Section -->
+                <!-- CHANGED: Event Details Section moved to first -->
                 <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Bride & Groom Information</h5>
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Event Details</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -38,15 +38,7 @@
                                 {% endif %}
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Event Details Section -->
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Event Details</h5>
-                    </div>
-                    <div class="card-body">
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="id_pre_wedding_appointment" class="form-label">{{ form.pre_wedding_appointment.label }}</label>
@@ -70,15 +62,6 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="id_ceremony_admin" class="form-label">{{ form.ceremony_admin.label }}</label>
-                                {{ form.ceremony_admin }}
-                                {% if form.ceremony_admin.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {{ form.ceremony_admin.errors }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <div class="form-check mt-4">
                                     {{ form.apostille_stamp }}
                                     <label for="id_apostille_stamp" class="form-check-label">
@@ -90,6 +73,113 @@
                                         </div>
                                     {% endif %}
                                 </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_ceremony_admin" class="form-label">{{ form.ceremony_admin.label }}</label>
+                                {{ form.ceremony_admin }}
+                                {% if form.ceremony_admin.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.ceremony_admin.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHANGED: Bride & Groom Information Section with all required fields -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Bride & Groom Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_bride_name" class="form-label">{{ form.bride_name.label }}</label>
+                                {{ form.bride_name }}
+                                {% if form.bride_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.bride_name.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_groom_name" class="form-label">{{ form.groom_name.label }}</label>
+                                {{ form.groom_name }}
+                                {% if form.groom_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.groom_name.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_wedding_day_display" class="form-label">{{ form.wedding_day_display.label }}</label>
+                                {{ form.wedding_day_display }}
+                                {% if form.wedding_day_display.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.wedding_day_display.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_bride_contact" class="form-label">{{ form.bride_contact.label }}</label>
+                                {{ form.bride_contact }}
+                                {% if form.bride_contact.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.bride_contact.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_groom_contact" class="form-label">{{ form.groom_contact.label }}</label>
+                                {{ form.groom_contact }}
+                                {% if form.groom_contact.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.groom_contact.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="id_emergency_contact" class="form-label">{{ form.emergency_contact.label }}</label>
+                                {{ form.emergency_contact }}
+                                {% if form.emergency_contact.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.emergency_contact.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_planner" class="form-label">{{ form.planner.label }}</label>
+                                {{ form.planner }}
+                                {% if form.planner.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.planner.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="id_special_notes" class="form-label">{{ form.special_notes.label }}</label>
+                                {{ form.special_notes }}
+                                {% if form.special_notes.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.special_notes.errors }}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -214,12 +304,18 @@
 </div>
 
 <script>
-    // Update total guests whenever guest numbers change
+    // CHANGED: Update total guests whenever guest numbers change - made defensive
     document.addEventListener('DOMContentLoaded', function() {
         const adultsInput = document.getElementById('id_adults');
         const childrenInput = document.getElementById('id_children');
         const babiesInput = document.getElementById('id_babies');
         const totalGuestsSpan = document.getElementById('total_guests');
+
+        // CHANGED: Only set up listeners if all elements exist
+        if (!adultsInput || !childrenInput || !babiesInput || !totalGuestsSpan) {
+            console.warn('Guest number inputs not found in DOM');
+            return;
+        }
 
         function updateTotal() {
             const adults = parseInt(adultsInput.value || 0);
