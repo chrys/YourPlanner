@@ -49,6 +49,19 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'chatbot',
+    'wagtail.contrib.forms',  # Wagtail forms
+    'wagtail.contrib.redirects',  # Wagtail redirects
+    'wagtail.embeds',  # Wagtail embeds
+    'wagtail.sites',  # Wagtail sites
+    'wagtail.users',  # Wagtail users
+    'wagtail.snippets',  # Wagtail snippets
+    'wagtail.documents',  # Wagtail documents
+    'wagtail.images',  # Wagtail images
+    'wagtail.search',  # Wagtail search
+    'wagtail.admin',  # Wagtail admin
+    'wagtail',  # Wagtail core
+    'modelcluster',  # Wagtail dependency
+    'taggit',  # Wagtail dependency
 ]
 
 MIDDLEWARE = [
@@ -198,6 +211,9 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
+
+WAGTAIL_SITE_NAME = "YourPlanner" 
+WAGTAILADMIN_BASE_URL = "http://127.0.0.1:8000/cms/"
 
 SUMMERNOTE_CONFIG = {
     'summernote': {

@@ -13,3 +13,4 @@ djangorestframework
 requests
 pytest
 pytest-django
+wagtail

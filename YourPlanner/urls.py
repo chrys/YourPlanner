@@ -7,6 +7,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from users.views import SignupView  # CHANGED: Import SignupView
+from wagtail.admin import urls as wagtailadmin_urls  
+from wagtail.documents import urls as wagtaildocs_urls 
+from wagtail import urls as wagtail_urls  
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -19,11 +22,12 @@ urlpatterns = [
     path('payments/', include('payments.urls', namespace='payments')),
     #path('accounts/', include('django.contrib.auth.urls')),
     path('summernote/', include('django_summernote.urls')),
-    # CHANGED: Uncommented core URLs to register the 'core:home' namespace for post-signup redirect
-    path('', include('core.urls', namespace='core')),
-    # CHANGED: Added signup landing page route - uses SignupView to provide form context
     path('signup/', SignupView.as_view(), name='landing_signup'),
     path('api/chatbot/', include('chatbot.api_urls')),
+    path('cms/', include(wagtailadmin_urls)),  # Wagtail admin
+    path('documents/', include(wagtaildocs_urls)),  # Wagtail documents
+    path('pages/', include(wagtail_urls)),
+    path('', include('core.urls', namespace='core')),
 ]
 
 

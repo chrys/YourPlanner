@@ -1,5 +1,10 @@
 from django.db import models
 
+from wagtail.models import Page
+from wagtail.fields import RichTextField
+from wagtail.admin.panels import FieldPanel
+
+
 class TimeStampedModel(models.Model):
     """
     An abstract base model that provides self-updating
@@ -19,5 +24,9 @@ class ActiveManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(is_active=True)
 
+class StandardPage(Page): 
+    body = RichTextField(blank=True)
 
-# Create your models here.
+    content_panels = Page.content_panels + [
+        FieldPanel('body'),
+    ]
