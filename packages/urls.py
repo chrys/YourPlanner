@@ -11,4 +11,6 @@ urlpatterns = [
     path('<int:pk>/delete/', views.TemplateDeleteView.as_view(), name='template-delete'),
     # CHANGED: Added packages view URL
     path('packages/', views.PackagesView.as_view(), name='packages'),
+    # CHANGED: Added URL for adding package to order
+    path('packages/add-to-order/', views.AddPackageToOrderView.as_view(), name='add_package_to_order'),
 ]

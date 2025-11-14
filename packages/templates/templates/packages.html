@@ -1,21 +1,114 @@
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block title %}Wedding Packages - YourPlanner{% endblock %}
+{% block title %}Wedding Packages{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-lg-8 offset-lg-2">
-            <h1 class="mb-4">Wedding Packages</h1>
-            <p class="lead text-muted">Explore our wedding packages and customize your event.</p>
-            
-            <!-- Placeholder content - will be populated later -->
-            <div class="alert alert-info" role="alert">
-                <h4 class="alert-heading">Coming Soon</h4>
-                <p>Wedding packages content will be added here.</p>
+<div class="container mt-4">
+    <h1 class="mb-4">Wedding Packages</h1>
+
+    <!-- CHANGED: Form for single package selection -->
+    <form id="packages-form" method="post" action="{% url 'packages:add_package_to_order' %}">
+        {% csrf_token %}
+
+        {% if packages %}
+            <div class="row">
+                {% for package in packages %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">{{ package.title }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ package.description|truncatewords:20 }}</p>
+                                
+                                <div class="mb-3">
+                                    <strong>Price:</strong> {{ package.base_price }} {{ package.currency }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <strong>Base Guests:</strong> {{ package.default_guests }}
+                                </div>
+                                
+                                {% if package.price_per_additional_guest %}
+                                    <div class="mb-3">
+                                        <strong>Additional Guest Price:</strong> {{ package.price_per_additional_guest }} {{ package.currency }}/guest
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="form-check">
+                                    <!-- CHANGED: Radio button for single selection -->
+                                    <input class="form-check-input" 
+                                           type="radio" 
+                                           name="selected_package" 
+                                           value="{{ package.pk }}"
+                                           id="package_{{ package.pk }}"
+                                           {% if selected_package == package.pk %}checked{% endif %}>
+                                    <label class="form-check-label" for="package_{{ package.pk }}">
+                                        Select this package
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
-        </div>
-    </div>
+
+            <!-- CHANGED: Submit button for adding selected package to basket -->
+            <div class="row mt-4 mb-4">
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-success btn-lg me-2">
+                        <i class="fas fa-shopping-basket"></i> Add Package to Basket
+                    </button>
+                    <a href="{% url 'core:home' %}" class="btn btn-secondary btn-lg">Back to Home</a>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p>No packages available from your linked professional at the moment.</p>
+            </div>
+        {% endif %}
+    </form>
 </div>
+
+<script>
+    // CHANGED: Form validation for package selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('packages-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const selectedPackage = document.querySelector('input[name="selected_package"]:checked');
+                
+                if (!selectedPackage) {
+                    e.preventDefault();
+                    alert('Please select a package to add to your basket.');
+                }
+            });
+        }
+    });
+</script>
+
+<style>
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+</style>
+
 {% endblock %}

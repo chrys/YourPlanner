@@ -2,13 +2,17 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView, TemplateView
+from django.views import View  # CHANGED: Added View import for AddFoodDrinksToOrderView
 from django.urls import reverse_lazy
 from django.http import Http404 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
+import json
 from users.models import Professional
 from .models import Service, Item, Price
 from .forms import ServiceForm, ItemForm, PriceForm, ServicePriceFormSet
+from orders.models import Order, OrderItem  # CHANGED: Added Order and OrderItem imports
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -603,32 +607,508 @@ class FoodDrinksView(LoginRequiredMixin, TemplateView):
             ).distinct()
             food_drinks_sections[section_name] = items
         
+        # CHANGED: Get existing basket items for the current customer
+        try:
+            customer = self.request.user.customer_profile
+            order = Order.objects.filter(
+                customer=customer,
+                status__in=[Order.StatusChoices.PENDING, Order.StatusChoices.CONFIRMED]
+            ).first()
+            
+            # CHANGED: Create a dictionary of item_id -> quantity for easy lookup in template
+            basket_items = {}
+            if order:
+                for order_item in order.items.all():
+                    if order_item.item:
+                        basket_items[order_item.item.pk] = order_item.quantity
+            
+            # CHANGED: Convert to JSON string for template usage
+            context['basket_items'] = basket_items
+            context['basket_items_json'] = json.dumps(basket_items, cls=DjangoJSONEncoder)
+        except Exception as e:
+            # CHANGED: Handle case where customer profile doesn't exist
+            context['basket_items'] = {}
+            context['basket_items_json'] = '{}'
+        
         context['food_drinks_sections'] = food_drinks_sections
         context['page_title'] = "Food & Drinks"
         return context
 
 
-# CHANGED: Added RoomsView for displaying available event rooms
-class RoomsView(TemplateView):
+# CHANGED: Added AddFoodDrinksToOrderView to handle adding selected food & drinks to order
+class AddFoodDrinksToOrderView(LoginRequiredMixin, View):
     """
-    View to display event rooms.
+    View to add/update selected food and drinks items with quantities to the customer's order.
+    Processes POST data from the food_drinks.html form.
+    CHANGED: Now also updates quantities for existing items and redirects to basket.
+    """
+    
+    def post(self, request):
+        try:
+            # CHANGED: Get or create an order for the current customer
+            customer = request.user.customer_profile
+            order, created = Order.objects.get_or_create(
+                customer=customer,
+                status=Order.StatusChoices.PENDING
+            )
+            
+            # CHANGED: Collect all items with quantities from the POST data
+            added_items = []
+            updated_items = []
+            
+            for key, value in request.POST.items():
+                if key.startswith('item_quantity_'):
+                    item_id = int(key.replace('item_quantity_', ''))
+                    quantity = int(value) if value else 0
+                    
+                    try:
+                        # CHANGED: Get the item
+                        item = Item.objects.get(pk=item_id)
+                        
+                        # CHANGED: Get the first active price for the item
+                        price_obj = item.prices.filter(is_active=True).first()
+                        if price_obj:
+                            # CHANGED: Get the service and professional from the item
+                            service = item.service
+                            professional = service.professional if service else None
+                            
+                            if not professional:
+                                messages.warning(
+                                    request,
+                                    f"Cannot add {item.title} - no professional assigned to its service"
+                                )
+                                continue
+                            
+                            # CHANGED: Check if this item already exists in the order
+                            try:
+                                order_item = OrderItem.objects.get(
+                                    order=order,
+                                    item=item,
+                                    price=price_obj
+                                )
+                                # CHANGED: Item exists - update quantity (not add to it)
+                                old_qty = order_item.quantity
+                                if quantity == 0:
+                                    # CHANGED: Delete item if quantity is 0
+                                    order_item.delete()
+                                    updated_items.append({
+                                        'title': item.title,
+                                        'old_quantity': old_qty,
+                                        'new_quantity': 0,
+                                        'action': 'removed'
+                                    })
+                                else:
+                                    order_item.quantity = quantity
+                                    order_item.save()
+                                    updated_items.append({
+                                        'title': item.title,
+                                        'old_quantity': old_qty,
+                                        'new_quantity': quantity,
+                                        'action': 'updated'
+                                    })
+                            except OrderItem.DoesNotExist:
+                                # CHANGED: Create new OrderItem only if quantity > 0
+                                if quantity > 0:
+                                    order_item = OrderItem.objects.create(
+                                        order=order,
+                                        item=item,
+                                        price=price_obj,  # Price instance
+                                        service=service,
+                                        professional=professional,
+                                        quantity=quantity
+                                    )
+                                    
+                                    added_items.append({
+                                        'title': item.title,
+                                        'quantity': quantity
+                                    })
+                    except Item.DoesNotExist:
+                        continue
+            
+            # CHANGED: Update order total and add success message
+            if added_items or updated_items:
+                order.calculate_total()
+                order.save()
+                
+                # CHANGED: Build comprehensive success message
+                messages.list = []
+                if added_items:
+                    item_list = ', '.join([f"{item['quantity']}x {item['title']}" for item in added_items])
+                    messages.success(
+                        request,
+                        f"Added to basket: {item_list}"
+                    )
+                
+                if updated_items:
+                    for item in updated_items:
+                        if item['action'] == 'removed':
+                            messages.info(request, f"Removed {item['title']} from basket")
+                        else:
+                            messages.info(
+                                request,
+                                f"Updated {item['title']}: {item['old_quantity']} → {item['new_quantity']}"
+                            )
+            else:
+                messages.info(request, "No changes were made to your basket.")
+            
+            # CHANGED: Redirect to basket
+            return redirect('orders:basket')
+            
+        except Exception as e:
+            # CHANGED: Added error handling
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f"An error occurred while updating your basket: {str(e)}")
+            return redirect('services:food_drinks')
+
+
+# CHANGED: Added RoomsView for displaying available event rooms
+class RoomsView(LoginRequiredMixin, TemplateView):
+    """
+    View to display event rooms (Items under Service ID 1) with quantity selection and basket integration.
+    Similar to FoodDrinksView but for rooms instead of food/drinks items.
     """
     template_name = 'services/rooms.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # CHANGED: Get only items under Service ID 1 (Rooms)
+        rooms_service = Service.objects.filter(pk=1, is_active=True).first()
+        if rooms_service:
+            rooms = Item.objects.filter(
+                service=rooms_service,
+                is_active=True
+            ).distinct()
+        else:
+            rooms = Item.objects.none()
+        
+        # CHANGED: Get existing basket items for the current customer
+        try:
+            customer = self.request.user.customer_profile
+            order = Order.objects.filter(
+                customer=customer,
+                status__in=[Order.StatusChoices.PENDING, Order.StatusChoices.CONFIRMED]
+            ).first()
+            
+            # CHANGED: Create a dictionary of item_id -> quantity for easy lookup
+            basket_items = {}
+            if order:
+                for order_item in order.items.all():
+                    if order_item.item:
+                        basket_items[order_item.item.pk] = order_item.quantity
+            
+            # CHANGED: Convert to JSON string for template usage
+            context['basket_items'] = basket_items
+            context['basket_items_json'] = json.dumps(basket_items, cls=DjangoJSONEncoder)
+        except Exception as e:
+            # CHANGED: Handle case where customer profile doesn't exist
+            context['basket_items'] = {}
+            context['basket_items_json'] = '{}'
+        
+        context['rooms'] = rooms
         context['page_title'] = "Rooms"
         return context
 
 
-# CHANGED: Added DecorsServicesView for displaying decors and services
-class DecorsServicesView(TemplateView):
+# CHANGED: Added AddRoomsToOrderView to handle adding selected rooms to order
+class AddRoomsToOrderView(LoginRequiredMixin, View):
     """
-    View to display decors and services.
+    View to add/update selected room items with quantities to the customer's order.
+    Processes POST data from the rooms.html form.
+    """
+    
+    def post(self, request):
+        try:
+            # CHANGED: Get or create an order for the current customer
+            customer = request.user.customer_profile
+            order, created = Order.objects.get_or_create(
+                customer=customer,
+                status=Order.StatusChoices.PENDING
+            )
+            
+            # CHANGED: Collect all items with quantities from the POST data
+            added_items = []
+            updated_items = []
+            
+            for key, value in request.POST.items():
+                if key.startswith('item_quantity_'):
+                    item_id = int(key.replace('item_quantity_', ''))
+                    quantity = int(value) if value else 0
+                    
+                    try:
+                        # CHANGED: Get the item
+                        item = Item.objects.get(pk=item_id)
+                        
+                        # CHANGED: Get the first active price for the item
+                        price_obj = item.prices.filter(is_active=True).first()
+                        if price_obj:
+                            # CHANGED: Get the service and professional from the item
+                            service = item.service
+                            professional = service.professional if service else None
+                            
+                            if not professional:
+                                messages.warning(
+                                    request,
+                                    f"Cannot add {item.title} - no professional assigned to its service"
+                                )
+                                continue
+                            
+                            # CHANGED: Check if this item already exists in the order
+                            try:
+                                order_item = OrderItem.objects.get(
+                                    order=order,
+                                    item=item,
+                                    price=price_obj
+                                )
+                                # CHANGED: Item exists - update quantity (not add to it)
+                                old_qty = order_item.quantity
+                                if quantity == 0:
+                                    # CHANGED: Delete item if quantity is 0
+                                    order_item.delete()
+                                    updated_items.append({
+                                        'title': item.title,
+                                        'old_quantity': old_qty,
+                                        'new_quantity': 0,
+                                        'action': 'removed'
+                                    })
+                                else:
+                                    order_item.quantity = quantity
+                                    order_item.save()
+                                    updated_items.append({
+                                        'title': item.title,
+                                        'old_quantity': old_qty,
+                                        'new_quantity': quantity,
+                                        'action': 'updated'
+                                    })
+                            except OrderItem.DoesNotExist:
+                                # CHANGED: Create new OrderItem only if quantity > 0
+                                if quantity > 0:
+                                    order_item = OrderItem.objects.create(
+                                        order=order,
+                                        item=item,
+                                        price=price_obj,  # Price instance
+                                        service=service,
+                                        professional=professional,
+                                        quantity=quantity
+                                    )
+                                    
+                                    added_items.append({
+                                        'title': item.title,
+                                        'quantity': quantity
+                                    })
+                    except Item.DoesNotExist:
+                        continue
+            
+            # CHANGED: Update order total and add success message
+            if added_items or updated_items:
+                order.calculate_total()
+                order.save()
+                
+                # CHANGED: Build comprehensive success message
+                messages.list = []
+                if added_items:
+                    item_list = ', '.join([f"{item['quantity']}x {item['title']}" for item in added_items])
+                    messages.success(
+                        request,
+                        f"Added to basket: {item_list}"
+                    )
+                
+                if updated_items:
+                    for item in updated_items:
+                        if item['action'] == 'removed':
+                            messages.info(request, f"Removed {item['title']} from basket")
+                        else:
+                            messages.info(
+                                request,
+                                f"Updated {item['title']}: {item['old_quantity']} → {item['new_quantity']}"
+                            )
+            else:
+                messages.info(request, "No changes were made to your basket.")
+            
+            # CHANGED: Redirect to basket
+            return redirect('orders:basket')
+            
+        except Exception as e:
+            # CHANGED: Added error handling
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f"An error occurred while updating your basket: {str(e)}")
+            return redirect('services:rooms')
+
+
+# CHANGED: Added DecorsServicesView for displaying decors and services
+class DecorsServicesView(LoginRequiredMixin, TemplateView):
+    """
+    View to display all services except Food, Drinks, and Rooms with quantity selection and basket integration.
+    Allows customers to add multiple different services with quantities.
     """
     template_name = 'services/decors_services.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # CHANGED: Get all services except Food, Drinks, and Rooms
+        # Rooms is Service ID 1, so we exclude it
+        excluded_service_ids = [1]  # Rooms service
+        services = Service.objects.filter(
+            is_active=True
+        ).exclude(
+            pk__in=excluded_service_ids
+        ).exclude(
+            title__icontains='Food'
+        ).exclude(
+            title__icontains='Drinks'
+        ).distinct().order_by('title')
+        
+        # CHANGED: Get existing basket items for the current customer
+        try:
+            customer = self.request.user.customer_profile
+            order = Order.objects.filter(
+                customer=customer,
+                status__in=[Order.StatusChoices.PENDING, Order.StatusChoices.CONFIRMED]
+            ).first()
+            
+            # CHANGED: Create a dictionary of service_id -> quantity for easy lookup
+            basket_items = {}
+            if order:
+                for order_item in order.items.all():
+                    if order_item.service and not order_item.item:
+                        basket_items[order_item.service.pk] = order_item.quantity
+            
+            # CHANGED: Convert to JSON string for template usage
+            context['basket_items'] = basket_items
+            context['basket_items_json'] = json.dumps(basket_items, cls=DjangoJSONEncoder)
+        except Exception as e:
+            # CHANGED: Handle case where customer profile doesn't exist
+            context['basket_items'] = {}
+            context['basket_items_json'] = '{}'
+        
+        context['services'] = services
         context['page_title'] = "Decors & Services"
         return context
+
+
+# CHANGED: Added AddDecorsServicesToOrderView to handle adding selected services to order
+class AddDecorsServicesToOrderView(LoginRequiredMixin, View):
+    """
+    View to add/update selected decors and services with quantities to the customer's order.
+    Processes POST data from the decors_services.html form.
+    """
+    
+    def post(self, request):
+        try:
+            # CHANGED: Get or create an order for the current customer
+            customer = request.user.customer_profile
+            order, created = Order.objects.get_or_create(
+                customer=customer,
+                status=Order.StatusChoices.PENDING
+            )
+            
+            # CHANGED: Collect all services with quantities from the POST data
+            added_items = []
+            updated_items = []
+            
+            for key, value in request.POST.items():
+                if key.startswith('service_quantity_'):
+                    service_id = int(key.replace('service_quantity_', ''))
+                    quantity = int(value) if value else 0
+                    
+                    try:
+                        # CHANGED: Get the service
+                        service = Service.objects.get(pk=service_id)
+                        
+                        # CHANGED: Get the first active price for the service
+                        price_obj = service.get_service_prices().first()
+                        if price_obj:
+                            professional = service.professional
+                            
+                            if not professional:
+                                messages.warning(
+                                    request,
+                                    f"Cannot add {service.title} - no professional assigned"
+                                )
+                                continue
+                            
+                            # CHANGED: Check if this service already exists in the order
+                            try:
+                                order_item = OrderItem.objects.get(
+                                    order=order,
+                                    service=service,
+                                    item=None,  # Service-only order item
+                                    price=price_obj
+                                )
+                                # CHANGED: Service exists - update quantity (not add to it)
+                                old_qty = order_item.quantity
+                                if quantity == 0:
+                                    # CHANGED: Delete item if quantity is 0
+                                    order_item.delete()
+                                    updated_items.append({
+                                        'title': service.title,
+                                        'old_quantity': old_qty,
+                                        'new_quantity': 0,
+                                        'action': 'removed'
+                                    })
+                                else:
+                                    order_item.quantity = quantity
+                                    order_item.save()
+                                    updated_items.append({
+                                        'title': service.title,
+                                        'old_quantity': old_qty,
+                                        'new_quantity': quantity,
+                                        'action': 'updated'
+                                    })
+                            except OrderItem.DoesNotExist:
+                                # CHANGED: Create new OrderItem only if quantity > 0
+                                if quantity > 0:
+                                    order_item = OrderItem.objects.create(
+                                        order=order,
+                                        service=service,
+                                        item=None,  # No specific item, just the service
+                                        price=price_obj,  # Price instance
+                                        professional=professional,
+                                        quantity=quantity
+                                    )
+                                    
+                                    added_items.append({
+                                        'title': service.title,
+                                        'quantity': quantity
+                                    })
+                    except Service.DoesNotExist:
+                        continue
+            
+            # CHANGED: Update order total and add success message
+            if added_items or updated_items:
+                order.calculate_total()
+                order.save()
+                
+                # CHANGED: Build comprehensive success message
+                messages.list = []
+                if added_items:
+                    item_list = ', '.join([f"{item['quantity']}x {item['title']}" for item in added_items])
+                    messages.success(
+                        request,
+                        f"Added to basket: {item_list}"
+                    )
+                
+                if updated_items:
+                    for item in updated_items:
+                        if item['action'] == 'removed':
+                            messages.info(request, f"Removed {item['title']} from basket")
+                        else:
+                            messages.info(
+                                request,
+                                f"Updated {item['title']}: {item['old_quantity']} → {item['new_quantity']}"
+                            )
+            else:
+                messages.info(request, "No changes were made to your basket.")
+            
+            # CHANGED: Redirect to basket
+            return redirect('orders:basket')
+            
+        except Exception as e:
+            # CHANGED: Added error handling
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f"An error occurred while updating your basket: {str(e)}")
+            return redirect('services:decors_services')

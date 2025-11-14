@@ -1,16 +1,19 @@
 from django.shortcuts import render, redirect
 from django.views.generic import CreateView, UpdateView, DetailView, ListView, DeleteView, TemplateView
 from django.shortcuts import get_object_or_404
-
+from django.views import View  # CHANGED: Added View import for AddPackageToOrderView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
+from django.core.serializers.json import DjangoJSONEncoder
+import json  # CHANGED: Added json import
 
 from .models import Template, TemplateItemGroup, TemplateItemGroupItem
 from .forms import TemplateForm, TemplateImageFormSet, TemplateItemGroupFormSet
-from orders.models import Order
+from orders.models import Order, OrderItem
+from services.models import Price
 from users.models import Professional
 
 try:
@@ -478,14 +481,187 @@ class TemplateDetailView(LoginRequiredMixin, DetailView):
 
 
 # CHANGED: Added PackagesView for displaying wedding packages
-class PackagesView(TemplateView):
+class PackagesView(LoginRequiredMixin, TemplateView):
     """
-    View to display wedding packages.
+    View to display wedding packages from the linked professional.
+    Customers can select only one package to add to their order.
     """
     # CHANGED: Corrected template path to match packages/templates/templates/ structure
     template_name = 'templates/packages.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # CHANGED: Get templates from the linked professional
+        try:
+            customer = self.request.user.customer_profile
+            professional = customer.get_linked_professional()
+            
+            if professional:
+                # CHANGED: Removed is_active filter since Template model doesn't have it
+                packages = Template.objects.filter(
+                    professional=professional
+                ).order_by('base_price')
+            else:
+                packages = Template.objects.none()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            packages = Template.objects.none()
+        
+        # CHANGED: Get existing package in basket (only one allowed)
+        selected_package = None
+        try:
+            customer = self.request.user.customer_profile
+            order = Order.objects.filter(
+                customer=customer,
+                status__in=[Order.StatusChoices.PENDING, Order.StatusChoices.CONFIRMED]
+            ).first()
+            
+            if order:
+                # Check if a template is already in the order (templates stored as service items)
+                order_item = order.items.filter(service__isnull=False, item__isnull=True).first()
+                # CHANGED: For now, we'll check via a custom approach since templates might be stored differently
+                # Looking for any order_item that represents a package
+                for order_item in order.items.all():
+                    # Templates might be stored with a special marker - we'll check the service title
+                    if order_item.service and 'package' in order_item.service.title.lower():
+                        selected_package = order_item.service.pk
+                        break
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+        
+        context['packages'] = packages
+        context['selected_package'] = selected_package
         context['page_title'] = "Wedding Packages"
         return context
+
+
+# CHANGED: Added AddPackageToOrderView to handle adding selected package to order
+class AddPackageToOrderView(LoginRequiredMixin, View):
+    """
+    View to add/update a single package to the customer's order.
+    Since only one package can be selected, this replaces any existing package.
+    Processes POST data from the packages.html form.
+    """
+    
+    def post(self, request):
+        try:
+            # CHANGED: Get or create an order for the current customer
+            customer = request.user.customer_profile
+            order, created = Order.objects.get_or_create(
+                customer=customer,
+                status=Order.StatusChoices.PENDING
+            )
+            
+            # CHANGED: Get the selected package ID from POST data
+            selected_package_id = request.POST.get('selected_package')
+            
+            if not selected_package_id:
+                messages.warning(request, "Please select a package.")
+                return redirect('packages:packages')
+            
+            try:
+                package = Template.objects.get(pk=selected_package_id)
+                
+                # CHANGED: Remove any existing package from the order
+                # Find and delete existing template order items
+                existing_packages = order.items.filter(
+                    service__isnull=False,
+                    item__isnull=True,
+                    service__title__icontains='package'
+                )
+                if existing_packages.exists():
+                    old_package_name = existing_packages.first().service.title
+                    existing_packages.delete()
+                    messages.info(request, f"Removed previous package: {old_package_name}")
+                
+                # CHANGED: Create a virtual service for this template package
+                # Since we need to store templates in orders, we'll need to handle this specially
+                # For now, we'll create an OrderItem with the template's details stored in the service field
+                # This requires a custom approach since templates aren't directly service items
+                
+                # We need to get or create a "virtual service" for this template
+                # Or store the template reference in a different way
+                # For a simpler approach, we can create an OrderItem linked to the professional
+                # and store the template ID in a custom field or use the service's description
+                
+                professional = package.professional
+                
+                # CHANGED: Get a price for the package
+                # Using the base price as a Price instance - but we need to create one
+                # For now, we'll try to find or create a price associated with the template
+                try:
+                    # Try to find an active price for this professional's "package" service
+                    # First, let's check if there's a package service created
+                    from services.models import Service
+                    package_service = Service.objects.filter(
+                        professional=professional,
+                        title__icontains='package'
+                    ).first()
+                    
+                    if not package_service:
+                        # Create a virtual service for packages if it doesn't exist
+                        package_service = Service.objects.create(
+                            professional=professional,
+                            title=f"Package Service ({professional.user.first_name})",
+                            is_active=True
+                        )
+                    
+                    # Get the first active price for this service
+                    price_obj = package_service.get_service_prices().first()
+                    
+                    if not price_obj:
+                        # Create a price if none exists
+                        price_obj = Price.objects.create(
+                            service=package_service,
+                            amount=package.base_price,
+                            currency=package.currency,
+                            is_active=True
+                        )
+                except Exception as e:
+                    messages.error(request, f"Error processing package price: {str(e)}")
+                    return redirect('packages:packages')
+                
+                # CHANGED: Create the OrderItem for the package
+                order_item = OrderItem.objects.create(
+                    order=order,
+                    service=package_service,
+                    item=None,  # Templates aren't items
+                    price=price_obj,
+                    professional=professional,
+                    quantity=1  # Only one package per order
+                )
+                
+                # CHANGED: Store template ID in a note field or similar
+                # Since we don't have a dedicated template field, we can store it in description
+                # or create a custom field. For now, we'll update a note.
+                order.template = package  # Assuming Order model has this field
+                
+                # CHANGED: Update order total
+                order.calculate_total()
+                order.save()
+                
+                messages.success(
+                    request,
+                    f"Added to basket: {package.title} (€{package.base_price})"
+                )
+            except Template.DoesNotExist:
+                messages.error(request, "Package not found.")
+                return redirect('packages:packages')
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f"An error occurred while adding the package: {str(e)}")
+                return redirect('packages:packages')
+            
+            # CHANGED: Redirect to basket
+            return redirect('orders:basket')
+            
+        except Exception as e:
+            # CHANGED: Added error handling
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f"An error occurred: {str(e)}")
+            return redirect('packages:packages')

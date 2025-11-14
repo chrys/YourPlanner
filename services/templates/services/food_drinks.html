@@ -8,102 +8,124 @@
 <div class="container mt-4">
     <h1 class="mb-4">Food & Drinks</h1>
 
-    {% for section_name, items in food_drinks_sections.items %}
-        {% if items %}
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h3 class="h5 mb-0">{{ section_name }}</h3>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Item Name</th>
-                                    <th>Description</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in items %}
+    <!-- CHANGED: Wrapped form around all sections for collecting food/drinks items -->
+    <form id="food-drinks-form" method="post" action="{% url 'services:add_food_drinks_to_order' %}">
+        {% csrf_token %}
+        <!-- CHANGED: Store basket_items as JSON for JavaScript access -->
+        <input type="hidden" id="basket-items-json" value="{{ basket_items_json }}">
+
+        {% for section_name, items in food_drinks_sections.items %}
+            {% if items %}
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h3 class="h5 mb-0">{{ section_name }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <strong>{{ item.title }}</strong>
-                                        </td>
-                                        <td>
-                                            {% if item.description %}
-                                                {{ item.description|truncatewords:10 }}
-                                            {% else %}
-                                                <span class="text-muted">No description</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if item.prices.all %}
-                                                {% for price in item.prices.all|slice:":1" %}
-                                                    {{ price.amount }} {{ price.currency }}
-                                                {% endfor %}
-                                            {% else %}
-                                                <span class="text-muted">No price</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
+                                        <th>Item Name</th>
+                                        <th>Description</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ item.title }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if item.description %}
+                                                    {{ item.description|truncatewords:10 }}
+                                                {% else %}
+                                                    <span class="text-muted">No description</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.prices.all %}
+                                                    {% for price in item.prices.all|slice:":1" %}
+                                                        {{ price.amount }} {{ price.currency }}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted">No price</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                            <!-- CHANGED: Use existing basket quantity if item is in basket -->
                                             <input type="number" class="form-control quantity-input" 
+                                                   name="item_quantity_{{ item.pk }}" 
                                                    data-item-id="{{ item.pk }}" 
                                                    value="0" 
                                                    min="0" 
                                                    style="width: 80px;">
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-primary add-to-order-btn" 
-                                                    data-item-id="{{ item.pk }}"
-                                                    data-item-title="{{ item.title }}">
-                                                Add to Order
-                                            </button>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- CHANGED: Single "Add to Basket" button at the end -->
+        <div class="row mt-4 mb-4">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-success btn-lg me-2">
+                    <i class="fas fa-shopping-basket"></i> Add to Basket
+                </button>
+                <a href="{% url 'core:home' %}" class="btn btn-secondary btn-lg">Back to Home</a>
             </div>
-        {% endif %}
-    {% endfor %}
-
-    <div class="alert alert-info mt-4">
-        <p><strong>Note:</strong> Select items and quantities above to add them to your order.</p>
-    </div>
-
-    <div class="row mt-4 mb-4">
-        <div class="col-md-12">
-            <a href="{% url 'core:home' %}" class="btn btn-secondary">Back to Home</a>
         </div>
-    </div>
+    </form>
 </div>
 
-<!-- CHANGED: Added JavaScript for quantity and order functionality -->
+<!-- CHANGED: Updated JavaScript to validate quantities before submission -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const addToOrderButtons = document.querySelectorAll('.add-to-order-btn');
-    
-    addToOrderButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const itemId = this.getAttribute('data-item-id');
-            const itemTitle = this.getAttribute('data-item-title');
-            const quantityInput = document.querySelector(`input[data-item-id="${itemId}"]`);
-            const quantity = parseInt(quantityInput.value) || 0;
+        document.addEventListener('DOMContentLoaded', function() {
+            // CHANGED: Load existing basket quantities from hidden JSON field
+            const basketItemsJson = document.getElementById('basket-items-json');
+            if (basketItemsJson && basketItemsJson.value) {
+                try {
+                    const basketItems = JSON.parse(basketItemsJson.value);
+                    const quantityInputs = document.querySelectorAll('.quantity-input');
+                    
+                    quantityInputs.forEach(input => {
+                        const itemId = parseInt(input.getAttribute('data-item-id'));
+                        if (basketItems[itemId]) {
+                            input.value = basketItems[itemId];
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error parsing basket items:', e);
+                }
+            }
             
-            if (quantity > 0) {
-                alert(`Added ${quantity} of "${itemTitle}" to your order`);
-                quantityInput.value = 0; // Reset quantity
-            } else {
-                alert('Please enter a quantity greater than 0');
+            // CHANGED: Original form validation logic
+            const form = document.getElementById('food-drinks-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let hasQuantities = false;
+                    const quantityInputs = document.querySelectorAll('.quantity-input');
+                    
+                    // CHANGED: Check if at least one item has quantity > 0
+                    quantityInputs.forEach(input => {
+                        if (parseInt(input.value || 0) > 0) {
+                            hasQuantities = true;
+                        }
+                    });
+                    
+                    if (!hasQuantities) {
+                        e.preventDefault();
+                        alert('Please select at least one item with a quantity greater than 0');
+                    }
+                });
             }
         });
-    });
-});
 </script>
 
 <style>

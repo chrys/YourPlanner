@@ -7,6 +7,9 @@ from .views import (
     FoodDrinksView,  
     RoomsView,  # CHANGED: Added RoomsView import
     DecorsServicesView,  # CHANGED: Added DecorsServicesView import
+    AddFoodDrinksToOrderView,  # CHANGED: Added AddFoodDrinksToOrderView import
+    AddRoomsToOrderView,  # CHANGED: Added AddRoomsToOrderView import
+    AddDecorsServicesToOrderView,  # CHANGED: Added AddDecorsServicesToOrderView import
 )
 
 app_name = 'services'
@@ -22,10 +25,16 @@ urlpatterns = [
     path('service/<int:service_pk>/price/create/', ServicePriceCreateView.as_view(), name='service_price_create'),
     # CHANGED: Updated Food & Drinks URL to be a standalone page
     path('food-drinks/', FoodDrinksView.as_view(), name='food_drinks'),
+    # CHANGED: Added URL for adding food & drinks to order
+    path('food-drinks/add-to-order/', AddFoodDrinksToOrderView.as_view(), name='add_food_drinks_to_order'),
     # CHANGED: Added Rooms URL
     path('rooms/', RoomsView.as_view(), name='rooms'),
+    # CHANGED: Added URL for adding rooms to order
+    path('rooms/add-to-order/', AddRoomsToOrderView.as_view(), name='add_rooms_to_order'),
     # CHANGED: Added Decors & Services URL
     path('decors-services/', DecorsServicesView.as_view(), name='decors_services'),
+    # CHANGED: Added URL for adding decors & services to order
+    path('decors-services/add-to-order/', AddDecorsServicesToOrderView.as_view(), name='add_decors_services_to_order'),
 
     # Item URLs (nested under services)
     # service_pk is used by the UserOwnsParentServiceMixin to fetch the parent service

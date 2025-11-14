@@ -1,21 +1,153 @@
 {% extends "core/base.html" %}
 {% load static %}
+{% load i18n %}
 
-{% block title %}Rooms - YourPlanner{% endblock %}
+{% block title %}Rooms{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-lg-8 offset-lg-2">
-            <h1 class="mb-4">Event Rooms</h1>
-            <p class="lead text-muted">Browse and manage event rooms for your wedding.</p>
-            
-            <!-- Placeholder content - will be populated later -->
-            <div class="alert alert-info" role="alert">
-                <h4 class="alert-heading">Coming Soon</h4>
-                <p>Rooms management page content will be added here.</p>
+<div class="container mt-4">
+    <h1 class="mb-4">Event Rooms</h1>
+
+    <!-- CHANGED: Wrapped form around all sections for collecting rooms -->
+    <form id="rooms-form" method="post" action="{% url 'services:add_rooms_to_order' %}">
+        {% csrf_token %}
+        <!-- CHANGED: Store basket_items as JSON for JavaScript access -->
+        <input type="hidden" id="basket-items-json" value="{{ basket_items_json }}">
+
+        {% if rooms %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h3 class="h5 mb-0">Available Rooms</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Room Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for room in rooms %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ room.title }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if room.description %}
+                                                {{ room.description|truncatewords:10 }}
+                                            {% else %}
+                                                <span class="text-muted">No description</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if room.prices.all %}
+                                                {% for price in room.prices.all|slice:":1" %}
+                                                    {{ price.amount }} {{ price.currency }}
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">No price</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                        <!-- CHANGED: Use existing basket quantity if room is in basket -->
+                                        <input type="number" class="form-control quantity-input" 
+                                               name="item_quantity_{{ room.pk }}" 
+                                               data-item-id="{{ room.pk }}" 
+                                               value="0" 
+                                               min="0" 
+                                               style="width: 80px;">
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p>No rooms available at the moment.</p>
+            </div>
+        {% endif %}
+
+        <!-- CHANGED: Single "Add to Basket" button at the end -->
+        <div class="row mt-4 mb-4">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-success btn-lg me-2">
+                    <i class="fas fa-shopping-basket"></i> Add to Basket
+                </button>
+                <a href="{% url 'core:home' %}" class="btn btn-secondary btn-lg">Back to Home</a>
             </div>
         </div>
-    </div>
+    </form>
 </div>
+
+<script>
+    // CHANGED: Initialize quantity inputs from basket data
+    document.addEventListener('DOMContentLoaded', function() {
+        // CHANGED: Load existing basket quantities from hidden JSON field
+        const basketItemsJson = document.getElementById('basket-items-json');
+        if (basketItemsJson && basketItemsJson.value) {
+            try {
+                const basketItems = JSON.parse(basketItemsJson.value);
+                const quantityInputs = document.querySelectorAll('.quantity-input');
+                
+                quantityInputs.forEach(input => {
+                    const itemId = parseInt(input.getAttribute('data-item-id'));
+                    if (basketItems[itemId]) {
+                        input.value = basketItems[itemId];
+                    }
+                });
+            } catch (e) {
+                console.error('Error parsing basket items:', e);
+            }
+        }
+        
+        // CHANGED: Original form validation logic
+        const form = document.getElementById('rooms-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                let hasQuantities = false;
+                const quantityInputs = document.querySelectorAll('.quantity-input');
+                
+                // CHANGED: Check if at least one room has quantity > 0
+                quantityInputs.forEach(input => {
+                    if (parseInt(input.value || 0) > 0) {
+                        hasQuantities = true;
+                    }
+                });
+                
+                if (!hasQuantities) {
+                    e.preventDefault();
+                    alert('Please select at least one room with a quantity greater than 0');
+                }
+            });
+        }
+    });
+</script>
+
+<style>
+    .quantity-input {
+        font-size: 14px;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+</style>
+
 {% endblock %}
